@@ -29,7 +29,8 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
-| Despliegue en Azure | — | — | Pendiente |
+| Despliegue en Azure | — | — | Pendiente: API en contenedor, Functions para el aviso y Azure SQL (ADR 0003) |
+| Ensayo del despliegue en local con contenedores | — | — | Pendiente |
 | Aviso de novedades | — | — | Diseño |
 | Escribir desde la web | — | — | Pendiente |
 | Varias personas con su cuenta | — | — | Pendiente |

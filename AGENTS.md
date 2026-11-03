@@ -21,7 +21,7 @@ Cada paso se cierra antes de abrir el siguiente. Un diseño sin ejecutar no es u
 
 Regla de dependencias: `Domain ← Application ← Infrastructure ← Api`. No la debilites: si la web necesita un tipo del servidor, se duplica el DTO en `Models/`.
 
-La persistencia es SQLite y se versiona con migraciones de EF Core (Code First): el modelo se escribe en C# y la base se genera desde ahí. No se edita la base a mano. La base (`*.db`) no se versiona. El CSV se copia a la salida del proyecto de API; su ruta se puede cambiar con `Datos:RutaCsv`.
+La persistencia es SQLite en local y el despliegue usará Azure SQL (ADR 0003). El esquema se versiona con migraciones de EF Core (Code First): el modelo se escribe en C# y la base se genera desde ahí. No se edita la base a mano. La base (`*.db`) no se versiona. El CSV se copia a la salida del proyecto de API; su ruta se puede cambiar con `Datos:RutaCsv`.
 
 Las herramientas de EF se restauran con `dotnet tool restore`. Para añadir una migración:
 
@@ -118,7 +118,7 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 ## Despliegue
 
-No se despliega nada en Azure sin autorización explícita. La infraestructura prevista —Static Web Apps, Functions y Azure SQL en su oferta gratuita— está en **Diseño** y no se presenta como hecha.
+No se despliega nada en Azure sin autorización explícita. La infraestructura prevista —Static Web Apps para la pantalla, Container Apps para la API, Functions para el aviso diario y Azure SQL en su oferta gratuita— solo existe como diseño: la decisión está en el [ADR 0003](docs/adr/0003-hospedaje-de-la-api.md) y el despliegue sigue **Pendiente**, sin presentarse como hecho.
 
 ## Commits
 
@@ -152,3 +152,4 @@ Estas las decide el propietario, no el agente:
 - **Tomo único:** se representa como serie con un solo tomo sin número.
 - **Serie con dos editoriales:** hoy se parte en dos series. Se unifica cuando aparezca el caso.
 - **Huecos:** se calculan al mostrar; no se guardan.
+- **Colección real en el despliegue:** la validación de la fase 2 usa el conjunto de demostración. Cargar la colección real en Azure SQL cambia las reglas de privacidad y lo decide el propietario.

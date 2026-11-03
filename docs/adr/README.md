@@ -6,3 +6,4 @@ Aquí guardo las decisiones que van a durar: qué elegí, qué otras opciones te
 |---|---|
 | [Capas, EF Core y SQLite](0001-capas-y-persistencia.md) | Aceptada |
 | [Blazor WebAssembly con API separada](0002-frontend-wasm-y-api-separada.md) | Aceptada |
+| [Por qué la API va en un contenedor y el aviso en Functions](0003-hospedaje-de-la-api.md) | Aceptada |

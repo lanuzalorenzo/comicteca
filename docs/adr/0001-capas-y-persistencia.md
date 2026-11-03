@@ -9,7 +9,7 @@ Una aplicación para mí solo, con una colección que aún cabe en un CSV y debe
 
 ## Qué decidí
 
-Separar el código en cuatro proyectos —dominio, aplicación, infraestructura y API— y guardar los datos con EF Core sobre SQLite, con el modelo escrito en C# y el esquema versionado con migraciones (Code First). Al arrancar se aplican las migraciones pendientes y, si la base está vacía, se carga el CSV.
+Separar el código en cuatro proyectos —dominio, aplicación, infraestructura y API— y guardar los datos con EF Core sobre SQLite en local y, al desplegar, sobre Azure SQL serverless con migraciones propias para ese proveedor (ADR 0003), con el modelo escrito en C# y el esquema versionado con migraciones (Code First). Al arrancar se aplican las migraciones pendientes y, si la base está vacía, se carga el CSV.
 
 Pienso en ello como una cocina: la despensa guarda los ingredientes, la receta decide qué se hace con ellos y el cocinero ejecuta. Si meto la despensa dentro del cocinero, cada cambio me obliga a moverlo todo.
 

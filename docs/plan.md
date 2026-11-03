@@ -6,20 +6,24 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 
 **Se cierra cuando** la colección se carga desde el CSV y puedo buscar en el móvil.
 
-- Toda mi colección cargada desde el CSV, en local.
-- 5 pruebas en verde y compilación sin avisos.
+- El conjunto de demostración cargado desde el CSV, en local.
+- 5 pruebas en verde en el cierre y compilación sin avisos; hoy son 25 pruebas.
 - Sin desplegar y sin que los datos salgan de este repositorio.
 
-## Fase 2 — Tener una dirección propia (Diseño)
+## Fase 2 — Tener una dirección propia (Diseño; despliegue Pendiente)
 
 **Se cierra cuando** una dirección privada sirve la aplicación con los mismos datos y la factura del mes es de 0 €.
 
 - La pantalla en Static Web Apps, en su plan gratuito.
-- La API en Functions y la base en Azure SQL, en la oferta gratuita, con auto-pausado al agotar la cuota.
+- La API en un contenedor sobre Container Apps y la base en Azure SQL, en la oferta gratuita, con auto-pausado al agotar la cuota.
+- Antes de Azure, el ensayo en local con Docker: el mismo código y los mismos estáticos, con los datos en un volumen, sin coste.
+- Agrupación de conexiones desactivada, para que la base pueda auto-pausar en lugar de gastar la cuota en dos días.
 - Migraciones en lugar de crear la base de golpe: ya están, y al pasar a Azure SQL necesitaré un conjunto propio para ese proveedor.
 - Entrada con Entra ID.
 - Prueba: la captura de facturación del mes y esta matriz actualizada.
 - Antes de desplegar, lo pido y lo autorizo yo.
+
+La decisión y sus números están en el [ADR 0003](adr/0003-hospedaje-de-la-api.md).
 
 ## Fase 3 — Que me avise (Diseño)
 
@@ -27,7 +31,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 
 - Leo las novedades de Norma, Planeta, Ivrea y Panini, que son la mayoría de mi colección.
 - Dos reglas: un número mayor que el último que tengo es novedad; un salto de dos o más es un hueco.
-- Ejecución programada, que no duplique avisos y que deje registro de la última vez que salió bien.
+- Ejecución programada en Functions, con un timer trigger (disparador por tiempo) separado de la API, que no duplique avisos y que deje registro de la última vez que salió bien.
 - Resumen por correo o Telegram.
 
 ## Fase 4 — Compartirla (Pendiente)
@@ -45,3 +49,5 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 | La lectura de novedades se rompe cuando una editorial cambia su web | Empiezo por dos fuentes y aviso del fallo en vez de callarlo |
 | Dos proyectos a medias | Esto no toca la carga principal del portfolio; avanzo en sesiones cortas |
 | Una factura inesperada en Azure | Auto-pausado, aviso de presupuesto y un grupo de recursos que se borra entero |
+| La base no se auto-pausa y agota la cuota | Agrupación de conexiones desactivada y aviso al 10 % de los vCore-s |
+| Los registros o el registro de imágenes generan factura | Alerta de presupuesto, retención corta y un registro que se pueda cambiar sin tocar la aplicación |
