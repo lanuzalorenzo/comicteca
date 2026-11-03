@@ -1,0 +1,23 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+
+[*.{csproj,props,targets,json,yml,yaml,md,razor,css}]
+indent_size = 2
+
+[*.cs]
+indent_size = 4
+
+# Las migraciones las genera EF Core; no se editan a mano.
+[**/Migrations/**]
+charset = utf-8-bom
+dotnet_diagnostic.CA1861.severity = none
+
+# Los nombres de prueba con guiones bajos describen el caso y se leen mejor así.
+[tests/**]
+dotnet_diagnostic.CA1707.severity = none
