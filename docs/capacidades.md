@@ -25,9 +25,9 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Se ve bien en el móvil | `app.css` | Prueba manual a 375 px y 1280 px | Parcial: sin dispositivos reales |
 | Solo el navegador queda limitado por CORS | `Api/appsettings.json` | Prueba manual con y sin origen permitido | Parcial: sin prueba automática |
 | No hay secretos en el código | `.gitleaks.toml` | `gitleaks detect` | Validado: sin hallazgos |
-| CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Pendiente: sin primer run |
-| CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Pendiente: sin primer run |
-| CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Pendiente: sin primer run |
+| CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
+| CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
+| CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | Despliegue en Azure | — | — | Pendiente |
 | Aviso de novedades | — | — | Diseño |
 | Escribir desde la web | — | — | Pendiente |
