@@ -1,0 +1,52 @@
+# Comicteca
+
+Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no guarda los tebeos, dice cuáles tengo, de qué editorial y en qué número. La empecé porque seguía las novedades en una web de pago y solo necesitaba una cosa de ella: saber cuándo sale el siguiente tomo de las series que leo.
+
+**Estado:** la carga y el listado funcionan en local con 20 series y 65 filas. El despliegue está pendiente y los avisos de novedades, en diseño.
+
+## Qué hace hoy
+
+- Carga mi colección desde un archivo CSV.
+- Agrupa por serie y editorial y resume cuántos tomos tengo y con qué números.
+- Busca por título o editorial.
+- Está pensada para el móvil, con tema oscuro; probada a 375 px en el navegador.
+
+## Cómo se arranca
+
+```bash
+dotnet run --project src/Comicteca.Api   # http://localhost:5094
+dotnet run --project src/Comicteca.Web   # http://localhost:5077
+```
+
+La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La web toma la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json`.
+
+## Cómo está organizado
+
+| Carpeta | Qué hay dentro |
+|---|---|
+| `src/Comicteca.Domain` | Las reglas: qué es una serie y qué es un tomo |
+| `src/Comicteca.Application` | Lo que la interfaz necesita saber de las series |
+| `src/Comicteca.Infrastructure` | La base de datos y la carga del CSV |
+| `src/Comicteca.Api` | La puerta por la que pregunta la web |
+| `src/Comicteca.Web` | La pantalla que uso |
+| `tests/` | Las pruebas |
+
+## Documentación
+
+| Documento | Qué cuenta |
+|---|---|
+| [`docs/adr/`](docs/adr/) | Por qué tomé cada decisión y qué alternativas había |
+| [`docs/datos.md`](docs/datos.md) | De dónde salen los datos y qué puedo afirmar |
+| [`docs/capacidades.md`](docs/capacidades.md) | Qué está probado y qué no |
+| [`docs/plan.md`](docs/plan.md) | Los pasos que faltan |
+
+## Datos
+
+`data/coleccion.csv` es una exportación de mi colección. El repositorio es privado y estos datos no se publican.
+
+## Comprobación
+
+```bash
+dotnet build Comicteca.slnx -c Release
+dotnet test Comicteca.slnx -c Release --no-build
+```

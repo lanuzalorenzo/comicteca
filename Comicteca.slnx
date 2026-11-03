@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Comicteca.Api/Comicteca.Api.csproj" />
+    <Project Path="src/Comicteca.Application/Comicteca.Application.csproj" />
+    <Project Path="src/Comicteca.Domain/Comicteca.Domain.csproj" />
+    <Project Path="src/Comicteca.Infrastructure/Comicteca.Infrastructure.csproj" />
+    <Project Path="src/Comicteca.Web/Comicteca.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Comicteca.Tests/Comicteca.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,29 @@
+# Binarios y objetos
+**/bin/
+**/obj/
+
+# Visual Studio / VS Code
+.vs/
+*.user
+*.suo
+.vscode/
+.idea/
+
+# Salidas de compilación
+*.dll
+*.exe
+*.pdb
+*.nupkg
+*.snupkg
+
+# NuGet
+packages/
+
+# Base de datos local
+*.db
+*.db-shm
+*.db-wal
+
+# Entorno
+.env
+appsettings.Local.json

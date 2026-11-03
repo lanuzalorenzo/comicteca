@@ -1,0 +1,99 @@
+﻿@page "/"
+@using Comicteca.Web.Models
+@inject HttpClient Http
+
+<PageTitle>Comicteca</PageTitle>
+
+<header class="cabecera">
+    <h1>Comicteca</h1>
+    <p class="resumen">@Series.Count series · @TotalTomos tomos</p>
+</header>
+
+@if (Cargando)
+{
+    <p class="aviso">Cargando la colección…</p>
+}
+else if (Error is not null)
+{
+    <p class="aviso error">@Error</p>
+}
+else
+{
+    <input class="buscador"
+           type="search"
+           placeholder="Buscar por serie o editorial"
+           aria-label="Buscar por serie o editorial"
+           @bind="Filtro"
+           @bind:event="oninput" />
+
+    <ul class="lista">
+        @foreach (var serie in Filtradas)
+        {
+            <li class="ficha">
+                <span class="titulo">@serie.Titulo</span>
+                <span class="editorial">@serie.Editorial</span>
+                <span class="tomos">@Texto(serie)</span>
+            </li>
+        }
+    </ul>
+
+    @if (Filtradas.Count == 0)
+    {
+        <p class="aviso">Ninguna serie coincide con «@Filtro».</p>
+    }
+}
+
+@code {
+    private List<SerieDto> Series { get; set; } = [];
+    private bool Cargando { get; set; } = true;
+    private string? Error { get; set; }
+    private string Filtro { get; set; } = string.Empty;
+
+    private int TotalTomos => Series.Sum(serie => serie.Total);
+
+    private List<SerieDto> Filtradas =>
+        string.IsNullOrWhiteSpace(Filtro)
+            ? Series
+            : Series.Where(serie =>
+                serie.Titulo.Contains(Filtro, StringComparison.OrdinalIgnoreCase) ||
+                serie.Editorial.Contains(Filtro, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Series = await Http.GetFromJsonAsync<List<SerieDto>>("api/series") ?? [];
+        }
+        catch (Exception excepcion)
+        {
+            Error = $"No se pudo cargar la colección: {excepcion.Message}";
+        }
+        finally
+        {
+            Cargando = false;
+        }
+    }
+
+    private static string Texto(SerieDto serie)
+    {
+        var numeros = serie.Numeros
+            .Where(numero => numero.HasValue)
+            .Select(numero => numero!.Value)
+            .ToList();
+
+        if (numeros.Count == 0)
+        {
+            return serie.Total == 1 ? "1 tomo" : $"{serie.Total} tomos sin numerar";
+        }
+
+        if (numeros.Count == 1)
+        {
+            return "1 tomo";
+        }
+
+        var contiguos = numeros.Count == numeros[^1] - numeros[0] + 1;
+        return contiguos
+            ? $"{numeros.Count} tomos · {numeros[0]}–{numeros[^1]}"
+            : $"{numeros.Count} tomos: {string.Join(", ", numeros)}";
+    }
+}

@@ -1,0 +1,6 @@
+# Configuración de Gitleaks para la Comicteca.
+#
+# El repositorio no guarda credenciales. El CSV de la colección contiene datos
+# personales de lectura, no secretos, y no se publica.
+[extend]
+useDefault = true
