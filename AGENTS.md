@@ -51,9 +51,9 @@ El backlog no vive aquí. Este repositorio puede abrirse y las prioridades no se
 
 ## Datos y privacidad
 
-- `data/coleccion.csv` es el conjunto inventado de demostración: serie, editorial, número y edición. La colección real no está en la copia actual y se carga en local con `Datos__RutaCsv`; sigue en el historial de Git.
+- `data/coleccion.csv` es el conjunto inventado de demostración: serie, editorial, número y edición. La colección real no está en la copia actual ni en el historial alcanzable, y se carga en local con `Datos__RutaCsv`.
 - No se añaden fechas de compra o lectura, datos de cuenta ni identificadores de terceros.
-- La colección real no se publica ni se copia a repos públicos. Ya no está en la copia actual, pero sigue en el historial de Git.
+- La colección real no se publica ni se copia a repos públicos. No está en la copia actual ni en el historial alcanzable: se reescribió el 3 de noviembre de 2026 para retirarla de todos los commits.
 - Los datos vienen de una exportación propia; no se redistribuye el catálogo de la fuente.
 
 ## Público y privado
@@ -68,7 +68,7 @@ El repositorio es privado hoy y puede abrirse más adelante. Todo lo que se escr
 | `AGENTS.md` y `.opencode/` | Sí | Son herramientas del repositorio, no documentación |
 | Base local, `appsettings.Local.json` | No | Ignorados por Git |
 
-**Aviso importante:** el CSV real está en el historial desde el primer commit. La copia actual ya es inventada y `docs/datos.md` describe la demostración, pero el historial sigue publicando la colección: abrir el repositorio exige reescribir el historial o crear uno nuevo con datos de demostración. No basta con borrar los archivos.
+**Aviso importante:** el CSV real estuvo en el historial desde el primer commit. El 3 de noviembre de 2026 se reescribió para sustituirlo por el conjunto inventado en todos los commits. Antes de abrir el repositorio hay que comprobar que no reaparece en ningún clon, fork ni objeto inalcanzable del remoto.
 
 Antes de cambiar la visibilidad:
 

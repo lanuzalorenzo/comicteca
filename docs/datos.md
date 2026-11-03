@@ -1,6 +1,6 @@
 # Los datos: de dónde salen y qué puedo afirmar
 
-`data/coleccion.csv` es un conjunto inventado: veinte series que no existen, con la misma forma que una exportación de mi colección. Está en el repositorio como conjunto de demostración, para enseñar la aplicación con datos que no son míos. La colección real, exportada el 3 de noviembre de 2026, ya no está en la copia actual —se carga solo en local—, pero sigue en el historial de Git: abrir el repositorio la publicaría igual hasta que ese historial se reescriba o se empiece uno nuevo. La idea es la misma que con la colección de verdad: una lista de la compra no dice lo que hay en la nevera, y un CSV no dice lo que hay en la estantería hasta que lo compruebo.
+`data/coleccion.csv` es un conjunto inventado: veinte series que no existen, con la misma forma que una exportación de mi colección. Está en el repositorio como conjunto de demostración, para enseñar la aplicación con datos que no son míos. La colección real, exportada el 3 de noviembre de 2026, no está en la copia actual ni en el historial alcanzable —se reescribió para retirarla— y se carga solo en local. La idea es la misma que con la colección de verdad: una lista de la compra no dice lo que hay en la nevera, y un CSV no dice lo que hay en la estantería hasta que lo compruebo.
 
 ## Qué guarda el archivo
 
@@ -59,7 +59,7 @@ El conjunto reproduce algunos casos raros que ya conocía, para que la interfaz 
 
 1. Toda cifra lleva fecha y fuente. Sin fecha, no la publico.
 2. Separo lo que he medido de lo que supongo: «hay 65 filas» no es «tengo 65 cómics».
-3. El CSV versionado es inventado. La colección real no está en la copia actual, pero sigue en el historial de Git: antes de abrir el repositorio hay que reescribir ese historial o empezar uno nuevo.
+3. El CSV versionado es inventado. La colección real no está en la copia actual ni en el historial alcanzable: se queda en local.
 4. Un hueco no es un error de la editorial ni una falta confirmada: es la diferencia entre lo que tengo y lo que conozco.
 
 ## Cómo lo actualizo

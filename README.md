@@ -42,7 +42,7 @@ La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La w
 
 ## Datos
 
-`data/coleccion.csv` es un conjunto inventado de veinte series, con la misma forma que la exportación de mi colección. Está ahí como conjunto de demostración; la colección real se carga en local con `Datos__RutaCsv`. El CSV real ya no está en la copia actual, pero sigue en el historial de Git: abrir el repositorio exige reescribirlo antes.
+`data/coleccion.csv` es un conjunto inventado de veinte series, con la misma forma que la exportación de mi colección. Está ahí como conjunto de demostración; la colección real se carga en local con `Datos__RutaCsv` y no está en la copia actual ni en el historial alcanzable.
 
 ## Comprobación
 
