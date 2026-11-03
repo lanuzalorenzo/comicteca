@@ -41,12 +41,45 @@ dotnet ef migrations add Nombre --project src/Comicteca.Infrastructure --startup
 
 La bitácora no es un diario: se escribe al cerrar un hito, va ligada a una evidencia y no repite lo que ya dicen los ADR o `capacidades.md`. El motivo de cada cambio vive en el commit.
 
+## Backlog y comando
+
+El backlog no vive aquí. Este repositorio puede abrirse y las prioridades no se publican: viven en el registro privado de planificación, junto con el diario y las reglas transversales.
+
+- La documentación versionada —README, `docs/`, bitácora— solo describe lo que cualquiera puede leer.
+- Las herramientas locales, como `/retomar`, viven en `.opencode/`, que no se versiona.
+- Ningún archivo versionado contiene rutas ni referencias a repositorios privados.
+
 ## Datos y privacidad
 
 - `data/coleccion.csv` es la colección personal: serie, editorial, número y edición.
 - No se añaden fechas de compra o lectura, datos de cuenta ni identificadores de terceros.
 - No se publica ni se copia a repos públicos. Si el repositorio se abre, se sustituye por un conjunto inventado de veinte series.
 - Los datos vienen de una exportación propia; no se redistribuye el catálogo de la fuente.
+
+## Público y privado
+
+El repositorio es privado hoy y puede abrirse más adelante. Todo lo que se escribe debe poder publicarse tal cual, salvo los datos.
+
+| Pieza | ¿Publicable? | Condición |
+|---|---|---|
+| Código, pruebas y CI | Sí | Sin credenciales, rutas personales ni nombres de usuario |
+| `README.md`, `docs/` (salvo `datos.md`), `bitacora/` | Sí | Sin datos reales ni enlaces a repos privados |
+| `docs/datos.md` | No | Sus cifras y ejemplos salen de la colección real; sustituir por inventados |
+| `data/coleccion.csv` | No | Sustituir por un conjunto inventado antes de abrir |
+| `AGENTS.md` y `.opencode/` | Sí | Son herramientas del repositorio, no documentación |
+| Base local, `appsettings.Local.json` | No | Ignorados por Git |
+
+**Aviso importante:** el CSV real está en el historial desde el primer commit, y `docs/datos.md` lo describe. Abrir el repositorio los publica. Si no se quiere, hay que reescribir el historial o crear un repositorio nuevo con datos de demostración; no basta con borrar los archivos.
+
+Antes de cambiar la visibilidad:
+
+1. Sustituir el CSV y las cifras de `docs/datos.md` por veinte series inventadas, y comprobar que no queda ningún dato real en el historial.
+2. Buscar rutas absolutas, nombres de usuario y referencias a repos privados.
+3. Revisar la identidad de autor y committer de los commits: nombre y correo se publican con el historial.
+4. Pasar el revisor y el escaneo de secretos sobre el historial completo.
+5. Activar la protección de `main` con los checks del CI; en un repositorio público es gratuita.
+
+La documentación publicada —README, `docs/` y bitácora— no menciona asistentes ni generación automática: el trabajo se firma como propio. `AGENTS.md` y `.opencode/` son herramientas y se publican como tales.
 
 ## Identidad visual
 
@@ -91,6 +124,14 @@ No se despliega nada en Azure sin autorización explícita. La infraestructura p
 ## Commits
 
 Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `data`, `tests`, `docs`, `repo`, `deps`. Tipos: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`. Asunto imperativo, conciso y en inglés.
+
+## Cambios y autorización
+
+- No se escriben credenciales ni cadenas reales. El hook de Gitleaks y el CI son la red, no la excusa para saltarse la regla.
+- Commit y push requieren autorización explícita del propietario, aunque el agente pueda hacerlos.
+- Un cambio de más de un archivo, o que toque reglas, CI, seguridad o publicación, pasa por el revisor antes de commitear.
+- Si un cambio contradice un ADR o una cifra de `capacidades.md`, se actualizan en el mismo lote. No se deja la documentación mintiendo.
+- No se reescribe el historial salvo para retirar datos personales antes de abrir el repositorio, y se documenta el motivo en el commit.
 
 ## Integración continua
 

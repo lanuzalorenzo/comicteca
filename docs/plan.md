@@ -37,13 +37,6 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 - Cada cuenta ve lo suyo.
 - Es la fase que me da los escenarios de identidad que ahora faltan.
 
-## Cómo encaja en el portfolio
-
-- **Lo que enseñaría:** el código, las decisiones y la prueba de coste y controles. Nada más.
-- **Lo que no sale nunca:** mi CSV, mis datos y cualquier identificador de la web de origen.
-- **Cómo lo contaría:** como una segunda carga con los mismos controles, no como un producto. Lo que demuestro es cómo despliego, cómo protejo el acceso y cómo mantengo el coste a cero.
-- **Qué falta para enseñarlo:** el despliegue real, la integración continua al abrir el repositorio y un conjunto de datos inventado para la demostración.
-
 ## Lo que puede salir mal
 
 | Riesgo | Qué hago |

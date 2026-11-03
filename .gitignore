@@ -27,3 +27,6 @@ packages/
 # Entorno
 .env
 appsettings.Local.json
+
+# Herramientas locales de OpenCode: no se versionan
+.opencode/

@@ -47,6 +47,8 @@ La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La w
 ## Comprobación
 
 ```bash
-dotnet build Comicteca.slnx -c Release
+dotnet build Comicteca.slnx -c Release -warnaserror
 dotnet test Comicteca.slnx -c Release --no-build
+dotnet format Comicteca.slnx --verify-no-changes --no-restore
+gitleaks detect --source . --redact --verbose --exit-code 2
 ```
