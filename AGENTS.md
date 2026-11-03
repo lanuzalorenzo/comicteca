@@ -140,7 +140,7 @@ El repositorio es privado, pero se comporta como público. `.github/workflows/ci
 - **Secretos:** Gitleaks sobre el historial completo.
 - **Dependencias:** auditoría de paquetes NuGet directos y transitivos; falla si hay vulnerabilidades conocidas.
 
-Dependabot agrupa cada lunes las actualizaciones de NuGet y de las acciones.
+Dependabot agrupa cada lunes las actualizaciones de NuGet y de las acciones. El flujo automático fusiona las de parche y minor con los tres checks en verde; las major quedan para revisión.
 
 La protección de `main` no está activa: GitHub exige un plan de pago para proteger ramas de repositorios privados. Al abrir el repositorio se activa con los checks obligatorios, rama actualizada y fusión por squash. Mientras tanto, el hook local de Gitleaks sigue siendo obligatorio en cada clon.
 
