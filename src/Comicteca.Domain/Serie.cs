@@ -3,6 +3,10 @@ namespace Comicteca.Domain;
 /// <summary>Una serie de la colección. Un tomo único es una serie con un solo tomo sin número.</summary>
 public sealed class Serie
 {
+    public const int TituloMaximo = 200;
+
+    public const int EditorialMaxima = 120;
+
     private readonly List<Tomo> _tomos = [];
 
     private Serie()
@@ -21,9 +25,22 @@ public sealed class Serie
             throw new ArgumentException("La editorial es obligatoria.", nameof(editorial));
         }
 
+        var tituloLimpio = titulo.Trim();
+        var editorialLimpia = editorial.Trim();
+
+        if (tituloLimpio.Length > TituloMaximo)
+        {
+            throw new ArgumentException($"El título no puede superar los {TituloMaximo} caracteres.", nameof(titulo));
+        }
+
+        if (editorialLimpia.Length > EditorialMaxima)
+        {
+            throw new ArgumentException($"La editorial no puede superar los {EditorialMaxima} caracteres.", nameof(editorial));
+        }
+
         Id = id;
-        Titulo = titulo.Trim();
-        Editorial = editorial.Trim();
+        Titulo = tituloLimpio;
+        Editorial = editorialLimpia;
     }
 
     public Guid Id { get; private set; }
@@ -36,7 +53,7 @@ public sealed class Serie
 
     public Tomo AgregarTomo(int? numero, string? edicion)
     {
-        var tomo = new Tomo(Guid.NewGuid(), numero, edicion);
+        var tomo = new Tomo(Guid.NewGuid(), Id, numero, edicion);
         _tomos.Add(tomo);
         return tomo;
     }

@@ -16,11 +16,12 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Capacidad | Dónde está | Cómo lo compruebo | Estado |
 |---|---|---|---|
 | Compila en Release sin avisos | Toda la solución | `dotnet build` | Validado |
-| Una serie no puede quedarse sin título | `Serie`, `Tomo` | 1 prueba unitaria y 2 más de los límites del dominio | Validado |
+| Una serie no puede quedarse sin título | `Serie`, `Tomo` | 6 pruebas unitarias: título, longitudes y tomo único | Validado |
 | La API devuelve las series agrupadas | `Api/Program.cs` | 1 prueba de contrato con base temporal y 1 de `/health` | Validado |
 | Carga el CSV de demostración | `CsvSeeder` | Arranque real: 20 series y 65 filas | Validado en local |
 | El esquema se versiona con migraciones | `Infrastructure/Migrations` | `dotnet ef database update`; historial en `__EFMigrationsHistory` | Validado |
 | Agrupa por serie y editorial | `SqliteSerieReader` | Prueba con dos series y un tomo único | Validado |
+| Alta y baja de series y tomos por API | `ISerieWriter`, `SqliteSerieWriter` | 17 pruebas de contrato: 201, 204, 400, 404 y 409 | Validado |
 | Busca por título y editorial | `Home.razor` | Prueba manual en el navegador | Parcial: sin prueba automática |
 | Se ve bien en el móvil | `app.css` | Prueba manual a 375 px y 1280 px | Parcial: sin dispositivos reales |
 | Solo el navegador queda limitado por CORS | `Api/appsettings.json` | Prueba manual con y sin origen permitido | Parcial: sin prueba automática |
@@ -36,6 +37,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 ## Lo que no puedo decir
 
 - «Validado» quiere decir que lo he ejecutado y he visto el resultado en mi máquina, no que esté desplegado ni que lo haya usado otra persona.
-- No he medido la cobertura: hay 5 pruebas y ningún umbral.
+- No he medido la cobertura: hay 25 pruebas y ningún umbral.
 - La interfaz no la he probado con lector de pantalla ni en Safari.
 - El CORS no protege la API de otros clientes: solo limita a los navegadores. Cualquiera con la dirección puede llamarla.
+- La API no pide autenticación: quien llegue a ella puede escribir. La escritura solo vale en local hasta que exista el despliegue con Entra ID.

@@ -15,8 +15,8 @@ public sealed class ComictecaDbContext(DbContextOptions<ComictecaDbContext> opti
         {
             entidad.ToTable("Series");
             entidad.HasKey(serie => serie.Id);
-            entidad.Property(serie => serie.Titulo).IsRequired().HasMaxLength(200);
-            entidad.Property(serie => serie.Editorial).IsRequired().HasMaxLength(120);
+            entidad.Property(serie => serie.Titulo).IsRequired().HasMaxLength(Serie.TituloMaximo);
+            entidad.Property(serie => serie.Editorial).IsRequired().HasMaxLength(Serie.EditorialMaxima);
             entidad.HasIndex(serie => new { serie.Titulo, serie.Editorial }).IsUnique();
             entidad.HasMany(serie => serie.Tomos)
                 .WithOne()
@@ -29,7 +29,7 @@ public sealed class ComictecaDbContext(DbContextOptions<ComictecaDbContext> opti
         {
             entidad.ToTable("Tomos");
             entidad.HasKey(tomo => tomo.Id);
-            entidad.Property(tomo => tomo.Edicion).HasMaxLength(200);
+            entidad.Property(tomo => tomo.Edicion).HasMaxLength(Tomo.EdicionMaxima);
             entidad.HasIndex(tomo => new { tomo.SerieId, tomo.Numero });
         });
     }

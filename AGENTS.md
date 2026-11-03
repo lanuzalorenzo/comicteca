@@ -4,7 +4,7 @@ Herramienta personal para llevar la colección de cómics y, más adelante, avis
 
 ## Propósito y alcance
 
-- **Ahora:** cargar la colección desde un CSV, listarla y buscarla.
+- **Ahora:** cargar la colección desde un CSV, listarla, buscarla y darla de alta o de baja por API.
 - **Después:** detectar novedades por serie, huecos en la numeración y avisos periódicos.
 - **Fuera:** catálogo colaborativo, mercado de segunda mano, cuentas de terceros, redes sociales.
 
@@ -13,7 +13,7 @@ Cada paso se cierra antes de abrir el siguiente. Un diseño sin ejecutar no es u
 ## Arquitectura
 
 - `src/Comicteca.Domain`: entidades e invariantes. Sin dependencias.
-- `src/Comicteca.Application`: DTOs y puertos de lectura. Solo depende de `Domain`.
+- `src/Comicteca.Application`: DTOs y puertos de lectura y escritura. Solo depende de `Domain`.
 - `src/Comicteca.Infrastructure`: EF Core, SQLite y carga inicial del CSV.
 - `src/Comicteca.Api`: host mínimo con `/health` y `/api/series`.
 - `src/Comicteca.Web`: Blazor WebAssembly. Consume la API por HTTP; no referencia capas del servidor.
@@ -114,7 +114,7 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 ## Estados
 
-`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura y listado **Validado** en local con el conjunto de demostración (20 series, 65 filas, 3 de noviembre de 2026); despliegue **Pendiente**; novedades **Diseño**.
+`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 3 de noviembre de 2026); despliegue **Pendiente**; novedades **Diseño**.
 
 ## Despliegue
 
