@@ -2,7 +2,7 @@
 
 Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no guarda los tebeos, dice cuáles tengo, de qué editorial y en qué número. La empecé porque seguía las novedades en una web de pago y solo necesitaba una cosa de ella: saber cuándo sale el siguiente tomo de las series que leo.
 
-**Estado:** la carga y el listado funcionan en local con 20 series y 65 filas. El despliegue está pendiente y los avisos de novedades, en diseño.
+**Estado:** la carga y el listado funcionan en local con el conjunto de demostración: 20 series y 65 filas (3 de noviembre de 2026). El despliegue está pendiente y los avisos de novedades, en diseño.
 
 ## Qué hace hoy
 
@@ -42,7 +42,7 @@ La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La w
 
 ## Datos
 
-`data/coleccion.csv` es una exportación de mi colección. El repositorio es privado y estos datos no se publican.
+`data/coleccion.csv` es un conjunto inventado de veinte series, con la misma forma que la exportación de mi colección. Está ahí como conjunto de demostración; la colección real se carga en local con `Datos__RutaCsv`. El CSV real ya no está en la copia actual, pero sigue en el historial de Git: abrir el repositorio exige reescribirlo antes.
 
 ## Comprobación
 

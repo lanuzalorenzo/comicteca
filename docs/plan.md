@@ -6,7 +6,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 
 **Se cierra cuando** la colección se carga desde el CSV y puedo buscar en el móvil.
 
-- 20 series y 65 filas cargados.
+- Toda mi colección cargada desde el CSV, en local.
 - 5 pruebas en verde y compilación sin avisos.
 - Sin desplegar y sin que los datos salgan de este repositorio.
 

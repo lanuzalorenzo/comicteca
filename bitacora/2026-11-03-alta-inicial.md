@@ -6,7 +6,7 @@ Entrada ligada a la prueba de [capacidades](../docs/capacidades.md) y a la de [d
 
 - Compila en Release sin avisos y el formato está limpio.
 - 5 pruebas en verde.
-- La API sirve 20 series y 65 filas desde el CSV, con la migración `Inicial` aplicada y registrada.
+- La API sirve toda mi colección desde el CSV, con la migración `Inicial` aplicada y registrada.
 - Gitleaks no encuentra secretos.
 
 ## Qué no he probado

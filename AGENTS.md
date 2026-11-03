@@ -51,9 +51,9 @@ El backlog no vive aquí. Este repositorio puede abrirse y las prioridades no se
 
 ## Datos y privacidad
 
-- `data/coleccion.csv` es la colección personal: serie, editorial, número y edición.
+- `data/coleccion.csv` es el conjunto inventado de demostración: serie, editorial, número y edición. La colección real no está en la copia actual y se carga en local con `Datos__RutaCsv`; sigue en el historial de Git.
 - No se añaden fechas de compra o lectura, datos de cuenta ni identificadores de terceros.
-- No se publica ni se copia a repos públicos. Si el repositorio se abre, se sustituye por un conjunto inventado de veinte series.
+- La colección real no se publica ni se copia a repos públicos. Ya no está en la copia actual, pero sigue en el historial de Git.
 - Los datos vienen de una exportación propia; no se redistribuye el catálogo de la fuente.
 
 ## Público y privado
@@ -63,17 +63,16 @@ El repositorio es privado hoy y puede abrirse más adelante. Todo lo que se escr
 | Pieza | ¿Publicable? | Condición |
 |---|---|---|
 | Código, pruebas y CI | Sí | Sin credenciales, rutas personales ni nombres de usuario |
-| `README.md`, `docs/` (salvo `datos.md`), `bitacora/` | Sí | Sin datos reales ni enlaces a repos privados |
-| `docs/datos.md` | No | Sus cifras y ejemplos salen de la colección real; sustituir por inventados |
-| `data/coleccion.csv` | No | Sustituir por un conjunto inventado antes de abrir |
+| `README.md`, `docs/`, `bitacora/` | Sí | Sin datos reales ni enlaces a repos privados |
+| `data/coleccion.csv` | Sí | Es el conjunto inventado de demostración; cargar la colección real lo vuelve no publicable |
 | `AGENTS.md` y `.opencode/` | Sí | Son herramientas del repositorio, no documentación |
 | Base local, `appsettings.Local.json` | No | Ignorados por Git |
 
-**Aviso importante:** el CSV real está en el historial desde el primer commit, y `docs/datos.md` lo describe. Abrir el repositorio los publica. Si no se quiere, hay que reescribir el historial o crear un repositorio nuevo con datos de demostración; no basta con borrar los archivos.
+**Aviso importante:** el CSV real está en el historial desde el primer commit. La copia actual ya es inventada y `docs/datos.md` describe la demostración, pero el historial sigue publicando la colección: abrir el repositorio exige reescribir el historial o crear uno nuevo con datos de demostración. No basta con borrar los archivos.
 
 Antes de cambiar la visibilidad:
 
-1. Sustituir el CSV y las cifras de `docs/datos.md` por veinte series inventadas, y comprobar que no queda ningún dato real en el historial.
+1. Comprobar que el CSV y las cifras de `docs/datos.md` son los inventados, y que no queda ningún dato real en el historial.
 2. Buscar rutas absolutas, nombres de usuario y referencias a repos privados.
 3. Revisar la identidad de autor y committer de los commits: nombre y correo se publican con el historial.
 4. Pasar el revisor y el escaneo de secretos sobre el historial completo.
@@ -115,7 +114,7 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 ## Estados
 
-`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura y listado **Validado** en local (20 series, 65 filas); despliegue **Pendiente**; novedades **Diseño**.
+`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura y listado **Validado** en local con el conjunto de demostración (20 series, 65 filas, 3 de noviembre de 2026); despliegue **Pendiente**; novedades **Diseño**.
 
 ## Despliegue
 

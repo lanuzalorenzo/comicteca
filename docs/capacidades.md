@@ -18,7 +18,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Compila en Release sin avisos | Toda la solución | `dotnet build` | Validado |
 | Una serie no puede quedarse sin título | `Serie`, `Tomo` | 1 prueba unitaria y 2 más de los límites del dominio | Validado |
 | La API devuelve las series agrupadas | `Api/Program.cs` | 1 prueba de contrato con base temporal y 1 de `/health` | Validado |
-| Carga el CSV de mi colección | `CsvSeeder` | Arranque real: 65 filas | Validado en local |
+| Carga el CSV de demostración | `CsvSeeder` | Arranque real: 20 series y 65 filas | Validado en local |
 | El esquema se versiona con migraciones | `Infrastructure/Migrations` | `dotnet ef database update`; historial en `__EFMigrationsHistory` | Validado |
 | Agrupa por serie y editorial | `SqliteSerieReader` | Prueba con dos series y un tomo único | Validado |
 | Busca por título y editorial | `Home.razor` | Prueba manual en el navegador | Parcial: sin prueba automática |

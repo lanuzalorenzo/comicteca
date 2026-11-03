@@ -5,7 +5,7 @@
 
 ## De qué iba
 
-Una aplicación para mí solo, con 20 series y 65 filas, que debe poder vivir en internet gratis y crecer hasta avisarme de las novedades. El modelo es sencillo: una serie tiene tomos y cada serie es de una editorial.
+Una aplicación para mí solo, con una colección que aún cabe en un CSV y debe poder vivir en internet gratis y crecer hasta avisarme de las novedades. El modelo es sencillo: una serie tiene tomos y cada serie es de una editorial.
 
 ## Qué decidí
 
