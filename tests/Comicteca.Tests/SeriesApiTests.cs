@@ -18,9 +18,13 @@ public sealed class SeriesApiTests(ApiFactory factory) : IClassFixture<ApiFactor
 
         var serieA = Assert.Single(series, serie => serie.Titulo == "Serie A");
         Assert.Equal([1, 2], serieA.Numeros);
+        Assert.Equal([1, 2], serieA.Tomos.Select(tomo => tomo.Numero));
+        Assert.All(serieA.Tomos, tomo => Assert.NotEqual(Guid.Empty, tomo.Id));
+        Assert.All(serieA.Tomos, tomo => Assert.Equal("Rústica", tomo.Edicion));
 
         var serieB = Assert.Single(series, serie => serie.Titulo == "Serie B");
         Assert.Equal([(int?)null], serieB.Numeros);
+        Assert.Null(Assert.Single(serieB.Tomos).Numero);
     }
 
     [Fact]

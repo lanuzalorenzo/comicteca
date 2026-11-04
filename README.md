@@ -2,14 +2,14 @@
 
 Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no guarda los tebeos, dice cuáles tengo, de qué editorial y en qué número. La empecé porque seguía las novedades en una web de pago y solo necesitaba una cosa de ella: saber cuándo sale el siguiente tomo de las series que leo.
 
-**Estado:** la carga, el listado y la escritura por API funcionan en local con el conjunto de demostración: 20 series y 65 filas (3 de noviembre de 2026). El despliegue está pendiente y los avisos de novedades, en diseño.
+**Estado:** la carga, el listado y la escritura desde la web y por API funcionan en local con el conjunto de demostración: 20 series y 65 filas (4 de noviembre de 2026). El despliegue está pendiente y los avisos de novedades, en diseño.
 
 ## Qué hace hoy
 
 - Carga mi colección desde un archivo CSV.
 - Agrupa por serie y editorial y resume cuántos tomos tengo y con qué números.
 - Busca por título o editorial.
-- Da de alta y de baja series y tomos por API; la pantalla llegará después.
+- Da de alta y de baja series y tomos desde la pantalla o por API.
 - Está pensada para el móvil, con tema oscuro; probada a 375 px en el navegador.
 
 ## Cómo se arranca

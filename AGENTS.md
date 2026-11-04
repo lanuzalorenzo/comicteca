@@ -4,7 +4,7 @@ Herramienta personal para llevar la colección de cómics y, más adelante, avis
 
 ## Propósito y alcance
 
-- **Ahora:** cargar la colección desde un CSV, listarla, buscarla y darla de alta o de baja por API.
+- **Ahora:** cargar la colección desde un CSV, listarla, buscarla y darla de alta o de baja desde la web o por API.
 - **Después:** detectar novedades por serie, huecos en la numeración y avisos periódicos.
 - **Fuera:** catálogo colaborativo, mercado de segunda mano, cuentas de terceros, redes sociales.
 
@@ -114,7 +114,7 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 ## Estados
 
-`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 3 de noviembre de 2026); despliegue **Pendiente**; novedades **Diseño**.
+`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); despliegue **Pendiente**; novedades **Diseño**.
 
 ## Despliegue
 

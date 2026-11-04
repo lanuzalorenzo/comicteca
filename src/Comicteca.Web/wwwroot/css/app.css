@@ -43,6 +43,10 @@ body {
     letter-spacing: -0.01em;
 }
 
+.cabecera h1:focus {
+    outline: none;
+}
+
 .resumen {
     color: var(--muted);
     margin: 0.25rem 0 0;
@@ -86,6 +90,11 @@ body {
     border-radius: 0.6rem;
 }
 
+.ficha-datos {
+    display: grid;
+    gap: 0.15rem;
+}
+
 .titulo {
     font-weight: 600;
     overflow-wrap: anywhere;
@@ -94,6 +103,7 @@ body {
 .editorial {
     color: var(--accent-hover);
     font-size: 0.85rem;
+    overflow-wrap: anywhere;
 }
 
 .tomos {
@@ -104,10 +114,167 @@ body {
 .aviso {
     color: var(--muted);
     padding: 1rem 0;
+    overflow-wrap: anywhere;
 }
 
 .aviso.error {
     color: #fde68a;
+}
+
+.aviso.exito {
+    color: var(--accent-hover);
+}
+
+.alta {
+    margin-bottom: 1.5rem;
+}
+
+.alta h2,
+.subtitulo {
+    font-size: 1rem;
+    margin: 0 0 0.5rem;
+}
+
+.formulario {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+}
+
+.formulario .aviso {
+    padding: 0;
+    margin: 0;
+}
+
+.formulario-tomo {
+    margin: 0.75rem 0 0;
+    padding: 0.75rem;
+    background: var(--paper);
+}
+
+.campos {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.campo {
+    display: grid;
+    gap: 0.3rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.campo input {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--paper);
+    border: 1px solid var(--line-strong);
+    border-radius: 0.5rem;
+    color: var(--ink);
+    font: inherit;
+    font-size: 1rem;
+}
+
+.campo input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.acciones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.boton {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.9rem;
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 0.5rem;
+    color: var(--paper);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.boton:hover:not(:disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+.boton:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.boton:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.boton-secundario {
+    background: transparent;
+    border-color: var(--line-strong);
+    color: var(--ink);
+}
+
+.boton-secundario:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent-hover);
+}
+
+.boton-peligro {
+    background: transparent;
+    border-color: color-mix(in srgb, #fde68a 45%, var(--paper-deep));
+    color: #fde68a;
+}
+
+.boton-peligro:hover:not(:disabled) {
+    border-color: #fde68a;
+    color: #fef3c7;
+}
+
+.tomos-lista {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tomo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.tomo-datos {
+    flex: 1 1 8rem;
+    overflow-wrap: anywhere;
+}
+
+.tomo .boton {
+    min-height: 2.5rem;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.85rem;
+}
+
+.confirmar {
+    flex-basis: 100%;
+    color: var(--muted);
+    font-size: 0.9rem;
 }
 
 @media (min-width: 40rem) {
@@ -116,6 +283,10 @@ body {
     }
 
     .lista {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .campos {
         grid-template-columns: 1fr 1fr;
     }
 }

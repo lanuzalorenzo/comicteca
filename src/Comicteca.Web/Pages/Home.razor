@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using System.Net
+@using System.Text.Json
 @using Comicteca.Web.Models
 @inject HttpClient Http
 
@@ -15,10 +17,33 @@
 }
 else if (Error is not null)
 {
-    <p class="aviso error">@Error</p>
+    <p class="aviso error" role="alert">@Error</p>
 }
 else
 {
+    <section class="alta" aria-labelledby="titulo-alta-serie">
+        <h2 id="titulo-alta-serie">Nueva serie</h2>
+        <form class="formulario" @onsubmit="CrearSerieAsync" @onsubmit:preventDefault>
+            <div class="campos">
+                <label class="campo" for="serie-titulo">
+                    Título
+                    <input id="serie-titulo" @bind="TituloSerie" autocomplete="off" />
+                </label>
+                <label class="campo" for="serie-editorial">
+                    Editorial
+                    <input id="serie-editorial" @bind="EditorialSerie" autocomplete="off" />
+                </label>
+            </div>
+            @if (ErrorSerie is not null)
+            {
+                <p class="aviso error" role="alert">@ErrorSerie</p>
+            }
+            <div class="acciones">
+                <button type="submit" class="boton" disabled="@GuardandoSerie">Añadir serie</button>
+            </div>
+        </form>
+    </section>
+
     <input class="buscador"
            type="search"
            placeholder="Buscar por serie o editorial"
@@ -26,28 +51,135 @@ else
            @bind="Filtro"
            @bind:event="oninput" />
 
+    @if (Mensaje is not null)
+    {
+        <p class="aviso exito" role="status">@Mensaje</p>
+    }
+
+    @if (ErrorAccion is not null)
+    {
+        <p class="aviso error" role="alert">@ErrorAccion</p>
+    }
+
     <ul class="lista">
         @foreach (var serie in Filtradas)
         {
-            <li class="ficha">
-                <span class="titulo">@serie.Titulo</span>
-                <span class="editorial">@serie.Editorial</span>
-                <span class="tomos">@Texto(serie)</span>
+            <li class="ficha" @key="serie.Id">
+                <div class="ficha-datos">
+                    <span class="titulo">@serie.Titulo</span>
+                    <span class="editorial">@serie.Editorial</span>
+                    <span class="tomos">@Texto(serie)</span>
+                </div>
+
+                @if (serie.Tomos.Length > 0)
+                {
+                    <ul class="tomos-lista" aria-label="Tomos de @serie.Titulo">
+                        @foreach (var tomo in serie.Tomos)
+                        {
+                            <li class="tomo" @key="tomo.Id">
+                                <span class="tomo-datos">@EtiquetaTomo(tomo)</span>
+                                @if (ConfirmarBorradoTomo == tomo.Id)
+                                {
+                                    <span class="confirmar">¿Borrar?</span>
+                                    <button class="boton boton-peligro" disabled="@Operando"
+                                            @onclick="() => BorrarTomoAsync(serie, tomo)">Sí</button>
+                                    <button class="boton boton-secundario" disabled="@Operando"
+                                            @onclick="() => ConfirmarBorradoTomo = null">No</button>
+                                }
+                                else
+                                {
+                                    <button class="boton boton-secundario" disabled="@Operando"
+                                            aria-label="Borrar @EtiquetaTomo(tomo) de @serie.Titulo"
+                                            @onclick="() => ConfirmarBorradoTomo = tomo.Id">Borrar</button>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+
+                @if (SerieConAltaTomo == serie.Id)
+                {
+                    <form class="formulario formulario-tomo" @onsubmit="() => AgregarTomoAsync(serie)" @onsubmit:preventDefault>
+                        <p class="subtitulo">Nuevo tomo</p>
+                        <div class="campos">
+                            <label class="campo" for="tomo-numero">
+                                Número (vacío si es único)
+                                <input id="tomo-numero" inputmode="numeric" @bind="NumeroTomo" />
+                            </label>
+                            <label class="campo" for="tomo-edicion">
+                                Edición
+                                <input id="tomo-edicion" @bind="EdicionTomo" />
+                            </label>
+                        </div>
+                        @if (ErrorTomo is not null)
+                        {
+                            <p class="aviso error" role="alert">@ErrorTomo</p>
+                        }
+                        <div class="acciones">
+                            <button type="submit" class="boton" disabled="@GuardandoTomo">Añadir tomo</button>
+                            <button type="button" class="boton boton-secundario"
+                                    @onclick="() => SerieConAltaTomo = null">Cancelar</button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="acciones">
+                        <button class="boton boton-secundario" disabled="@Operando"
+                                @onclick="() => AbrirAltaTomo(serie.Id)">Añadir tomo</button>
+                        @if (ConfirmarBorradoSerie == serie.Id)
+                        {
+                            <span class="confirmar">¿Borrar la serie y sus tomos?</span>
+                            <button class="boton boton-peligro" disabled="@Operando"
+                                    @onclick="() => BorrarSerieAsync(serie)">Sí, borrar</button>
+                            <button class="boton boton-secundario" disabled="@Operando"
+                                    @onclick="() => ConfirmarBorradoSerie = null">Cancelar</button>
+                        }
+                        else
+                        {
+                            <button class="boton boton-peligro" disabled="@Operando"
+                                    @onclick="() => ConfirmarBorradoSerie = serie.Id">Borrar serie</button>
+                        }
+                    </div>
+                }
             </li>
         }
     </ul>
 
     @if (Filtradas.Count == 0)
     {
-        <p class="aviso">Ninguna serie coincide con «@Filtro».</p>
+        <p class="aviso">
+            @(string.IsNullOrWhiteSpace(Filtro) ? "No hay series todavía." : $"Ninguna serie coincide con «{Filtro}».")
+        </p>
     }
 }
 
 @code {
+    private const int TituloMaximo = 200;
+    private const int EditorialMaxima = 120;
+    private const int EdicionMaxima = 200;
+
     private List<SerieDto> Series { get; set; } = [];
     private bool Cargando { get; set; } = true;
     private string? Error { get; set; }
+    private string? Mensaje { get; set; }
+    private string? ErrorAccion { get; set; }
     private string Filtro { get; set; } = string.Empty;
+
+    private string TituloSerie { get; set; } = string.Empty;
+    private string EditorialSerie { get; set; } = string.Empty;
+    private string? ErrorSerie { get; set; }
+    private bool GuardandoSerie { get; set; }
+
+    private Guid? SerieConAltaTomo { get; set; }
+    private string NumeroTomo { get; set; } = string.Empty;
+    private string EdicionTomo { get; set; } = string.Empty;
+    private string? ErrorTomo { get; set; }
+    private bool GuardandoTomo { get; set; }
+
+    private Guid? ConfirmarBorradoSerie { get; set; }
+    private Guid? ConfirmarBorradoTomo { get; set; }
+    private bool Operando { get; set; }
 
     private int TotalTomos => Series.Sum(serie => serie.Total);
 
@@ -58,11 +190,14 @@ else
                 serie.Titulo.Contains(Filtro, StringComparison.OrdinalIgnoreCase) ||
                 serie.Editorial.Contains(Filtro, StringComparison.OrdinalIgnoreCase)).ToList();
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync() => CargarAsync();
+
+    private async Task CargarAsync()
     {
         try
         {
             Series = await Http.GetFromJsonAsync<List<SerieDto>>("api/series") ?? [];
+            Error = null;
         }
         catch (Exception excepcion)
         {
@@ -74,8 +209,268 @@ else
         }
     }
 
+    private async Task CrearSerieAsync()
+    {
+        ErrorSerie = ValidarSerie(TituloSerie, EditorialSerie);
+        if (ErrorSerie is not null)
+        {
+            return;
+        }
+
+        GuardandoSerie = true;
+        Mensaje = null;
+        ErrorAccion = null;
+
+        try
+        {
+            using var respuesta = await Http.PostAsJsonAsync(
+                "api/series",
+                new { titulo = TituloSerie, editorial = EditorialSerie });
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                ErrorSerie = await LeerErrorAsync(respuesta);
+                return;
+            }
+
+            Mensaje = $"Serie «{TituloSerie.Trim()}» añadida.";
+            TituloSerie = string.Empty;
+            EditorialSerie = string.Empty;
+            await CargarAsync();
+        }
+        catch (Exception excepcion)
+        {
+            ErrorSerie = $"No se pudo añadir la serie: {excepcion.Message}";
+        }
+        finally
+        {
+            GuardandoSerie = false;
+        }
+    }
+
+    private async Task BorrarSerieAsync(SerieDto serie)
+    {
+        Operando = true;
+        Mensaje = null;
+        ErrorAccion = null;
+
+        try
+        {
+            using var respuesta = await Http.DeleteAsync($"api/series/{serie.Id}");
+            if (respuesta.StatusCode == HttpStatusCode.NotFound)
+            {
+                ErrorAccion = "La serie ya no existe. Se ha actualizado la lista.";
+            }
+            else if (!respuesta.IsSuccessStatusCode)
+            {
+                ErrorAccion = await LeerErrorAsync(respuesta);
+            }
+            else
+            {
+                Mensaje = $"Serie «{serie.Titulo}» borrada.";
+            }
+
+            ConfirmarBorradoSerie = null;
+            await CargarAsync();
+        }
+        catch (Exception excepcion)
+        {
+            ErrorAccion = $"No se pudo borrar la serie: {excepcion.Message}";
+        }
+        finally
+        {
+            Operando = false;
+        }
+    }
+
+    private void AbrirAltaTomo(Guid serieId)
+    {
+        SerieConAltaTomo = SerieConAltaTomo == serieId ? null : serieId;
+        NumeroTomo = string.Empty;
+        EdicionTomo = string.Empty;
+        ErrorTomo = null;
+    }
+
+    private async Task AgregarTomoAsync(SerieDto serie)
+    {
+        int? numero = null;
+        if (!string.IsNullOrWhiteSpace(NumeroTomo))
+        {
+            if (!int.TryParse(NumeroTomo, out var valor))
+            {
+                ErrorTomo = "El número de tomo debe ser un entero positivo.";
+                return;
+            }
+
+            numero = valor;
+        }
+
+        ErrorTomo = ValidarTomo(numero, EdicionTomo);
+        if (ErrorTomo is not null)
+        {
+            return;
+        }
+
+        GuardandoTomo = true;
+        Mensaje = null;
+        ErrorAccion = null;
+
+        try
+        {
+            using var respuesta = await Http.PostAsJsonAsync(
+                $"api/series/{serie.Id}/tomos",
+                new { numero, edicion = EdicionTomo });
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                ErrorTomo = respuesta.StatusCode == HttpStatusCode.NotFound
+                    ? "La serie ya no existe. Se ha actualizado la lista."
+                    : await LeerErrorAsync(respuesta);
+                return;
+            }
+
+            Mensaje = numero is null
+                ? $"Tomo único añadido a «{serie.Titulo}»."
+                : $"Tomo {numero} añadido a «{serie.Titulo}».";
+            NumeroTomo = string.Empty;
+            EdicionTomo = string.Empty;
+            SerieConAltaTomo = null;
+            await CargarAsync();
+        }
+        catch (Exception excepcion)
+        {
+            ErrorTomo = $"No se pudo añadir el tomo: {excepcion.Message}";
+        }
+        finally
+        {
+            GuardandoTomo = false;
+        }
+    }
+
+    private async Task BorrarTomoAsync(SerieDto serie, TomoDto tomo)
+    {
+        Operando = true;
+        Mensaje = null;
+        ErrorAccion = null;
+
+        try
+        {
+            using var respuesta = await Http.DeleteAsync($"api/series/{serie.Id}/tomos/{tomo.Id}");
+            if (respuesta.StatusCode == HttpStatusCode.NotFound)
+            {
+                ErrorAccion = "El tomo ya no existe. Se ha actualizado la lista.";
+            }
+            else if (!respuesta.IsSuccessStatusCode)
+            {
+                ErrorAccion = await LeerErrorAsync(respuesta);
+            }
+            else
+            {
+                Mensaje = $"{EtiquetaTomo(tomo)} borrado de «{serie.Titulo}».";
+            }
+
+            ConfirmarBorradoTomo = null;
+            await CargarAsync();
+        }
+        catch (Exception excepcion)
+        {
+            ErrorAccion = $"No se pudo borrar el tomo: {excepcion.Message}";
+        }
+        finally
+        {
+            Operando = false;
+        }
+    }
+
+    private static string? ValidarSerie(string titulo, string editorial)
+    {
+        if (string.IsNullOrWhiteSpace(titulo))
+        {
+            return "El título es obligatorio.";
+        }
+
+        if (string.IsNullOrWhiteSpace(editorial))
+        {
+            return "La editorial es obligatoria.";
+        }
+
+        if (titulo.Trim().Length > TituloMaximo)
+        {
+            return $"El título no puede superar los {TituloMaximo} caracteres.";
+        }
+
+        if (editorial.Trim().Length > EditorialMaxima)
+        {
+            return $"La editorial no puede superar los {EditorialMaxima} caracteres.";
+        }
+
+        return null;
+    }
+
+    private static string? ValidarTomo(int? numero, string edicion)
+    {
+        if (numero is <= 0)
+        {
+            return "El número de tomo debe ser positivo.";
+        }
+
+        if (!string.IsNullOrWhiteSpace(edicion) && edicion.Trim().Length > EdicionMaxima)
+        {
+            return $"La edición no puede superar los {EdicionMaxima} caracteres.";
+        }
+
+        return null;
+    }
+
+    private static async Task<string> LeerErrorAsync(HttpResponseMessage respuesta)
+    {
+        try
+        {
+            using var documento = JsonDocument.Parse(await respuesta.Content.ReadAsStringAsync());
+            var raiz = documento.RootElement;
+
+            if (raiz.TryGetProperty("errors", out var errores) && errores.ValueKind == JsonValueKind.Object)
+            {
+                var mensajes = errores
+                    .EnumerateObject()
+                    .SelectMany(propiedad => propiedad.Value.EnumerateArray())
+                    .Select(mensaje => mensaje.GetString())
+                    .Where(mensaje => !string.IsNullOrWhiteSpace(mensaje));
+
+                var texto = string.Join(" ", mensajes);
+                if (texto.Length > 0)
+                {
+                    return texto;
+                }
+            }
+
+            foreach (var propiedad in (string[])["mensaje", "detail", "title"])
+            {
+                if (raiz.TryGetProperty(propiedad, out var valor) && valor.ValueKind == JsonValueKind.String)
+                {
+                    var texto = valor.GetString();
+                    if (!string.IsNullOrWhiteSpace(texto))
+                    {
+                        return texto;
+                    }
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // El cuerpo no era JSON: se usa el código de estado.
+        }
+
+        return $"Error {(int)respuesta.StatusCode}.";
+    }
+
     private static string Texto(SerieDto serie)
     {
+        if (serie.Total == 0)
+        {
+            return "Sin tomos";
+        }
+
         var numeros = serie.Numeros
             .Where(numero => numero.HasValue)
             .Select(numero => numero!.Value)
@@ -84,6 +479,11 @@ else
         if (numeros.Count == 0)
         {
             return serie.Total == 1 ? "1 tomo" : $"{serie.Total} tomos sin numerar";
+        }
+
+        if (numeros.Count != serie.Total)
+        {
+            return $"{serie.Total} tomos";
         }
 
         if (numeros.Count == 1)
@@ -95,5 +495,11 @@ else
         return contiguos
             ? $"{numeros.Count} tomos · {numeros[0]}–{numeros[^1]}"
             : $"{numeros.Count} tomos: {string.Join(", ", numeros)}";
+    }
+
+    private static string EtiquetaTomo(TomoDto tomo)
+    {
+        var etiqueta = tomo.Numero is null ? "Tomo único" : $"Tomo {tomo.Numero}";
+        return string.IsNullOrWhiteSpace(tomo.Edicion) ? etiqueta : $"{etiqueta} · {tomo.Edicion}";
     }
 }
