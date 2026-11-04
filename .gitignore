@@ -24,6 +24,10 @@ packages/
 *.db-shm
 *.db-wal
 
+# Node y artefactos de la prueba de interfaz
+node_modules/
+tests/e2e/artifacts/
+
 # Entorno
 .env
 appsettings.Local.json

@@ -47,6 +47,7 @@ La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con
 | [`docs/adr/`](docs/adr/) | Por qué tomé cada decisión y qué alternativas había |
 | [`docs/datos.md`](docs/datos.md) | De dónde salen los datos y qué puedo afirmar |
 | [`docs/capacidades.md`](docs/capacidades.md) | Qué está probado y qué no |
+| [`docs/pruebas.md`](docs/pruebas.md) | Cómo se prueba en local: suite, interfaz, contenedores y checklist manual |
 | [`docs/plan.md`](docs/plan.md) | Los pasos que faltan |
 
 ## Datos
@@ -61,3 +62,5 @@ dotnet test Comicteca.slnx -c Release --no-build
 dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
+
+La guía completa —arranque, prueba de interfaz en Chromium a 375 px, ensayo con Docker y checklist manual— está en [`docs/pruebas.md`](docs/pruebas.md).
