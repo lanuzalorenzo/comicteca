@@ -12,5 +12,5 @@ Entrada ligada a la prueba de [capacidades](../docs/capacidades.md) y al commit 
 ## Qué no he probado
 
 - Safari, lector de pantalla y dispositivo real: la prueba es en Chromium con una ventana de 375 px.
-- Esa prueba de navegador no está en el repositorio ni en el CI; es manual.
+- Esa prueba de navegador era manual en ese commit; desde `dde91ab` vive en `tests/e2e` y en el CI.
 - Nada de esto está desplegado: la escritura sigue limitada a localhost.

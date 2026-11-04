@@ -6,10 +6,10 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 
 | Nivel | Dónde | Qué comprueba | Cómo se lanza |
 |---|---|---|---|
-| Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título y editorial obligatorios, longitudes máximas, número positivo y tomo único | `dotnet test` |
+| Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
 | API | `tests/Comicteca.Tests/EscrituraApiTests.cs` y `SeriesApiTests.cs` | 19 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409 y `/health` | `dotnet test` |
-| Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y errores de JavaScript | `npm test` con la API y la web arrancadas |
-| Contenedores | `compose.yaml` | Puertos, healthchecks, volumen de la base y conservación tras `down` | Manual, con Docker |
+| Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
+| Contenedores | `compose.yaml` | Puertos, healthchecks y volumen de la base | Manual, con Docker |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
 
 Las tres primeras están automatizadas: dominio y API en el trabajo de compilación y pruebas, e interfaz en su propio trabajo del CI. El ensayo con contenedores y la prueba manual no lo están.
@@ -29,7 +29,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **25 pruebas correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI.
+Resultado esperado: compilación sin avisos, **25 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
@@ -61,11 +61,12 @@ Con la API y la web arrancadas, en otra terminal:
 ```bash
 cd tests/e2e
 npm ci
+npm audit --audit-level=high
 npx playwright install chromium   # solo la primera vez
 npm test
 ```
 
-Qué hace, en orden: comprueba que no hay desbordamiento horizontal a 375 px, da de alta una serie, comprueba que aparece sin recargar, le añade un tomo, repite la serie para ver el 409, prueba un número 0, borra el tomo y la serie, y verifica que la lista vuelve al estado inicial y que la página no se ha recargado. Si algo falla, deja una captura en `tests/e2e/artifacts/fallo.png` y limpia la serie de prueba por la API.
+Qué hace: comprueba que no hay desbordamiento horizontal a 375 px, da de alta una serie, comprueba que aparece sin recargar, le añade un tomo, repite la serie para ver el 409, prueba un número 0, borra el tomo y la serie, y verifica que la lista vuelve al estado inicial, que la página no se ha recargado y que no hubo excepciones de JavaScript. El CI añade esta auditoría y la prueba a la suite de .NET.
 
 Se puede apuntar a otra dirección con `COMICTECA_WEB` y `COMICTECA_API`, pero solo cambia lo que usa el guion para esperar y limpiar: la dirección de la API que consume la aplicación se cambia en `src/Comicteca.Web/wwwroot/appsettings.json`. Si usas otra base, arranca la API con el CSV de demostración.
 

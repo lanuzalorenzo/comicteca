@@ -140,7 +140,7 @@ El repositorio es privado, pero se comporta como público. `.github/workflows/ci
 - **Compilación y pruebas:** `dotnet build -warnaserror` con analizadores, verificación de formato y `dotnet test`.
 - **Interfaz:** Chromium a 375 px contra la API y la web arrancadas con una base temporal.
 - **Secretos:** Gitleaks sobre el historial completo.
-- **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas.
+- **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas en NuGet o altas y críticas en npm.
 
 Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cuatro checks en verde; las major quedan para revisión.
 
