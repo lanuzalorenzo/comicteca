@@ -1,0 +1,39 @@
+name: comicteca
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/Comicteca.Api/Dockerfile
+    environment:
+      ConnectionStrings__Comicteca: "Data Source=/data/comicteca.db"
+      Datos__RutaCsv: "/app/data/coleccion.csv"
+    volumes:
+      - datos:/data
+    ports:
+      - "127.0.0.1:5094:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: src/Comicteca.Web/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5077:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+volumes:
+  datos:

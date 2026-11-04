@@ -16,7 +16,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 
 - La pantalla en Static Web Apps, en su plan gratuito.
 - La API en un contenedor sobre Container Apps y la base en Azure SQL, en la oferta gratuita, con auto-pausado al agotar la cuota.
-- Antes de Azure, el ensayo en local con Docker: el mismo código y los mismos estáticos, con los datos en un volumen, sin coste.
+- El ensayo en local con Docker está hecho: el mismo código y los mismos estáticos, con los datos en un volumen y sin coste.
 - Agrupación de conexiones desactivada, para que la base pueda auto-pausar en lugar de gastar la cuota en dos días.
 - Migraciones en lugar de crear la base de golpe: ya están, y al pasar a Azure SQL necesitaré un conjunto propio para ese proveedor.
 - Entrada con Entra ID.

@@ -31,7 +31,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | Despliegue en Azure | — | — | Pendiente: API en contenedor, Functions para el aviso y Azure SQL (ADR 0003) |
-| Ensayo del despliegue en local con contenedores | — | — | Pendiente |
+| Ensayo del despliegue en local con contenedores | `compose.yaml`, Dockerfiles | `docker compose up`: lista en 5077, `/health` en 5094, prueba a 375 px en contenedor y base conservada tras `down` | Validado en local: sin Docker en CI |
 | Aviso de novedades | — | — | Diseño |
 | Varias personas con su cuenta | — | — | Pendiente |
 

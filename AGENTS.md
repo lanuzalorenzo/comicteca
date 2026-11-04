@@ -110,11 +110,11 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 
 Los mismos pasos corren en `.github/workflows/ci.yml`.
 
-Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotnet run --project src/Comicteca.Web` (puerto 5077). La web lee la URL de la API de `wwwroot/appsettings.json`.
+Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotnet run --project src/Comicteca.Web` (puerto 5077). La misma pila en contenedores: `docker compose up -d --build`, con la base en el volumen `comicteca_datos`. La web lee la URL de la API de `wwwroot/appsettings.json`.
 
 ## Estados
 
-`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); despliegue **Pendiente**; novedades **Diseño**.
+`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); ensayo en Docker **Validado** en local; despliegue **Pendiente**; novedades **Diseño**.
 
 ## Despliegue
 

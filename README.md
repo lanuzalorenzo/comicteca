@@ -21,6 +21,14 @@ dotnet run --project src/Comicteca.Web   # http://localhost:5077
 
 La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La web toma la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json`.
 
+### Con Docker
+
+```bash
+docker compose up -d --build
+```
+
+La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con la base en el volumen `comicteca_datos`: `docker compose down` no la borra. Para empezar de cero, `docker compose down -v`.
+
 ## Cómo está organizado
 
 | Carpeta | Qué hay dentro |

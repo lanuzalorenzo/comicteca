@@ -58,7 +58,7 @@ Las concesiones de Functions solo aplican a suscripciones de pago por uso, no a 
 
 ## Qué falta por comprobar
 
-1. El mismo stack en local con Docker, sin coste: imagen, estáticos y datos.
+1. El mismo stack en local con Docker, sin coste: imagen, estáticos y datos. Comprobado el 4 de noviembre de 2026: `docker compose up` sirve la lista en 5077, `/health` en 5094 y `down` conserva el volumen. Queda [documentado](../../docs/capacidades.md).
 2. Tamaño de la imagen y tiempo de arranque en frío.
 3. Consumo real de vCore-s de la base con la agrupación desactivada.
 
