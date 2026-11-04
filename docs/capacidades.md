@@ -22,15 +22,15 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | El esquema se versiona con migraciones | `Infrastructure/Migrations` | `dotnet ef database update`; historial en `__EFMigrationsHistory` | Validado |
 | Agrupa por serie y editorial | `SqliteSerieReader` | Prueba con dos series y un tomo único | Validado |
 | Alta y baja de series y tomos por API | `ISerieWriter`, `SqliteSerieWriter` | 17 pruebas de contrato: 201, 204, 400, 404 y 409 | Validado |
-| Alta y baja de series y tomos desde la web | `Home.razor` | Prueba de interfaz en Chromium a 375 px (`tests/e2e`): alta, duplicado, número inválido, baja de tomo y de serie, sin recargar | Validado en local; el run de CI quedó sin cerrar por una incidencia de GitHub |
+| Alta y baja de series y tomos desde la web | `Home.razor` | Prueba de interfaz en Chromium a 375 px (`tests/e2e`): alta, duplicado, número inválido, baja de tomo y de serie, sin recargar | Validado: local y CI (run 41862372649) |
 | Busca por título y editorial | `Home.razor` | Prueba manual en el navegador | Parcial: sin prueba automática |
 | Se ve bien en el móvil | `app.css` | Prueba manual a 375 px y 1280 px | Parcial: sin dispositivos reales |
 | Solo el navegador queda limitado por CORS | `Api/appsettings.json` | Prueba manual con y sin origen permitido | Parcial: sin prueba automática |
 | No hay secretos en el código | `.gitleaks.toml` | `gitleaks detect` | Validado: sin hallazgos |
 | CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
-| CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde (NuGet); npm, pasos en verde sin run cerrado |
-| CI: interfaz en navegador (375 px) | `.github/workflows/ci.yml`, `tests/e2e` | Job «Interfaz en navegador (375 px)» | Parcial: pasos en verde, ejecución sin cerrar por la incidencia de GitHub (run 41862372649) |
+| CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: NuGet, run del 3 de noviembre de 2026; npm, run 41862372649, sin vulnerabilidades |
+| CI: interfaz en navegador (375 px) | `.github/workflows/ci.yml`, `tests/e2e` | Job «Interfaz en navegador (375 px)» | Validado: run 41862372649 en verde (4 de noviembre de 2026) |
 | Despliegue en Azure | — | — | Pendiente: API en contenedor, Functions para el aviso y Azure SQL (ADR 0003) |
 | Ensayo del despliegue en local con contenedores | `compose.yaml`, Dockerfiles | `docker compose up`: lista en 5077, `/health` en 5094, prueba a 375 px en contenedor y base conservada tras `down` | Validado en local: sin Docker en CI |
 | Aviso de novedades | — | — | Diseño |
