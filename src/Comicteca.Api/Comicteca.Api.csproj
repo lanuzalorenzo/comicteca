@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Comicteca.Infrastructure\Comicteca.Infrastructure.csproj" />
+    <ProjectReference Include="..\Comicteca.Infrastructure.SqlServer\Comicteca.Infrastructure.SqlServer.csproj" />
     <ProjectReference Include="..\Comicteca.Application\Comicteca.Application.csproj" />
     <ProjectReference Include="..\Comicteca.Domain\Comicteca.Domain.csproj" />
   </ItemGroup>

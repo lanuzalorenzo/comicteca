@@ -4,6 +4,7 @@
     <Project Path="src/Comicteca.Application/Comicteca.Application.csproj" />
     <Project Path="src/Comicteca.Domain/Comicteca.Domain.csproj" />
     <Project Path="src/Comicteca.Infrastructure/Comicteca.Infrastructure.csproj" />
+    <Project Path="src/Comicteca.Infrastructure.SqlServer/Comicteca.Infrastructure.SqlServer.csproj" />
     <Project Path="src/Comicteca.Web/Comicteca.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">

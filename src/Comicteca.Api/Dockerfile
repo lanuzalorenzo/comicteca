@@ -5,6 +5,7 @@ COPY Directory.Build.props ./
 COPY src/Comicteca.Domain/Comicteca.Domain.csproj src/Comicteca.Domain/
 COPY src/Comicteca.Application/Comicteca.Application.csproj src/Comicteca.Application/
 COPY src/Comicteca.Infrastructure/Comicteca.Infrastructure.csproj src/Comicteca.Infrastructure/
+COPY src/Comicteca.Infrastructure.SqlServer/Comicteca.Infrastructure.SqlServer.csproj src/Comicteca.Infrastructure.SqlServer/
 COPY src/Comicteca.Api/Comicteca.Api.csproj src/Comicteca.Api/
 RUN dotnet restore src/Comicteca.Api/Comicteca.Api.csproj
 

@@ -36,6 +36,7 @@ La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con
 | `src/Comicteca.Domain` | Las reglas: qué es una serie y qué es un tomo |
 | `src/Comicteca.Application` | Lo que la interfaz necesita saber de las series |
 | `src/Comicteca.Infrastructure` | La base de datos y la carga del CSV |
+| `src/Comicteca.Infrastructure.SqlServer` | Las migraciones de Azure SQL |
 | `src/Comicteca.Api` | La puerta por la que pregunta la web |
 | `src/Comicteca.Web` | La pantalla que uso |
 | `tests/` | Las pruebas |

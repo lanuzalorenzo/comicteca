@@ -5,8 +5,29 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var cadena = builder.Configuration.GetConnectionString("Comicteca") ?? "Data Source=comicteca.db";
-builder.Services.AddDbContext<ComictecaDbContext>(opciones => opciones.UseSqlite(cadena));
+var usarSqlServer = builder.Configuration["Datos:Proveedor"] switch
+{
+    null or "" or "Sqlite" => false,
+    var proveedor when string.Equals(proveedor, "SqlServer", StringComparison.OrdinalIgnoreCase) => true,
+    var proveedor => throw new InvalidOperationException($"Proveedor de datos desconocido: {proveedor}.")
+};
+
+var cadena = builder.Configuration.GetConnectionString("Comicteca")
+    ?? (usarSqlServer
+        ? throw new InvalidOperationException("Falta la cadena de conexión 'Comicteca' para Azure SQL.")
+        : "Data Source=comicteca.db");
+
+builder.Services.AddDbContext<ComictecaDbContext>(opciones =>
+{
+    if (usarSqlServer)
+    {
+        opciones.UseSqlServer(cadena, sql => sql.MigrationsAssembly("Comicteca.Infrastructure.SqlServer"));
+    }
+    else
+    {
+        opciones.UseSqlite(cadena);
+    }
+});
 builder.Services.AddScoped<ISerieReader, SqliteSerieReader>();
 builder.Services.AddScoped<ISerieWriter, SqliteSerieWriter>();
 

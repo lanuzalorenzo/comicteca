@@ -15,19 +15,28 @@ Cada paso se cierra antes de abrir el siguiente. Un diseño sin ejecutar no es u
 - `src/Comicteca.Domain`: entidades e invariantes. Sin dependencias.
 - `src/Comicteca.Application`: DTOs y puertos de lectura y escritura. Solo depende de `Domain`.
 - `src/Comicteca.Infrastructure`: EF Core, SQLite y carga inicial del CSV.
+- `src/Comicteca.Infrastructure.SqlServer`: el conjunto de migraciones de Azure SQL. Solo lo referencia la API.
 - `src/Comicteca.Api`: host mínimo con `/health` y `/api/series`.
 - `src/Comicteca.Web`: Blazor WebAssembly. Consume la API por HTTP; no referencia capas del servidor.
 - `tests/Comicteca.Tests`: invariantes de dominio y contrato HTTP.
 
-Regla de dependencias: `Domain ← Application ← Infrastructure ← Api`. No la debilites: si la web necesita un tipo del servidor, se duplica el DTO en `Models/`.
+Regla de dependencias: `Domain ← Application ← Infrastructure ← Api`. No la debilites: si la web necesita un tipo del servidor, se duplica el DTO en `Models/`. El proyecto de migraciones de Azure SQL cuelga de `Infrastructure` y no lo conoce ninguna capa salvo la API.
 
 La persistencia es SQLite en local y el despliegue usará Azure SQL (ADR 0003). El esquema se versiona con migraciones de EF Core (Code First): el modelo se escribe en C# y la base se genera desde ahí. No se edita la base a mano. La base (`*.db`) no se versiona. El CSV se copia a la salida del proyecto de API; su ruta se puede cambiar con `Datos:RutaCsv`.
 
-Las herramientas de EF se restauran con `dotnet tool restore`. Para añadir una migración:
+Las herramientas de EF se restauran con `dotnet tool restore`. Para añadir una migración de SQLite:
 
 ```bash
 dotnet ef migrations add Nombre --project src/Comicteca.Infrastructure --startup-project src/Comicteca.Api --output-dir Migrations
 ```
+
+Cada proveedor tiene su propio conjunto de migraciones, porque el modelo cambia de tipos (`TEXT` frente a `nvarchar`). Para Azure SQL:
+
+```bash
+dotnet ef migrations add Nombre --project src/Comicteca.Infrastructure.SqlServer --startup-project src/Comicteca.Infrastructure.SqlServer --output-dir Migrations
+```
+
+La API elige el proveedor con `Datos:Proveedor` (`Sqlite` por defecto, o `SqlServer` con la cadena `Comicteca`).
 
 ## Documentación
 

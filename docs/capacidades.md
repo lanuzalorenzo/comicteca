@@ -1,6 +1,6 @@
 # Qué puedo demostrar y qué no
 
-Esta página es la diferencia entre tener el carné de conducir y haber conducido. Todo lo que digo de la Comicteca está aquí con la prueba que lo sostiene, y lo que no he probado aparece como pendiente. La última comprobación es del 4 de noviembre de 2026, en local.
+Esta página es la diferencia entre tener el carné de conducir y haber conducido. Todo lo que digo de la Comicteca está aquí con la prueba que lo sostiene, y lo que no he probado aparece como pendiente. La última comprobación es del 5 de noviembre de 2026, en local.
 
 ## Cómo lo compruebo
 
@@ -20,6 +20,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | La API devuelve las series agrupadas | `Api/Program.cs` | 1 prueba de contrato con base temporal y 1 de `/health` | Validado |
 | Carga el CSV de demostración | `CsvSeeder` | Arranque real: 20 series y 65 filas | Validado en local |
 | El esquema se versiona con migraciones | `Infrastructure/Migrations` | `dotnet ef database update`; historial en `__EFMigrationsHistory` | Validado |
+| El esquema de Azure SQL sale del mismo modelo | `Infrastructure.SqlServer/Migrations` | `dotnet ef migrations script` produce `uniqueidentifier` y `nvarchar` | Parcial: generado, sin aplicar |
 | Agrupa por serie y editorial | `SqliteSerieReader` | Prueba con dos series y un tomo único | Validado |
 | Alta y baja de series y tomos por API | `ISerieWriter`, `SqliteSerieWriter` | 17 pruebas de contrato: 201, 204, 400, 404 y 409 | Validado |
 | Alta y baja de series y tomos desde la web | `Home.razor` | Prueba de interfaz en Chromium a 375 px (`tests/e2e`): alta, duplicado, número inválido, baja de tomo y de serie, sin recargar | Validado: local y CI (run 41862372649) |
