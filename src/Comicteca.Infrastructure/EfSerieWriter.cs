@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Comicteca.Infrastructure;
 
-public sealed class SqliteSerieWriter(ComictecaDbContext db) : ISerieWriter
+public sealed class EfSerieWriter(ComictecaDbContext db) : ISerieWriter
 {
     public async Task<Guid?> CrearSerieAsync(string titulo, string editorial, CancellationToken cancellationToken = default)
     {

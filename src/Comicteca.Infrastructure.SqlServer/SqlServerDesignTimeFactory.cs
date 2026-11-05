@@ -14,7 +14,7 @@ public sealed class SqlServerDesignTimeFactory : IDesignTimeDbContextFactory<Com
     public ComictecaDbContext CreateDbContext(string[] args)
     {
         var opciones = new DbContextOptionsBuilder<ComictecaDbContext>()
-            .UseSqlServer(CadenaSinServidor, sql => sql.MigrationsAssembly("Comicteca.Infrastructure.SqlServer"))
+            .UsarSqlServer(CadenaSinServidor)
             .Options;
 
         return new ComictecaDbContext(opciones);

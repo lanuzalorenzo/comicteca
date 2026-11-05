@@ -21,8 +21,9 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Carga el CSV de demostración | `CsvSeeder` | Arranque real: 20 series y 65 filas | Validado en local |
 | El esquema se versiona con migraciones | `Infrastructure/Migrations` | `dotnet ef database update`; historial en `__EFMigrationsHistory` | Validado |
 | El esquema de Azure SQL sale del mismo modelo | `Infrastructure.SqlServer/Migrations` | `dotnet ef migrations script` produce `uniqueidentifier` y `nvarchar` | Parcial: generado, sin aplicar |
-| Agrupa por serie y editorial | `SqliteSerieReader` | Prueba con dos series y un tomo único | Validado |
-| Alta y baja de series y tomos por API | `ISerieWriter`, `SqliteSerieWriter` | 17 pruebas de contrato: 201, 204, 400, 404 y 409 | Validado |
+| Elige proveedor y apaga la agrupación | `ConfiguracionDatos`, `SqlServerComicteca` | 10 pruebas: proveedor, cadena, `Pooling=False` y ensamblado de migraciones | Parcial: sin probar contra Azure SQL real |
+| Agrupa por serie y editorial | `EfSerieReader` | Prueba con dos series y un tomo único | Validado |
+| Alta y baja de series y tomos por API | `ISerieWriter`, `EfSerieWriter` | 17 pruebas de contrato: 201, 204, 400, 404 y 409 | Validado |
 | Alta y baja de series y tomos desde la web | `Home.razor` | Prueba de interfaz en Chromium a 375 px (`tests/e2e`): alta, duplicado, número inválido, baja de tomo y de serie, sin recargar | Validado: local y CI (run 41862372649) |
 | Busca por título y editorial | `Home.razor` | Prueba manual en el navegador | Parcial: sin prueba automática |
 | Se ve bien en el móvil | `app.css` | Prueba manual a 375 px y 1280 px | Parcial: sin dispositivos reales |
@@ -40,7 +41,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 ## Lo que no puedo decir
 
 - «Validado» quiere decir que lo he ejecutado y he visto el resultado en mi máquina, no que esté desplegado ni que lo haya usado otra persona.
-- No he medido la cobertura: hay 25 pruebas .NET y 14 comprobaciones de interfaz, sin umbral.
+- No he medido la cobertura: hay 35 pruebas .NET y 14 comprobaciones de interfaz, sin umbral.
 - La interfaz no la he probado con lector de pantalla ni en Safari.
 - El CORS no protege la API de otros clientes: solo limita a los navegadores. Cualquiera con la dirección puede llamarla.
 - La API no pide autenticación: quien llegue a ella puede escribir. La escritura solo vale en local hasta que exista el despliegue con Entra ID.

@@ -7,7 +7,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 **Se cierra cuando** la colección se carga desde el CSV y puedo buscar en el móvil.
 
 - El conjunto de demostración cargado desde el CSV, en local.
-- 5 pruebas en verde en el cierre y compilación sin avisos; hoy son 25 pruebas .NET y 14 comprobaciones de interfaz.
+- 5 pruebas en verde en el cierre y compilación sin avisos; hoy son 35 pruebas .NET y 14 comprobaciones de interfaz.
 - Sin desplegar y sin que los datos salgan de este repositorio.
 
 ## Fase 2 — Tener una dirección propia (Diseño; despliegue Pendiente)

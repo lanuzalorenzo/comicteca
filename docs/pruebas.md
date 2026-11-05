@@ -8,6 +8,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 |---|---|---|---|
 | Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
 | API | `tests/Comicteca.Tests/EscrituraApiTests.cs` y `SeriesApiTests.cs` | 19 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409 y `/health` | `dotnet test` |
+| Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
 | Contenedores | `compose.yaml` | Puertos, healthchecks y volumen de la base | Manual, con Docker |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
@@ -29,7 +30,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **25 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz.
+Resultado esperado: compilación sin avisos, **35 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
@@ -112,7 +113,7 @@ La prueba automática usa Chromium. Antes de cerrar un cambio de interfaz, repá
 
 ## 6. Límites
 
-- No hay umbral de cobertura: hay 25 pruebas, no una métrica.
+- No hay umbral de cobertura: hay 35 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
 - La API no tiene autenticación; la escritura solo es aceptable en local hasta el despliegue con Entra ID.

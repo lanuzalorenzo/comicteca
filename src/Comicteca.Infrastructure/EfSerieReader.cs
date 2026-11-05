@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Comicteca.Infrastructure;
 
-public sealed class SqliteSerieReader(ComictecaDbContext db) : ISerieReader
+public sealed class EfSerieReader(ComictecaDbContext db) : ISerieReader
 {
     public async Task<IReadOnlyList<SerieDto>> ListarAsync(CancellationToken cancellationToken = default)
     {

@@ -14,8 +14,8 @@ Cada paso se cierra antes de abrir el siguiente. Un diseño sin ejecutar no es u
 
 - `src/Comicteca.Domain`: entidades e invariantes. Sin dependencias.
 - `src/Comicteca.Application`: DTOs y puertos de lectura y escritura. Solo depende de `Domain`.
-- `src/Comicteca.Infrastructure`: EF Core, SQLite y carga inicial del CSV.
-- `src/Comicteca.Infrastructure.SqlServer`: el conjunto de migraciones de Azure SQL. Solo lo referencia la API.
+- `src/Comicteca.Infrastructure`: EF Core, la carga inicial del CSV y los adaptadores de lectura y escritura, que no dependen del proveedor.
+- `src/Comicteca.Infrastructure.SqlServer`: el conjunto de migraciones de Azure SQL. Lo referencian la API y las pruebas.
 - `src/Comicteca.Api`: host mínimo con `/health` y `/api/series`.
 - `src/Comicteca.Web`: Blazor WebAssembly. Consume la API por HTTP; no referencia capas del servidor.
 - `tests/Comicteca.Tests`: invariantes de dominio y contrato HTTP.
