@@ -24,7 +24,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Elige proveedor y apaga la agrupación | `ConfiguracionDatos`, `SqlServerComicteca` | 10 pruebas: proveedor, cadena, `Pooling=False` y ensamblado de migraciones | Parcial: sin probar contra Azure SQL real |
 | Agrupa por serie y editorial | `EfSerieReader` | Prueba con dos series y un tomo único | Validado |
 | Alta y baja de series y tomos por API | `ISerieWriter`, `EfSerieWriter` | 17 pruebas de contrato: 201, 204, 400, 404 y 409 | Validado |
-| Alta y baja de series y tomos desde la web | `Home.razor` | Prueba de interfaz en Chromium a 375 px (`tests/e2e`): alta, duplicado, número inválido, baja de tomo y de serie, sin recargar | Validado: local y CI (run 41862372649) |
+| Alta y baja de series y tomos desde la web | `Home.razor` | Prueba de interfaz en Chromium a 375 px (`tests/e2e`): alta, duplicado, número inválido, baja de tomo y de serie, sin recargar | Validado: local y CI (run 42016523241) |
 | Busca por título y editorial | `Home.razor` | Prueba manual en el navegador | Parcial: sin prueba automática |
 | Se ve bien en el móvil | `app.css` | Prueba de interfaz en Chromium a 375 px | Parcial: sin dispositivos reales |
 | Se adapta al escritorio | `app.css` | Medición en Chromium a 1440 px: tres columnas sobre 1184 px de rejilla y sin desbordamiento | Parcial: sin prueba automática |
@@ -33,7 +33,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: NuGet, run del 3 de noviembre de 2026; npm, run 41862372649, sin vulnerabilidades |
-| CI: interfaz en navegador (375 px) | `.github/workflows/ci.yml`, `tests/e2e` | Job «Interfaz en navegador (375 px)» | Validado: run 41862372649 en verde (4 de noviembre de 2026) |
+| CI: interfaz en navegador (375 px) | `.github/workflows/ci.yml`, `tests/e2e` | Job «Interfaz en navegador (375 px)» | Validado: run 42016523241 en verde (5 de noviembre de 2026) |
 | Icono e instalación como aplicación | `manifest.json`, `index.html`, `icono.svg` | Icono fuente y manifiesto servido como `application/json`; iconos de 192 y 512 con 200 | Parcial: instalación sin probar en Chrome ni Android |
 | Despliegue en Azure | — | — | Pendiente: API en contenedor, Functions para el aviso y Azure SQL (ADR 0003) |
 | Ensayo del despliegue en local con contenedores | `compose.yaml`, Dockerfiles | `docker compose up`: lista en 5077, `/health` en 5094, prueba a 375 px en contenedor y base conservada tras `down` | Validado en local: sin Docker en CI |
