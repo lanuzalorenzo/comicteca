@@ -45,3 +45,4 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 - La interfaz no la he probado con lector de pantalla ni en Safari.
 - El CORS no protege la API de otros clientes: solo limita a los navegadores. Cualquiera con la dirección puede llamarla.
 - La API no pide autenticación: quien llegue a ella puede escribir. La escritura solo vale en local hasta que exista el despliegue con Entra ID.
+- El detalle por endpoint, la amenaza que cubre cada control y lo que queda abierto están en [modelo-de-amenaza.md](modelo-de-amenaza.md).

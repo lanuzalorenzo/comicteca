@@ -46,6 +46,7 @@ La API elige el proveedor con `Datos:Proveedor` (`Sqlite` por defecto, o `SqlSer
 | `docs/datos.md` | Origen del CSV, limpieza, cifras y límites |
 | `docs/capacidades.md` | Qué se puede afirmar y con qué prueba |
 | `docs/pruebas.md` | Cómo se prueba en local: suite, interfaz, contenedores y checklist |
+| `docs/modelo-de-amenaza.md` | Amenazas por endpoint, controles y huecos |
 | `docs/plan.md` | Fases, condiciones de cierre y riesgos |
 | `bitacora/` | Una entrada por hito, con resultado observado |
 
