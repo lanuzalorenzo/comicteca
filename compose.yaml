@@ -12,6 +12,7 @@ services:
       - datos:/data
     ports:
       - "127.0.0.1:5094:8080"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
       interval: 5s
@@ -28,6 +29,7 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:5077:80"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
       interval: 5s
