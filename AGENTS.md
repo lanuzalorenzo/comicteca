@@ -106,8 +106,8 @@ Un solo tema, oscuro. Valores en línea, sin depender de hojas externas:
 | Acento profundo | `#0369a1` |
 
 - Un único acento. El color de estado no se usa como superficie ni como adorno.
-- Mobile-first: una columna hasta 40 rem, dos después.
-- Sin imágenes ni iconos hasta que aporten información. La tipografía es la del sistema.
+- Mobile-first: una columna en el móvil; la rejilla crece sola hasta tres columnas en escritorio.
+- Un icono propio para la pestaña, la instalación como aplicación y el lanzador; ninguna imagen decorativa más. La tipografía es la del sistema.
 - Todo control tiene un borde de 3:1 como mínimo y foco visible.
 
 ## Verificación

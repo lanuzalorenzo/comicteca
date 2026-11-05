@@ -10,7 +10,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | API | `tests/Comicteca.Tests/EscrituraApiTests.cs` y `SeriesApiTests.cs` | 19 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409 y `/health` | `dotnet test` |
 | Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
-| Contenedores | `compose.yaml` | Puertos, healthchecks y volumen de la base | Manual, con Docker |
+| Contenedores | `compose.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base | Manual, con Docker |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
 
 Las tres primeras están automatizadas: dominio y API en el trabajo de compilación y pruebas, e interfaz en su propio trabajo del CI. El ensayo con contenedores y la prueba manual no lo están.
@@ -96,7 +96,7 @@ docker compose down -v            # esto sí borra la base y el volumen
 
 La API del contenedor no pide autenticación y solo escucha en tu máquina; no la publiques fuera de loopback.
 
-## 5. Checklist manual a 375 px
+## 5. Checklist manual
 
 La prueba automática usa Chromium. Antes de cerrar un cambio de interfaz, repásalo también a mano con las herramientas del navegador en 375 × 812:
 
@@ -110,6 +110,12 @@ La prueba automática usa Chromium. Antes de cerrar un cambio de interfaz, repá
 8. Borrar un tomo pide confirmación y lo quita sin recargar.
 9. Borrar una serie pide confirmación y se lleva sus tomos.
 10. No hay scroll horizontal ni controles cortados; el foco se ve al tabular.
+
+En escritorio, a 1440 × 900:
+
+11. A 1440 px la lista se reparte en tres columnas sobre una columna centrada de 1184 px, con unos 96 px de margen a cada lado; no queda ningún hueco vacío ni una tarjeta estirada.
+12. El formulario de alta cabe en una fila, con los campos a la izquierda y el botón a la derecha, y el buscador ocupa el ancho de la columna.
+13. Al estrechar, la rejilla pasa a dos columnas y luego a una, sin desbordamiento en ningún paso.
 
 ## 6. Límites
 

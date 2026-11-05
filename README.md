@@ -10,7 +10,7 @@ Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no
 - Agrupa por serie y editorial y resume cuántos tomos tengo y con qué números.
 - Busca por título o editorial.
 - Da de alta y de baja series y tomos desde la pantalla o por API.
-- Está pensada para el móvil, con tema oscuro; probada a 375 px en el navegador.
+- Está pensada para el móvil y crece hasta tres columnas en escritorio, con tema oscuro; prueba automática a 375 px y medición en Chromium a 1440 px.
 
 ## Cómo se arranca
 
