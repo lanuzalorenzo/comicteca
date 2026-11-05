@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Abre Comicteca en el navegador, arrancando los contenedores si están parados.
+set -euo pipefail
+
+repo="/home/tglla/Repositorios/comicteca"
+url="http://localhost:5077/"
+
+if ! curl -sf -o /dev/null --max-time 2 "$url"; then
+    docker compose -f "$repo/compose.yaml" up -d >/dev/null
+    for _ in $(seq 1 60); do
+        if curl -sf -o /dev/null --max-time 1 "$url"; then
+            break
+        fi
+        sleep 1
+    done
+fi
+
+xdg-open "$url"

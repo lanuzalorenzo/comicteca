@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Copia la base de Comicteca fuera del repositorio.
+# La base usa WAL, así que se copian los tres archivos y se consolida con
+# la API de respaldo de SQLite: el resultado es un único .db consistente.
+set -euo pipefail
+
+destino="${COMICTECA_COPIAS:-$HOME/copias/comicteca}"
+repo="/home/tglla/Repositorios/comicteca"
+fecha="$(date +%F)"
+copia="$destino/comicteca-$fecha.db"
+temporal="$(mktemp -d)"
+
+mkdir -p "$destino"
+limpiar() {
+    rm -rf "$temporal"
+    docker compose -f "$repo/compose.yaml" start >/dev/null
+}
+trap limpiar EXIT
+
+docker compose -f "$repo/compose.yaml" stop >/dev/null
+docker run --rm -v comicteca_datos:/data -v "$temporal":/copia \
+    mcr.microsoft.com/dotnet/aspnet:10.0 \
+    sh -c "cp /data/comicteca.db /data/comicteca.db-wal /data/comicteca.db-shm /copia/ 2>/dev/null \
+           || cp /data/comicteca.db /copia/; chown -R $(id -u):$(id -g) /copia"
+
+python3 - "$temporal/comicteca.db" "$copia" <<'PY'
+import sqlite3, sys
+origen, destino = sys.argv[1], sys.argv[2]
+with sqlite3.connect(origen) as src, sqlite3.connect(destino) as dst:
+    src.backup(dst)
+    estado = dst.execute('PRAGMA integrity_check').fetchone()[0]
+    series = dst.execute('SELECT COUNT(*) FROM Series').fetchone()[0]
+    tomos = dst.execute('SELECT COUNT(*) FROM Tomos').fetchone()[0]
+print(f'{destino}: integridad={estado}, series={series}, tomos={tomos}')
+if estado != 'ok':
+    raise SystemExit(1)
+PY
