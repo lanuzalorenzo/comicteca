@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Comicteca">
+  <title>Comicteca</title>
+  <rect width="1024" height="1024" fill="#07131e" />
+  <path id="c" fill="#38bdf8" d="M797.88 712.18 A349 349 0 1 1 797.88 311.82 L693.03 385.24 A221 221 0 1 0 693.03 638.76 Z" />
+  <mask id="lomo">
+    <use href="#c" fill="#ffffff" />
+  </mask>
+  <rect x="226" y="0" width="22" height="1024" fill="#07131e" mask="url(#lomo)" />
+</svg>
