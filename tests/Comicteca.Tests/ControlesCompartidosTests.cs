@@ -1,5 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using Comicteca.Application;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Comicteca.Tests;
 
@@ -53,6 +58,45 @@ public sealed class ControlesCompartidosTests(ApiFactory factory) : IClassFixtur
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
         Assert.Equal("nosniff", respuesta.Headers.GetValues("X-Content-Type-Options").Single());
         Assert.Equal("DENY", respuesta.Headers.GetValues("X-Frame-Options").Single());
+    }
+}
+
+public sealed class ProblemDetailsTests
+{
+    [Fact]
+    public async Task Una_excepcion_no_controlada_devuelve_problem_details()
+    {
+        using var factory = new ApiFactoryConFallo();
+        var respuesta = await factory.CreateClient().GetAsync("/api/series");
+
+        Assert.Equal(HttpStatusCode.InternalServerError, respuesta.StatusCode);
+        Assert.Equal("application/problem+json", respuesta.Content.Headers.ContentType?.MediaType);
+
+        var cuerpo = await respuesta.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("Fallo de prueba", cuerpo);
+
+        var problema = System.Text.Json.JsonSerializer.Deserialize<ProblemDetails>(cuerpo);
+        Assert.NotNull(problema);
+        Assert.Equal(500, problema.Status);
+    }
+
+    private sealed class ApiFactoryConFallo : ApiFactory
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            base.ConfigureWebHost(builder);
+            builder.ConfigureServices(servicios =>
+            {
+                servicios.RemoveAll<ISerieReader>();
+                servicios.AddScoped<ISerieReader, LectorQueFalla>();
+            });
+        }
+    }
+
+    private sealed class LectorQueFalla : ISerieReader
+    {
+        public Task<IReadOnlyList<SerieDto>> ListarAsync(CancellationToken cancellationToken = default) =>
+            Task.FromException<IReadOnlyList<SerieDto>>(new InvalidOperationException("Fallo de prueba."));
     }
 }
 
