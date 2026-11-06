@@ -1,7 +1,7 @@
 # 0004 — Consumir los controles compartidos, no extraer paquetes de Comicteca
 
 **Fecha:** 6 de noviembre de 2026
-**Estado:** Aceptada (decisión de diseño; el consumo queda Pendiente hasta que el feed publique la primera versión)
+**Estado:** Aceptada (consumo implementado el 6 de noviembre de 2026; validado en local, con el CI y Compose pendientes de ejecutar con el feed)
 
 ## De qué iba
 
@@ -9,7 +9,7 @@ Comicteca repite controles que no son suyos: CORS, endpoint de salud y formato d
 
 Un control compartido es como la cerradura de un edificio: se compra una, se instala en todas las puertas y se cambia la llave en un solo sitio. Copiarla en cada puerta obliga a revisar veinte copias y deja la puerta abierta el día que una se queda atrás.
 
-La publicación de la primera versión de los paquetes está en marcha. Este documento no la duplica: fija qué hará Comicteca cuando el feed esté disponible.
+La primera versión de los paquetes ya está publicada (`0.1.0`). Este documento fija qué hace Comicteca con ella y qué queda fuera.
 
 ## Qué decidí
 
@@ -18,10 +18,10 @@ La publicación de la primera versión de los paquetes está en marcha. Este doc
 - **Adopta `LL.Hosting`** para ProblemDetails y el endpoint de salud anónimo. No llama a `UseApiTransportSecurity`: la redirección a HTTPS y HSTS quedan fuera.
 - **Adapta la configuración:** `Cors:Origenes` se pasa como sección al paquete o se renombra a `Cors:AllowedOrigins`, y `UseCors` usa la política `ApiCors`.
 - **Mantiene el resto en casa:** `ConfiguracionDatos`, `ProblemaDeValidacion`, el `DbContext`, los lectores y escritores de EF y `CsvSeeder` son de esta aplicación, no de la plataforma.
-- **Fija la versión exacta** del paquete y deja que Dependabot la suba. No usa rangos flotantes: el resto del proyecto fija versiones exactas y una actualización debe pasar por el mismo CI.
+- **Fija la versión exacta** del paquete. No usa rangos flotantes: el resto del proyecto fija versiones exactas y una actualización debe pasar por el mismo CI. La subida es manual y queda pendiente una entrada `registries` de Dependabot con un token que pueda leer el feed.
 - **Autentica el feed sin secretos versionados.** El `nuget.config` lee las credenciales del entorno. En el CI, el workflow declara `packages: read` para todos los trabajos que restauran (`build-and-test`, `sca` y `web-e2e`); el `Dockerfile` copia el `nuget.config` antes del `restore` y recibe las credenciales con un secreto de BuildKit, sin dejarlas en la imagen ni en el historial. Dependabot necesita una entrada `registries` para poder subir la versión. Si el `GITHUB_TOKEN` del repositorio no puede leer el feed, se usa un PAT guardado como secreto; la decisión se toma al probarlo. Ninguna credencial se escribe en el repositorio.
 
-El orden de adopción será: CORS y cabeceras, límite por IP, ProblemDetails y salud. Cada paso entra con su prueba y con el CI en verde.
+El orden de adopción fue: CORS y cabeceras, límite por IP, ProblemDetails y salud. Cada paso entró con su prueba y la validación local quedó en verde.
 
 ## Qué otras opciones tenía
 
@@ -35,29 +35,29 @@ El orden de adopción será: CORS y cabeceras, límite por IP, ProblemDetails y 
 
 ## Qué gano y qué pierdo
 
-- **Gano** una sola implementación auditada de las cabeceras, el CORS y el límite, y pruebas del paquete en lugar de pruebas de cada copia. Las cabeceras cierran parte del hueco API8 que hoy está en `docs/modelo-de-amenaza.md`.
-- **Gano** una política CORS con denegación por defecto, configurable y probada en el paquete, en lugar de una configuración propia sin prueba automática. La política actual ya limita a dos orígenes, pero vive en `Program.cs` y nadie comprueba que siga siendo así.
+- **Gano** una sola implementación auditada de las cabeceras, el CORS y el límite, y pruebas del paquete en lugar de pruebas de cada copia. Las cabeceras cierran parte del hueco API8 que describe `docs/modelo-de-amenaza.md`.
+- **Gano** una política CORS con denegación por defecto, configurable y probada en el paquete, en lugar de una configuración propia sin prueba automática. La política ya no vive en `Program.cs` y su comportamiento queda cubierto por pruebas.
 - **Pierdo** una dependencia externa y su autenticación: GitHub Packages exige credenciales incluso para paquetes públicos. Eso añade un `nuget.config`, un PAT local y un token con `packages: read` en el CI.
 - **Asumo** que `LL.Security` arrastra `Microsoft.AspNetCore.Authentication.JwtBearer` aunque Comicteca solo use CORS, cabeceras y límite. Es peso y superficie de auditoría que no aportan nada aquí. Si el paquete se separa en el futuro, la decisión es de `shared-dotnet`.
-- **Asumo** que el endpoint `/health` cambiará de cuerpo: hoy devuelve `{ "estado": "ok" }` y el paquete publica el estado agregado, por defecto el texto `Healthy`. Las pruebas y el healthcheck solo miran el código de respuesta, pero es un cambio de contrato.
+- **Asumo** que el endpoint `/health` cambia de cuerpo: antes devolvía `{ "estado": "ok" }` y el paquete publica el estado agregado, por defecto el texto `Healthy`. Las pruebas y el healthcheck solo miran el código de respuesta, pero es un cambio de contrato.
 - **Asumo** que el límite por IP necesita una decisión detrás de un proxy: sin cabeceras reenviadas, la IP que ve la API es la del proxy. Se configura antes de desplegar, no después.
 - **Dejo pendiente** la redirección a HTTPS y HSTS. Hoy no se llama a la extensión, así que no afecta a Compose ni a la prueba de interfaz. Para adoptarla, el paquete tendría que permitir desactivar la redirección o reconocer un proxy con terminación TLS. Es una mejora de `shared-dotnet`, no un cambio de Comicteca.
 
 ## Cómo se comprueba
 
-El consumo no está hecho. Se dará por cerrado cuando, con una versión publicada del feed:
+El consumo quedó implementado el 6 de noviembre de 2026. En local:
 
-1. `dotnet restore` funcione en local y en el CI con credenciales del entorno y sin secretos versionados.
-2. Una prueba compruebe que un origen permitido pasa y uno desconocido no recibe `Access-Control-Allow-Origin`.
-3. Una prueba compruebe las cabeceras de seguridad en una respuesta normal y en un error.
-4. Una prueba compruebe el 429 al superar el límite, con el cupo configurado para la prueba.
-5. `/health` siga respondiendo sin autenticación y `docker compose up` siga en verde con la API por HTTP en el 8080.
-6. La prueba de interfaz a 375 px y la auditoría de dependencias sigan en verde.
+1. `dotnet restore` funciona con la versión `0.1.0` desde el feed y sin secretos versionados. El CI declara `packages: read`; su ejecución con el feed sigue pendiente.
+2. Una prueba comprueba que un origen permitido pasa y uno desconocido no recibe `Access-Control-Allow-Origin`.
+3. Una prueba comprueba las cabeceras de seguridad en una respuesta normal y en un error de validación.
+4. Una prueba comprueba el 429 al superar el límite de 120 peticiones por minuto.
+5. `/health` sigue respondiendo sin autenticación con el endpoint del paquete. `docker compose up` queda pendiente de ejecutar con `GITHUB_TOKEN` para el secreto de BuildKit.
+6. La prueba de interfaz a 375 px y la auditoría de dependencias siguen sin ejecutarse tras el cambio; lo harán en el CI.
 
-Hasta entonces, el estado es **Pendiente**. Las pruebas del paquete son suyas: Comicteca no las sustituye con las de su API.
+El estado es **Validado en local** para los puntos 1 a 5 y **Pendiente** para el CI y Compose con el feed. Las pruebas del paquete son suyas: Comicteca no las sustituye con las de su API.
 
 ## Qué no cambia
 
 - El dominio, los DTOs, el `DbContext`, las migraciones, el cargador del CSV y los lectores y escritores de EF siguen en Comicteca.
-- Las acciones de CI de `core` no se modifican; el workflow de Comicteca sí añadirá `packages: read` cuando adopte el feed. Este ADR decide el consumo de paquetes, no la lógica de las acciones.
+- Las acciones de CI de `core` no se modifican; el workflow de Comicteca declara `packages: read` en los trabajos que restauran. Este ADR decide el consumo de paquetes, no la lógica de las acciones.
 - La colección real y el CSV de demostración no salen del repositorio ni viajan en un paquete.

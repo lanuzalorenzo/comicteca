@@ -11,6 +11,7 @@ Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no
 - Busca por título o editorial.
 - Da de alta y de baja series y tomos desde la pantalla o por API.
 - Está pensada para el móvil y crece hasta tres columnas en escritorio, con tema oscuro; prueba automática a 375 px y medición en Chromium a 1440 px.
+- CORS, cabeceras de seguridad, límite por IP, ProblemDetails y salud vienen de los paquetes compartidos `LL.Security` y `LL.Hosting`.
 
 ## Cómo se arranca
 
@@ -24,10 +25,11 @@ La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La w
 ### Con Docker
 
 ```bash
+export GITHUB_TOKEN="$(gh auth token)"
 docker compose up -d --build
 ```
 
-La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con la base en el volumen `comicteca_datos`: `docker compose down` no la borra. Para empezar de cero, `docker compose down -v`.
+La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con la base en el volumen `comicteca_datos`: `docker compose down` no la borra. Para empezar de cero, `docker compose down -v`. El token lee los paquetes `LL.*` del feed de GitHub Packages y se pasa al `Dockerfile` como secreto de BuildKit.
 
 ## Cómo está organizado
 
@@ -58,6 +60,8 @@ La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con
 ## Comprobación
 
 ```bash
+export GITHUB_TOKEN="$(gh auth token)"
+dotnet restore Comicteca.slnx
 dotnet build Comicteca.slnx -c Release -warnaserror
 dotnet test Comicteca.slnx -c Release --no-build
 dotnet format Comicteca.slnx --verify-no-changes --no-restore

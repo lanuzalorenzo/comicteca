@@ -77,6 +77,7 @@ El repositorio es privado hoy y puede abrirse más adelante. Todo lo que se escr
 | `README.md`, `docs/`, `bitacora/` | Sí | Sin datos reales ni enlaces a repos privados |
 | `data/coleccion.csv` | Sí | Es el conjunto inventado de demostración; cargar la colección real lo vuelve no publicable |
 | `AGENTS.md` y `.opencode/` | Sí | Son herramientas del repositorio, no documentación |
+| `NuGet.config` | Sí | Sin credenciales: lee `%GITHUB_TOKEN%` del entorno |
 | Base local, `appsettings.Local.json` | No | Ignorados por Git |
 
 **Aviso importante:** el CSV real estuvo en el historial desde el primer commit. El 3 de noviembre de 2026 se reescribió para sustituirlo por el conjunto inventado en todos los commits. Antes de abrir el repositorio hay que comprobar que no reaparece en ningún clon, fork ni objeto inalcanzable del remoto.
@@ -113,19 +114,21 @@ Un solo tema, oscuro. Valores en línea, sin depender de hojas externas:
 ## Verificación
 
 ```bash
+export GITHUB_TOKEN="$(gh auth token)"
+dotnet restore Comicteca.slnx
 dotnet build Comicteca.slnx -c Release -warnaserror
 dotnet test Comicteca.slnx -c Release --no-build
 dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Los mismos pasos corren en `.github/workflows/ci.yml`. El CI añade la comprobación de enlaces de la documentación con la acción `check-links` de `lanuzalorenzo/core`, y el trabajo «Interfaz en navegador (375 px)» arranca la API y la web y ejecuta `tests/e2e` con Chromium; el procedimiento completo está en `docs/pruebas.md`.
+Los mismos pasos corren en `.github/workflows/ci.yml`, que declara `packages: read` para restaurar los paquetes `LL.*`. El CI añade la comprobación de enlaces de la documentación y el escaneo de secretos con las acciones de `lanuzalorenzo/core`, y el trabajo «Interfaz en navegador (375 px)» arranca la API y la web y ejecuta `tests/e2e` con Chromium; el procedimiento completo está en `docs/pruebas.md`.
 
-Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotnet run --project src/Comicteca.Web` (puerto 5077). La misma pila en contenedores: `docker compose up -d --build`, con la base en el volumen `comicteca_datos`. La web lee la URL de la API de `wwwroot/appsettings.json`.
+Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotnet run --project src/Comicteca.Web` (puerto 5077). La misma pila en contenedores: `export GITHUB_TOKEN="$(gh auth token)" && docker compose up -d --build`, con la base en el volumen `comicteca_datos`. El token viaja al `Dockerfile` como secreto de BuildKit para leer GitHub Packages. La web lee la URL de la API de `wwwroot/appsettings.json`.
 
 ## Estados
 
-`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); ensayo en Docker **Validado** en local; despliegue **Pendiente**; novedades **Diseño**.
+`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); CORS, cabeceras, límite y salud desde los paquetes compartidos **Validado** en local (6 de noviembre de 2026), con ProblemDetails registrado y sin prueba de excepción; ensayo en Docker **Validado** el 4 de noviembre y **Pendiente** de repetir con el secreto del feed; despliegue **Pendiente**; novedades **Diseño**.
 
 ## Despliegue
 
@@ -147,13 +150,13 @@ Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `da
 
 El repositorio es privado, pero se comporta como público. `.github/workflows/ci.yml` ejecuta cinco trabajos en cada push y en cada PR:
 
-- **Compilación y pruebas:** la acción `dotnet` de `lanuzalorenzo/core` (`@v1.1`) restaura, compila en Release con los avisos como errores, verifica el formato y ejecuta `dotnet test`. Publica el `.trx`.
-- **Documentación:** la acción `check-links` de `lanuzalorenzo/core` (`@v1.1`) valida los enlaces relativos y las anclas.
-- **Interfaz:** Chromium a 375 px contra la API y la web arrancadas con una base temporal.
-- **Secretos:** Gitleaks sobre el historial completo.
-- **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas en NuGet o altas y críticas en npm.
+- **Compilación y pruebas:** la acción `dotnet` de `lanuzalorenzo/core` (`@v1.3`) restaura, compila en Release con los avisos como errores, verifica el formato y ejecuta `dotnet test`. Publica el `.trx` y declara `packages: read` para el feed `LL.*`.
+- **Documentación:** la acción `check-links` de `lanuzalorenzo/core` (`@v1.3`) valida los enlaces relativos y las anclas.
+- **Interfaz:** Chromium a 375 px contra la API y la web arrancadas con una base temporal. También restaura los paquetes con `packages: read`.
+- **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) escanea el historial completo.
+- **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas en NuGet o altas y críticas en npm. El trabajo que restaura declara `packages: read`.
 
-Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión.
+Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión. Los paquetes `LL.*` se ignoran porque GitHub Packages exige un token propio: su versión se sube a mano y pasa por el mismo CI.
 
 La protección de `main` no está activa: GitHub exige un plan de pago para proteger ramas de repositorios privados. Al abrir el repositorio se activa con los checks obligatorios, rama actualizada y fusión por squash. Mientras tanto, el hook local de Gitleaks sigue siendo obligatorio en cada clon.
 

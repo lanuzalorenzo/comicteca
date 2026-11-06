@@ -7,7 +7,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Nivel | Dónde | Qué comprueba | Cómo se lanza |
 |---|---|---|---|
 | Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
-| API | `tests/Comicteca.Tests/EscrituraApiTests.cs` y `SeriesApiTests.cs` | 19 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409 y `/health` | `dotnet test` |
+| API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 24 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras y 429 | `dotnet test` |
 | Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
 | Contenedores | `compose.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base | Manual, con Docker |
@@ -18,23 +18,26 @@ Las tres primeras están automatizadas: dominio y API en el trabajo de compilaci
 ## Requisitos
 
 - .NET 10 SDK.
+- Un `GITHUB_TOKEN` con permiso para leer GitHub Packages (`read:packages`), porque los paquetes `LL.*` viven en ese feed.
 - Docker con Compose, solo para el ensayo en contenedores.
 - Node 22, solo para la prueba de interfaz.
 
 ## 1. La suite automática
 
 ```bash
+export GITHUB_TOKEN="$(gh auth token)"
+dotnet restore Comicteca.slnx
 dotnet build Comicteca.slnx -c Release -warnaserror
 dotnet test Comicteca.slnx -c Release --no-build
 dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **35 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El CI reutiliza las acciones `dotnet` y `check-links` de `lanuzalorenzo/core` (`@v1.1`); `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **40 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
-El CI añade una comprobación de enlaces relativos y anclas con la acción `check-links` de `lanuzalorenzo/core` (`@v1.1`). No está en la lista local porque depende de ese repositorio; si tocas la documentación, puedes ejecutar su script con la raíz del proyecto y omitiendo `src/Comicteca.Web/wwwroot` y `src/Comicteca.Web/obj`, que contienen rutas generadas al compilar y publicar la web.
+El CI añade una comprobación de enlaces relativos y anclas con la acción `check-links` de `lanuzalorenzo/core` (`@v1.3`). No está en la lista local porque depende de ese repositorio; si tocas la documentación, puedes ejecutar su script con la raíz del proyecto y omitiendo `src/Comicteca.Web/wwwroot` y `src/Comicteca.Web/obj`, que contienen rutas generadas al compilar y publicar la web.
 
 ## 2. Arrancar la aplicación
 
@@ -78,12 +81,13 @@ Si algo falla y la página llegó a abrirse, deja una captura en `tests/e2e/arti
 ## 4. Ensayo con contenedores
 
 ```bash
+export GITHUB_TOKEN="$(gh auth token)"
 docker compose up -d --build
 docker compose ps                 # api y web en healthy
 curl http://localhost:5094/health
 ```
 
-La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`.
+La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`. Compose añade `Cors__AllowedOrigins__0` con el origen de la web; sin esa variable, la API en Production deniega CORS por defecto.
 
 Para comprobar que la base sobrevive:
 
@@ -121,7 +125,7 @@ En escritorio, a 1440 × 900:
 
 ## 6. Límites
 
-- No hay umbral de cobertura: hay 35 pruebas, no una métrica.
+- No hay umbral de cobertura: hay 40 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
 - La API no tiene autenticación; la escritura solo es aceptable en local hasta el despliegue con Entra ID.

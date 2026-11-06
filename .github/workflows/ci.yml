@@ -18,12 +18,17 @@ jobs:
   build-and-test:
     name: Compilación, formato y pruebas (.NET 10)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v7
 
       - name: Compilar, verificar el formato y probar
-        uses: lanuzalorenzo/core/actions/dotnet@v1.1
+        uses: lanuzalorenzo/core/actions/dotnet@v1.3
         with:
           solution: Comicteca.slnx
 
@@ -35,7 +40,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Comprobar enlaces y anclas
-        uses: lanuzalorenzo/core/actions/check-links@v1.1
+        uses: lanuzalorenzo/core/actions/check-links@v1.3
         with:
           root: .
           skip: src/Comicteca.Web/wwwroot,src/Comicteca.Web/obj
@@ -49,21 +54,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Instalar Gitleaks
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl -sSL -o "$RUNNER_TEMP/gitleaks.tar.gz" \
-            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
-          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $RUNNER_TEMP/gitleaks.tar.gz" | sha256sum -c -
-          tar -xzf "$RUNNER_TEMP/gitleaks.tar.gz" -C "$HOME/.local/bin" gitleaks
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
       - name: Escanear secretos con Gitleaks
-        run: gitleaks detect --source . --redact --verbose --exit-code 2
+        uses: lanuzalorenzo/core/actions/gitleaks@v1.3
 
   sca:
     name: Dependencias vulnerables (NuGet)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v7
@@ -82,6 +83,11 @@ jobs:
   web-e2e:
     name: Interfaz en navegador (375 px)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v7
@@ -121,6 +127,7 @@ jobs:
           set -euo pipefail
           export ConnectionStrings__Comicteca="Data Source=$RUNNER_TEMP/comicteca-e2e.db"
           export Datos__RutaCsv="$GITHUB_WORKSPACE/data/coleccion.csv"
+          export Cors__AllowedOrigins__0="http://localhost:5077"
           ASPNETCORE_URLS=http://localhost:5094 dotnet run --project src/Comicteca.Api -c Release --no-build --no-launch-profile > "$RUNNER_TEMP/api.log" 2>&1 &
           ASPNETCORE_URLS=http://localhost:5077 dotnet run --project src/Comicteca.Web -c Release --no-build --no-launch-profile > "$RUNNER_TEMP/web.log" 2>&1 &
           trap 'kill $(jobs -p) 2>/dev/null || true' EXIT

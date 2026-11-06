@@ -5,9 +5,12 @@ services:
     build:
       context: .
       dockerfile: src/Comicteca.Api/Dockerfile
+      secrets:
+        - github_token
     environment:
       ConnectionStrings__Comicteca: "Data Source=/data/comicteca.db"
       Datos__RutaCsv: "/app/data/coleccion.csv"
+      Cors__AllowedOrigins__0: "http://localhost:5077"
     volumes:
       - datos:/data
     ports:
@@ -39,3 +42,7 @@ services:
 
 volumes:
   datos:
+
+secrets:
+  github_token:
+    environment: GITHUB_TOKEN

@@ -12,6 +12,10 @@ updates:
     labels:
       - "dependencies"
       - "security"
+    ignore:
+      # LL.* vive en GitHub Packages y se fija a mano: Dependabot no puede leer
+      # el feed sin un token propio. La subida pasa por el mismo CI.
+      - dependency-name: "LL.*"
     groups:
       nuget-patch-minor:
         patterns:

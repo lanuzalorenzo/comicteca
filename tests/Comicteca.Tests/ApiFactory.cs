@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Comicteca.Tests;
 
-public sealed class ApiFactory : WebApplicationFactory<Program>
+public class ApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _baseDatos = Path.Combine(Path.GetTempPath(), $"comicteca-{Guid.NewGuid():N}.db");
     private readonly string _csv = Path.Combine(Path.GetTempPath(), $"comicteca-{Guid.NewGuid():N}.csv");
@@ -22,10 +22,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             "Serie B,Editorial Y,,\n");
 
         builder.ConfigureAppConfiguration((_, configuracion) =>
+        {
             configuracion.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Datos:RutaCsv"] = _csv
-            }));
+                ["Datos:RutaCsv"] = _csv,
+                ["Cors:AllowedOrigins:0"] = "http://permitido.test"
+            });
+        });
 
         builder.ConfigureServices(servicios =>
         {
