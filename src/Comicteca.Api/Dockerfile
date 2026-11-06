@@ -2,6 +2,8 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY Directory.Build.props ./
+COPY Directory.Packages.props ./
+COPY .editorconfig ./
 COPY src/Comicteca.Domain/Comicteca.Domain.csproj src/Comicteca.Domain/
 COPY src/Comicteca.Application/Comicteca.Application.csproj src/Comicteca.Application/
 COPY src/Comicteca.Infrastructure/Comicteca.Infrastructure.csproj src/Comicteca.Infrastructure/
