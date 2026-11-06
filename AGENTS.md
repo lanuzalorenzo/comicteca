@@ -119,7 +119,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Los mismos pasos corren en `.github/workflows/ci.yml`. Además, el trabajo «Interfaz en navegador (375 px)» arranca la API y la web y ejecuta `tests/e2e` con Chromium; el procedimiento completo está en `docs/pruebas.md`.
+Los mismos pasos corren en `.github/workflows/ci.yml`. El CI añade la comprobación de enlaces de la documentación con la acción `check-links` de `lanuzalorenzo/core`, y el trabajo «Interfaz en navegador (375 px)» arranca la API y la web y ejecuta `tests/e2e` con Chromium; el procedimiento completo está en `docs/pruebas.md`.
 
 Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotnet run --project src/Comicteca.Web` (puerto 5077). La misma pila en contenedores: `docker compose up -d --build`, con la base en el volumen `comicteca_datos`. La web lee la URL de la API de `wwwroot/appsettings.json`.
 
@@ -145,14 +145,15 @@ Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `da
 
 ## Integración continua
 
-El repositorio es privado, pero se comporta como público. `.github/workflows/ci.yml` ejecuta cuatro trabajos en cada push y en cada PR:
+El repositorio es privado, pero se comporta como público. `.github/workflows/ci.yml` ejecuta cinco trabajos en cada push y en cada PR:
 
-- **Compilación y pruebas:** `dotnet build -warnaserror` con analizadores, verificación de formato y `dotnet test`.
+- **Compilación y pruebas:** la acción `dotnet` de `lanuzalorenzo/core` (`@v1.1`) restaura, compila en Release con los avisos como errores, verifica el formato y ejecuta `dotnet test`. Publica el `.trx`.
+- **Documentación:** la acción `check-links` de `lanuzalorenzo/core` (`@v1.1`) valida los enlaces relativos y las anclas.
 - **Interfaz:** Chromium a 375 px contra la API y la web arrancadas con una base temporal.
 - **Secretos:** Gitleaks sobre el historial completo.
 - **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas en NuGet o altas y críticas en npm.
 
-Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cuatro checks en verde; las major quedan para revisión.
+Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión.
 
 La protección de `main` no está activa: GitHub exige un plan de pago para proteger ramas de repositorios privados. Al abrir el repositorio se activa con los checks obligatorios, rama actualizada y fusión por squash. Mientras tanto, el hook local de Gitleaks sigue siendo obligatorio en cada clon.
 

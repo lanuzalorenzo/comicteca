@@ -22,33 +22,23 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v7
 
-      - name: Configurar .NET 10 SDK
-        uses: actions/setup-dotnet@v6
+      - name: Compilar, verificar el formato y probar
+        uses: lanuzalorenzo/core/actions/dotnet@v1.1
         with:
-          dotnet-version: '10.0.x'
+          solution: Comicteca.slnx
 
-      - name: Restaurar dependencias
-        run: dotnet restore Comicteca.slnx
+  links:
+    name: Enlaces de la documentación
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v7
 
-      - name: Compilar en Release con analizadores
-        run: dotnet build Comicteca.slnx -c Release --no-restore -warnaserror
-
-      - name: Verificar formato
-        run: dotnet format Comicteca.slnx --verify-no-changes --no-restore
-
-      - name: Ejecutar pruebas
-        run: >
-          dotnet test Comicteca.slnx
-          -c Release --no-build --no-restore
-          --logger "trx;LogFileName=test-results.trx"
-
-      - name: Publicar resultados de pruebas
-        if: always()
-        uses: actions/upload-artifact@v7
+      - name: Comprobar enlaces y anclas
+        uses: lanuzalorenzo/core/actions/check-links@v1.1
         with:
-          name: test-results
-          path: tests/**/TestResults/*.trx
-          if-no-files-found: ignore
+          root: .
+          skip: src/Comicteca.Web/wwwroot,src/Comicteca.Web/obj
 
   secret-scanning:
     name: Detección de secretos (historial completo)
