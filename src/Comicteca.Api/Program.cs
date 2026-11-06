@@ -2,6 +2,9 @@ using Comicteca.Api;
 using Comicteca.Application;
 using Comicteca.Infrastructure;
 using Comicteca.Infrastructure.SqlServer;
+using LL.Hosting;
+using LL.Security;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,11 +26,18 @@ builder.Services.AddDbContext<ComictecaDbContext>(opciones =>
 builder.Services.AddScoped<ISerieReader, EfSerieReader>();
 builder.Services.AddScoped<ISerieWriter, EfSerieWriter>();
 
-var origenes = builder.Configuration.GetSection("Cors:Origenes").Get<string[]>() ?? [];
-builder.Services.AddCors(opciones => opciones.AddDefaultPolicy(politica =>
-    politica.WithOrigins(origenes).AllowAnyHeader().AllowAnyMethod()));
-
 builder.Services.AddOpenApi();
+builder.Services.AddApiProblemDetails();
+builder.Services.AddApiHealthChecks();
+builder.Services.AddDenyByDefaultCors(builder.Configuration);
+builder.Services.AddRemoteIpRateLimiting(opciones =>
+{
+    var cupo = builder.Configuration.GetValue<int?>("Limites:PermitLimit");
+    if (cupo is > 0)
+    {
+        opciones.PermitLimit = cupo.Value;
+    }
+});
 
 var app = builder.Build();
 
@@ -36,9 +46,14 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors();
+// El orden importa: las cabeceras se escriben cuando empieza la respuesta y el
+// manejador de excepciones va antes que el resto del pipeline.
+app.UseSecurityHeaders();
+app.UseApiProblemDetails();
+app.UseCors("ApiCors");
+app.UseRateLimiter();
 
-app.MapGet("/health", () => Results.Ok(new { estado = "ok" }));
+app.MapApiHealthChecks().DisableRateLimiting();
 
 app.MapGet("/api/series", async (ISerieReader lector, CancellationToken cancellationToken) =>
     Results.Ok(await lector.ListarAsync(cancellationToken)));

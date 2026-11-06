@@ -1,6 +1,8 @@
+# syntax=docker/dockerfile:1
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+COPY NuGet.config ./
 COPY Directory.Build.props ./
 COPY Directory.Packages.props ./
 COPY .editorconfig ./
@@ -9,7 +11,11 @@ COPY src/Comicteca.Application/Comicteca.Application.csproj src/Comicteca.Applic
 COPY src/Comicteca.Infrastructure/Comicteca.Infrastructure.csproj src/Comicteca.Infrastructure/
 COPY src/Comicteca.Infrastructure.SqlServer/Comicteca.Infrastructure.SqlServer.csproj src/Comicteca.Infrastructure.SqlServer/
 COPY src/Comicteca.Api/Comicteca.Api.csproj src/Comicteca.Api/
-RUN dotnet restore src/Comicteca.Api/Comicteca.Api.csproj
+# GitHub Packages exige token incluso para leer paquetes públicos: entra como
+# secreto de BuildKit y no queda en ninguna capa de la imagen.
+RUN --mount=type=secret,id=github_token \
+    GITHUB_TOKEN="$(cat /run/secrets/github_token)" \
+    dotnet restore src/Comicteca.Api/Comicteca.Api.csproj
 
 COPY src/ src/
 COPY data/ data/
