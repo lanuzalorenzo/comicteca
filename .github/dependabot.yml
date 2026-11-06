@@ -5,7 +5,7 @@ registries:
     type: nuget-feed
     url: https://nuget.pkg.github.com/lanuzalorenzo/index.json
     username: lanuzalorenzo
-    password: ${{secrets.GITHUB_TOKEN}}
+    password: ${{secrets.LL_PACKAGES_TOKEN}}
 
 updates:
   - package-ecosystem: "nuget"
