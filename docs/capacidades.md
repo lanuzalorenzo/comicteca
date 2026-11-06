@@ -30,8 +30,8 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Se adapta al escritorio | `app.css` | Medición en Chromium a 1440 px: tres columnas sobre 1184 px de rejilla y sin desbordamiento | Parcial: sin prueba automática |
 | Solo el navegador queda limitado por CORS | `Api/appsettings.json` | Prueba manual con y sin origen permitido | Parcial: sin prueba automática |
 | No hay secretos en el código | `.gitleaks.toml` | `gitleaks detect` | Validado: sin hallazgos |
-| CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `dotnet` de `lanuzalorenzo/core` (`@v1.1`) | Parcial: pendiente el primer run del workflow con la acción compartida; el último run verde, del 3 de noviembre de 2026, usó los pasos propios |
-| CI: enlaces de la documentación | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `check-links` de `lanuzalorenzo/core` (`@v1.1`) | Pendiente: sin run |
+| CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `dotnet` de `lanuzalorenzo/core` (`@v1.1`) | Validado: run 42191483040 en verde (6 de noviembre de 2026) |
+| CI: enlaces de la documentación | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `check-links` de `lanuzalorenzo/core` (`@v1.1`) | Validado: run 42191483040 en verde (6 de noviembre de 2026) |
 | CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run del 3 de noviembre de 2026 en verde |
 | CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: NuGet, run del 3 de noviembre de 2026; npm, run 41862372649, sin vulnerabilidades |
 | CI: interfaz en navegador (375 px) | `.github/workflows/ci.yml`, `tests/e2e` | Job «Interfaz en navegador (375 px)» | Validado: run 42016523241 en verde (5 de noviembre de 2026) |
