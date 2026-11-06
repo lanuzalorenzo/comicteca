@@ -7,7 +7,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 **Se cierra cuando** la colección se carga desde el CSV y puedo buscar en el móvil.
 
 - El conjunto de demostración cargado desde el CSV, en local.
-- 5 pruebas en verde en el cierre y compilación sin avisos; hoy son 40 pruebas .NET y 14 comprobaciones de interfaz.
+- 5 pruebas en verde en el cierre y compilación sin avisos; hoy son 41 pruebas .NET y 14 comprobaciones de interfaz.
 - Sin desplegar y sin que los datos salgan de este repositorio.
 
 ## Fase 2 — Tener una dirección propia (Diseño; despliegue Pendiente)
@@ -16,7 +16,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 
 - La pantalla en Static Web Apps, en su plan gratuito.
 - La API en un contenedor sobre Container Apps y la base en Azure SQL, en la oferta gratuita, con auto-pausado al agotar la cuota.
-- El ensayo en local con Docker está hecho: el mismo código y los mismos estáticos, con los datos en un volumen y sin coste. Tras adoptar los controles compartidos queda pendiente repetirlo con `GITHUB_TOKEN` para el secreto de BuildKit.
+- El ensayo en local con Docker está hecho: el mismo código y los mismos estáticos, con los datos en un volumen y sin coste. Tras adoptar los controles compartidos se repitió el 6 de noviembre de 2026 con un token con `read:packages`: API y web en healthy, `/health` sano, web 200 y 20 series.
 - Agrupación de conexiones desactivada, para que la base pueda auto-pausar en lugar de gastar la cuota en dos días.
 - Migraciones en lugar de crear la base de golpe: el conjunto de SQLite ya está y el de Azure SQL también, en su propio proyecto; al desplegar se aplican.
 - Entrada con Entra ID.

@@ -73,7 +73,7 @@ El repositorio es privado hoy y puede abrirse más adelante. Todo lo que se escr
 
 | Pieza | ¿Publicable? | Condición |
 |---|---|---|
-| Código, pruebas y CI | Sí | Sin credenciales, rutas personales ni nombres de usuario |
+| Código, pruebas y CI | Sí | Sin credenciales ni rutas personales; el handle de GitHub del feed es público y necesario |
 | `README.md`, `docs/`, `bitacora/` | Sí | Sin datos reales ni enlaces a repos privados |
 | `data/coleccion.csv` | Sí | Es el conjunto inventado de demostración; cargar la colección real lo vuelve no publicable |
 | `AGENTS.md` y `.opencode/` | Sí | Son herramientas del repositorio, no documentación |
@@ -128,7 +128,7 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 ## Estados
 
-`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); CORS, cabeceras, límite y salud desde los paquetes compartidos **Validado** en local y CI (run 42237288900, 6 de noviembre de 2026), con ProblemDetails registrado y sin prueba de excepción; ensayo en Docker **Validado** el 4 de noviembre y **Pendiente** de repetir con el secreto del feed; despliegue **Pendiente**; novedades **Diseño**.
+`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); CORS, cabeceras, límite y salud desde los paquetes compartidos **Validado** en local y CI (run 42237288900, 6 de noviembre de 2026); ProblemDetails ante una excepción **Validado** en local (6 de noviembre de 2026), pendiente de CI; ensayo en Docker **Validado** el 6 de noviembre de 2026 con el token de `gh` y `read:packages`: API sana, web 200 y 20 series; despliegue **Pendiente**; novedades **Diseño**.
 
 ## Despliegue
 
@@ -156,7 +156,7 @@ El repositorio es privado, pero se comporta como público. `.github/workflows/ci
 - **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) escanea el historial completo.
 - **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas en NuGet o altas y críticas en npm. El trabajo que restaura declara `packages: read`.
 
-Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión. Los paquetes `LL.*` se ignoran porque GitHub Packages exige un token propio: su versión se sube a mano y pasa por el mismo CI.
+Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión. El registro `github-packages` de `dependabot.yml` está configurado para dar acceso al feed de GitHub Packages y proponer también actualizaciones de `LL.*`; falta confirmar en la primera ejecución que el token lee el feed.
 
 La protección de `main` no está activa: GitHub exige un plan de pago para proteger ramas de repositorios privados. Al abrir el repositorio se activa con los checks obligatorios, rama actualizada y fusión por squash. Mientras tanto, el hook local de Gitleaks sigue siendo obligatorio en cada clon.
 

@@ -29,7 +29,7 @@ export GITHUB_TOKEN="$(gh auth token)"
 docker compose up -d --build
 ```
 
-La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con la base en el volumen `comicteca_datos`: `docker compose down` no la borra. Para empezar de cero, `docker compose down -v`. El token lee los paquetes `LL.*` del feed de GitHub Packages y se pasa al `Dockerfile` como secreto de BuildKit.
+La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con la base en el volumen `comicteca_datos`: `docker compose down` no la borra. Para empezar de cero, `docker compose down -v`. El token debe tener `read:packages` para leer los paquetes `LL.*` del feed de GitHub Packages y se pasa al `Dockerfile` como secreto de BuildKit.
 
 ## Cómo está organizado
 

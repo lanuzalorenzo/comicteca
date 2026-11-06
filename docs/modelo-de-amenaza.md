@@ -28,7 +28,7 @@ La web es un cliente Blazor WebAssembly: no guarda credenciales ni firma peticio
 | Manipulación | Añadir o borrar series y tomos sin permiso | La misma autenticación; consultas parametrizadas por EF Core | Pendiente la primera; Parcial la segunda |
 | Repudio | Borrar una serie y no poder decir quién ni cuándo | Registro de altas y bajas con fecha y origen | Diseño |
 | Divulgación | Leer la colección desde cualquier cliente que tenga la dirección | Autenticación y HTTPS en el despliegue | Pendiente |
-| Denegación | Ráfagas de peticiones o cuerpos enormes | Límite por IP y tamaño máximo de cuerpo | Pendiente |
+| Denegación | Ráfagas de peticiones o cuerpos enormes | Límite por IP y tamaño máximo de cuerpo | Parcial: 429 validado, falta el 413 |
 | Elevación | El usuario de la aplicación puede crear tablas en la base | Usuario sin DDL; las migraciones con otro usuario | Diseño |
 
 ## 3. OWASP API Security Top 10 (2023)
@@ -83,7 +83,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 - **La auditoría será un registro de aplicación**, no una prueba inmutable ni firmada.
 - **SQLite en local no tiene copia automática.** En Azure la copia la pone la plataforma y hay que comprobarla, no darla por hecha.
 - **El umbral del límite no está calibrado** y no hay pruebas de carga.
-- **La cobertura no se mide:** hay 40 pruebas .NET y 14 comprobaciones de interfaz, sin umbral.
+- **La cobertura no se mide:** hay 41 pruebas .NET y 14 comprobaciones de interfaz, sin umbral.
 - **El CORS solo limita navegadores.** No autentica ni protege de otros clientes.
 
 ## 7. Cómo se mantiene

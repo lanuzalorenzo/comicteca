@@ -7,7 +7,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Nivel | Dónde | Qué comprueba | Cómo se lanza |
 |---|---|---|---|
 | Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
-| API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 24 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras y 429 | `dotnet test` |
+| API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 25 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras, 429 y excepción no controlada con ProblemDetails | `dotnet test` |
 | Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
 | Contenedores | `compose.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base | Manual, con Docker |
@@ -33,7 +33,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **40 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **41 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
@@ -89,6 +89,10 @@ curl http://localhost:5094/health
 
 La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`. Compose añade `Cors__AllowedOrigins__0` con el origen de la web; sin esa variable, la API en Production deniega CORS por defecto.
 
+El token de `gh auth token` solo vale si la sesión tiene el permiso `read:packages`. Si el restore falla con 403, añádelo con `gh auth refresh -s read:packages` o usa un token que ya lo tenga; el token se pasa como secreto de BuildKit y no queda en la imagen.
+
+Resultado observado el 6 de noviembre de 2026 con ese permiso: `api` y `web` en `healthy`, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series.
+
 Para comprobar que la base sobrevive:
 
 ```bash
@@ -125,7 +129,7 @@ En escritorio, a 1440 × 900:
 
 ## 6. Límites
 
-- No hay umbral de cobertura: hay 40 pruebas, no una métrica.
+- No hay umbral de cobertura: hay 41 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
 - La API no tiene autenticación; la escritura solo es aceptable en local hasta el despliegue con Entra ID.

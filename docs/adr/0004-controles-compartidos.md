@@ -1,7 +1,7 @@
 # 0004 — Consumir los controles compartidos, no extraer paquetes de Comicteca
 
 **Fecha:** 6 de noviembre de 2026
-**Estado:** Aceptada (consumo implementado el 6 de noviembre de 2026; validado en local y CI, con Compose pendiente de repetir con el feed)
+**Estado:** Aceptada (consumo implementado y validado en local y CI el 6 de noviembre de 2026; Compose repetido en local el mismo día)
 
 ## De qué iba
 
@@ -18,8 +18,8 @@ La primera versión de los paquetes ya está publicada (`0.1.0`). Este documento
 - **Adopta `LL.Hosting`** para ProblemDetails y el endpoint de salud anónimo. No llama a `UseApiTransportSecurity`: la redirección a HTTPS y HSTS quedan fuera.
 - **Adapta la configuración:** `Cors:Origenes` se pasa como sección al paquete o se renombra a `Cors:AllowedOrigins`, y `UseCors` usa la política `ApiCors`.
 - **Mantiene el resto en casa:** `ConfiguracionDatos`, `ProblemaDeValidacion`, el `DbContext`, los lectores y escritores de EF y `CsvSeeder` son de esta aplicación, no de la plataforma.
-- **Fija la versión exacta** del paquete. No usa rangos flotantes: el resto del proyecto fija versiones exactas y una actualización debe pasar por el mismo CI. La subida es manual y queda pendiente una entrada `registries` de Dependabot con un token que pueda leer el feed.
-- **Autentica el feed sin secretos versionados.** El `nuget.config` lee las credenciales del entorno. En el CI, el workflow declara `packages: read` para todos los trabajos que restauran (`build-and-test`, `sca` y `web-e2e`); el `Dockerfile` copia el `nuget.config` antes del `restore` y recibe las credenciales con un secreto de BuildKit, sin dejarlas en la imagen ni en el historial. Dependabot necesita una entrada `registries` para poder subir la versión. Si el `GITHUB_TOKEN` del repositorio no puede leer el feed, se usa un PAT guardado como secreto; la decisión se toma al probarlo. Ninguna credencial se escribe en el repositorio.
+- **Fija la versión exacta** del paquete. No usa rangos flotantes: el resto del proyecto fija versiones exactas y una actualización debe pasar por el mismo CI. La subida es manual salvo cuando Dependabot pueda proponerla: el registro `github-packages` está declarado y falta confirmar que su token lee el feed.
+- **Autentica el feed sin secretos versionados.** El `nuget.config` lee las credenciales del entorno. En el CI, el workflow declara `packages: read` para todos los trabajos que restauran (`build-and-test`, `sca` y `web-e2e`); el `Dockerfile` copia el `nuget.config` antes del `restore` y recibe las credenciales con un secreto de BuildKit, sin dejarlas en la imagen ni en el historial. Dependabot usa el registro `github-packages`; si su token no puede leer el feed, se usa un PAT guardado como secreto. Ninguna credencial se escribe en el repositorio.
 
 El orden de adopción fue: CORS y cabeceras, límite por IP, ProblemDetails y salud. Cada paso entró con su prueba y la validación local quedó en verde.
 
@@ -51,10 +51,12 @@ El consumo quedó implementado el 6 de noviembre de 2026. En local:
 2. Una prueba comprueba que un origen permitido pasa y uno desconocido no recibe `Access-Control-Allow-Origin`.
 3. Una prueba comprueba las cabeceras de seguridad en una respuesta normal y en un error de validación.
 4. Una prueba comprueba el 429 al superar el límite de 120 peticiones por minuto.
-5. `/health` sigue respondiendo sin autenticación con el endpoint del paquete. `docker compose up` queda pendiente de ejecutar con `GITHUB_TOKEN` para el secreto de BuildKit.
-6. La prueba de interfaz a 375 px y la auditoría de dependencias pasan en el run 42237288900.
+5. Una prueba provoca una excepción no controlada y comprueba el 500 con `application/problem+json`.
+6. `/health` sigue respondiendo sin autenticación con el endpoint del paquete.
+7. `docker compose up -d --build` con un token con `read:packages` arranca `api` y `web` en healthy, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series.
+8. La prueba de interfaz a 375 px y la auditoría de dependencias pasan en el run 42237288900.
 
-El estado es **Validado en local y CI** para los puntos 1 a 6 y **Pendiente** para Compose con el feed. Las pruebas del paquete son suyas: Comicteca no las sustituye con las de su API.
+El estado es **Validado en local y CI** para los puntos 1 a 4, 6 y 8; el punto 5 y Compose quedan **Validado en local** hasta que el CI recoja la prueba nueva. Las pruebas del paquete son suyas: Comicteca no las sustituye con las de su API.
 
 ## Qué no cambia
 
