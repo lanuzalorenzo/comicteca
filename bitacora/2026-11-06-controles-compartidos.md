@@ -12,9 +12,12 @@ Entrada ligada al [ADR 0004](../docs/adr/0004-controles-compartidos.md) y a la t
 - `/health` sigue respondiendo sin autenticación, ahora con el endpoint del paquete.
 - `dotnet build` en Release no da avisos, `dotnet test` suma 40 pruebas correctas y `dotnet format` no propone cambios.
 
+## CI
+
+El run 42237288900 pasó los cinco trabajos con `packages: read`: compilación y 40 pruebas, enlaces, Gitleaks, auditoría de dependencias e interfaz a 375 px.
+
 ## Qué no he probado
 
-- El CI con `packages: read` no se ha ejecutado todavía; la última ejecución en verde es anterior a estos paquetes.
 - `docker compose up` no se ha repetido con el secreto de BuildKit; el ensayo anterior sigue siendo el del 4 de noviembre.
 - Dependabot no puede leer el feed `LL.*`: la versión se sube a mano hasta que exista una entrada `registries` con un token propio.
 - El umbral de 120 peticiones por minuto no está calibrado con una prueba de carga.

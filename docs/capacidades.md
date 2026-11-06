@@ -29,16 +29,16 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Busca por título y editorial | `Home.razor` | Prueba manual en el navegador | Parcial: sin prueba automática |
 | Se ve bien en el móvil | `app.css` | Prueba de interfaz en Chromium a 375 px | Parcial: sin dispositivos reales |
 | Se adapta al escritorio | `app.css` | Medición en Chromium a 1440 px: tres columnas sobre 1184 px de rejilla y sin desbordamiento | Parcial: sin prueba automática |
-| CORS con denegación por defecto | `Program.cs`, `LL.Security` | 2 pruebas: un origen permitido recibe la cabecera y uno desconocido no | Validado en local |
-| Cabeceras de seguridad en respuestas y errores | `Program.cs`, `LL.Security` | 2 pruebas: respuesta normal y error de validación con `nosniff`, `DENY` y `no-referrer` | Validado en local |
-| Límite de 120 peticiones por minuto | `Program.cs`, `LL.Security` | 1 prueba: 120 respuestas correctas y la 121 con 429 | Validado en local |
+| CORS con denegación por defecto | `Program.cs`, `LL.Security` | 2 pruebas: un origen permitido recibe la cabecera y uno desconocido no | Validado en local y CI (run 42237288900) |
+| Cabeceras de seguridad en respuestas y errores | `Program.cs`, `LL.Security` | 2 pruebas: respuesta normal y error de validación con `nosniff`, `DENY` y `no-referrer` | Validado en local y CI (run 42237288900) |
+| Límite de 120 peticiones por minuto | `Program.cs`, `LL.Security` | 1 prueba: 120 respuestas correctas y la 121 con 429 | Validado en local y CI (run 42237288900) |
 | Salud anónima y ProblemDetails registrado | `Program.cs`, `LL.Hosting` | `/health` responde sin autenticación; ProblemDetails está registrado, pero no hay una prueba que provoque una excepción no controlada | Parcial: falta la prueba de excepción |
 | No hay secretos en el código | `.gitleaks.toml` | `gitleaks detect` | Validado: sin hallazgos |
-| CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `dotnet` de `lanuzalorenzo/core` (`@v1.1`) | Validado con `@v1.1`: run 42191483040 en verde (6 de noviembre de 2026); el workflow pasa a `@v1.3` y queda pendiente de ejecución |
-| CI: enlaces de la documentación | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `check-links` de `lanuzalorenzo/core` (`@v1.1`) | Validado con `@v1.1`: run 42191483040 en verde (6 de noviembre de 2026); el workflow pasa a `@v1.3` y queda pendiente de ejecución |
-| CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado con la instalación manual: run del 3 de noviembre de 2026 en verde; el workflow pasa a la acción de `core` y queda pendiente de ejecución |
-| CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado antes de añadir `LL.*`: NuGet, run del 3 de noviembre de 2026; npm, run 41862372649, sin vulnerabilidades. Pendiente de repetir con los paquetes compartidos |
-| CI: interfaz en navegador (375 px) | `.github/workflows/ci.yml`, `tests/e2e` | Job «Interfaz en navegador (375 px)» | Validado antes de los controles compartidos: run 42016523241 en verde (5 de noviembre de 2026). Pendiente de repetir |
+| CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `dotnet` de `lanuzalorenzo/core` (`@v1.3`) | Validado: run 42237288900 en verde (6 de noviembre de 2026), con `packages: read` y los paquetes `LL.*` |
+| CI: enlaces de la documentación | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `check-links` de `lanuzalorenzo/core` (`@v1.3`) | Validado: run 42237288900 en verde (6 de noviembre de 2026) |
+| CI: Gitleaks sobre el historial | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run 42237288900 en verde (6 de noviembre de 2026), con la acción de `core@v1.3` |
+| CI: auditoría de dependencias | `.github/workflows/ci.yml` | Ejecución en GitHub Actions | Validado: run 42237288900 en verde (6 de noviembre de 2026), con los paquetes `LL.*`; npm, run 41862372649 sin vulnerabilidades |
+| CI: interfaz en navegador (375 px) | `.github/workflows/ci.yml`, `tests/e2e` | Job «Interfaz en navegador (375 px)» | Validado: run 42237288900 en verde (6 de noviembre de 2026), con los controles compartidos |
 | Icono e instalación como aplicación | `manifest.json`, `index.html`, `icono.svg` | Icono fuente y manifiesto servido como `application/json`; iconos de 192 y 512 con 200 | Parcial: instalación sin probar en Chrome ni Android |
 | Despliegue en Azure | — | — | Pendiente: API en contenedor, Functions para el aviso y Azure SQL (ADR 0003) |
 | Ensayo del despliegue en local con contenedores | `compose.yaml`, Dockerfiles | `docker compose up`: lista en 5077, `/health` en 5094, prueba a 375 px en contenedor y base conservada tras `down` | Validado en local el 4 de noviembre; pendiente de repetir con el secreto del feed |

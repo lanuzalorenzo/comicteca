@@ -1,7 +1,7 @@
 # 0004 — Consumir los controles compartidos, no extraer paquetes de Comicteca
 
 **Fecha:** 6 de noviembre de 2026
-**Estado:** Aceptada (consumo implementado el 6 de noviembre de 2026; validado en local, con el CI y Compose pendientes de ejecutar con el feed)
+**Estado:** Aceptada (consumo implementado el 6 de noviembre de 2026; validado en local y CI, con Compose pendiente de repetir con el feed)
 
 ## De qué iba
 
@@ -47,14 +47,14 @@ El orden de adopción fue: CORS y cabeceras, límite por IP, ProblemDetails y sa
 
 El consumo quedó implementado el 6 de noviembre de 2026. En local:
 
-1. `dotnet restore` funciona con la versión `0.1.0` desde el feed y sin secretos versionados. El CI declara `packages: read`; su ejecución con el feed sigue pendiente.
+1. `dotnet restore` funciona con la versión `0.1.0` desde el feed y sin secretos versionados. El CI lo ejecuta con `packages: read` en el run 42237288900.
 2. Una prueba comprueba que un origen permitido pasa y uno desconocido no recibe `Access-Control-Allow-Origin`.
 3. Una prueba comprueba las cabeceras de seguridad en una respuesta normal y en un error de validación.
 4. Una prueba comprueba el 429 al superar el límite de 120 peticiones por minuto.
 5. `/health` sigue respondiendo sin autenticación con el endpoint del paquete. `docker compose up` queda pendiente de ejecutar con `GITHUB_TOKEN` para el secreto de BuildKit.
-6. La prueba de interfaz a 375 px y la auditoría de dependencias siguen sin ejecutarse tras el cambio; lo harán en el CI.
+6. La prueba de interfaz a 375 px y la auditoría de dependencias pasan en el run 42237288900.
 
-El estado es **Validado en local** para los puntos 1 a 5 y **Pendiente** para el CI y Compose con el feed. Las pruebas del paquete son suyas: Comicteca no las sustituye con las de su API.
+El estado es **Validado en local y CI** para los puntos 1 a 6 y **Pendiente** para Compose con el feed. Las pruebas del paquete son suyas: Comicteca no las sustituye con las de su API.
 
 ## Qué no cambia
 
