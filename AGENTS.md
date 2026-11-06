@@ -128,7 +128,7 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 ## Estados
 
-`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); CORS, cabeceras, límite y salud desde los paquetes compartidos **Validado** en local y CI (run 42237288900, 6 de noviembre de 2026); ProblemDetails ante una excepción **Validado** en local (6 de noviembre de 2026), pendiente de CI; ensayo en Docker **Validado** el 6 de noviembre de 2026 con el token de `gh` y `read:packages`: API sana, web 200 y 20 series; despliegue **Pendiente**; novedades **Diseño**.
+`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); CORS, cabeceras, límite y salud desde los paquetes compartidos **Validado** en local y CI (run 42237288900, 6 de noviembre de 2026); ProblemDetails ante una excepción **Validado** en local y CI (run 42248091775, 6 de noviembre de 2026); ensayo en Docker **Validado** el 6 de noviembre de 2026 con el token de `gh` y `read:packages`: API sana, web 200 y 20 series; despliegue **Pendiente**; novedades **Diseño**.
 
 ## Despliegue
 

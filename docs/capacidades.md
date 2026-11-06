@@ -33,7 +33,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Cabeceras de seguridad en respuestas y errores | `Program.cs`, `LL.Security` | 2 pruebas: respuesta normal y error de validación con `nosniff`, `DENY` y `no-referrer` | Validado en local y CI (run 42237288900) |
 | Límite de 120 peticiones por minuto | `Program.cs`, `LL.Security` | 1 prueba: 120 respuestas correctas y la 121 con 429 | Validado en local y CI (run 42237288900) |
 | Salud anónima | `Program.cs`, `LL.Hosting` | `/health` responde sin autenticación | Validado en local y CI (run 42237288900) |
-| ProblemDetails ante una excepción | `Program.cs`, `LL.Hosting` | 1 prueba provoca una excepción no controlada y comprueba el 500 con `application/problem+json` | Validado en local |
+| ProblemDetails ante una excepción | `Program.cs`, `LL.Hosting` | 1 prueba provoca una excepción no controlada y comprueba el 500 con `application/problem+json` | Validado en local y CI (run 42248091775) |
 | No hay secretos en el código | `.gitleaks.toml` | `gitleaks detect` | Validado: sin hallazgos |
 | CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `dotnet` de `lanuzalorenzo/core` (`@v1.3`) | Validado: run 42237288900 en verde (6 de noviembre de 2026), con `packages: read` y los paquetes `LL.*` |
 | CI: enlaces de la documentación | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `check-links` de `lanuzalorenzo/core` (`@v1.3`) | Validado: run 42237288900 en verde (6 de noviembre de 2026) |

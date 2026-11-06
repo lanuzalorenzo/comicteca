@@ -51,12 +51,12 @@ El consumo quedó implementado el 6 de noviembre de 2026. En local:
 2. Una prueba comprueba que un origen permitido pasa y uno desconocido no recibe `Access-Control-Allow-Origin`.
 3. Una prueba comprueba las cabeceras de seguridad en una respuesta normal y en un error de validación.
 4. Una prueba comprueba el 429 al superar el límite de 120 peticiones por minuto.
-5. Una prueba provoca una excepción no controlada y comprueba el 500 con `application/problem+json`.
+5. Una prueba provoca una excepción no controlada y comprueba el 500 con `application/problem+json` (run 42248091775).
 6. `/health` sigue respondiendo sin autenticación con el endpoint del paquete.
 7. `docker compose up -d --build` con un token con `read:packages` arranca `api` y `web` en healthy, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series.
 8. La prueba de interfaz a 375 px y la auditoría de dependencias pasan en el run 42237288900.
 
-El estado es **Validado en local y CI** para los puntos 1 a 4, 6 y 8; el punto 5 y Compose quedan **Validado en local** hasta que el CI recoja la prueba nueva. Las pruebas del paquete son suyas: Comicteca no las sustituye con las de su API.
+El estado es **Validado en local y CI** para los puntos 1 a 6 y 8; Compose queda **Validado en local** (6 de noviembre de 2026). Las pruebas del paquete son suyas: Comicteca no las sustituye con las de su API.
 
 ## Qué no cambia
 
