@@ -25,7 +25,7 @@ La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La w
 ### Con Docker
 
 ```bash
-export GITHUB_TOKEN="$(gh auth token)"
+export GH_PACKAGES_TOKEN="<pat-read:packages>"
 docker compose up -d --build
 ```
 
@@ -60,7 +60,7 @@ La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con
 ## Comprobación
 
 ```bash
-export GITHUB_TOKEN="$(gh auth token)"
+export GH_PACKAGES_TOKEN="<pat-read:packages>"
 dotnet restore Comicteca.slnx
 dotnet build Comicteca.slnx -c Release -warnaserror
 dotnet test Comicteca.slnx -c Release --no-build

@@ -77,7 +77,7 @@ El repositorio es privado hoy y puede abrirse más adelante. Todo lo que se escr
 | `README.md`, `docs/`, `bitacora/` | Sí | Sin datos reales ni enlaces a repos privados |
 | `data/coleccion.csv` | Sí | Es el conjunto inventado de demostración; cargar la colección real lo vuelve no publicable |
 | `AGENTS.md` y `.opencode/` | Sí | Son herramientas del repositorio, no documentación |
-| `NuGet.config` | Sí | Sin credenciales: lee `%GITHUB_TOKEN%` del entorno |
+| `NuGet.config` | Sí | Sin credenciales: lee `%GH_PACKAGES_TOKEN%` del entorno |
 | Base local, `appsettings.Local.json` | No | Ignorados por Git |
 
 **Aviso importante:** el CSV real estuvo en el historial desde el primer commit. El 3 de noviembre de 2026 se reescribió para sustituirlo por el conjunto inventado en todos los commits. Antes de abrir el repositorio hay que comprobar que no reaparece en ningún clon, fork ni objeto inalcanzable del remoto.
@@ -114,7 +114,7 @@ Un solo tema, oscuro. Valores en línea, sin depender de hojas externas:
 ## Verificación
 
 ```bash
-export GITHUB_TOKEN="$(gh auth token)"
+export GH_PACKAGES_TOKEN="<pat-de-solo-lectura>"
 dotnet restore Comicteca.slnx
 dotnet build Comicteca.slnx -c Release -warnaserror
 dotnet test Comicteca.slnx -c Release --no-build
@@ -124,7 +124,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 
 Los mismos pasos corren en `.github/workflows/ci.yml`, que declara `packages: read` para restaurar los paquetes `LL.*`. El CI añade la comprobación de enlaces de la documentación y el escaneo de secretos con las acciones de `lanuzalorenzo/core`, y el trabajo «Interfaz en navegador (375 px)» arranca la API y la web y ejecuta `tests/e2e` con Chromium; el procedimiento completo está en `docs/pruebas.md`.
 
-Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotnet run --project src/Comicteca.Web` (puerto 5077). La misma pila en contenedores: `export GITHUB_TOKEN="$(gh auth token)" && docker compose up -d --build`, con la base en el volumen `comicteca_datos`. El token viaja al `Dockerfile` como secreto de BuildKit para leer GitHub Packages. La web lee la URL de la API de `wwwroot/appsettings.json`.
+Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotnet run --project src/Comicteca.Web` (puerto 5077). La misma pila en contenedores: `export GH_PACKAGES_TOKEN="<pat-de-solo-lectura>" && docker compose up -d --build`, con la base en el volumen `comicteca_datos`. El token viaja al `Dockerfile` como secreto de BuildKit para leer GitHub Packages. La web lee la URL de la API de `wwwroot/appsettings.json`.
 
 ## Estados
 
