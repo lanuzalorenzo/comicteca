@@ -18,14 +18,14 @@ Las tres primeras están automatizadas: dominio y API en el trabajo de compilaci
 ## Requisitos
 
 - .NET 10 SDK.
-- Un `GITHUB_TOKEN` con permiso para leer GitHub Packages (`read:packages`), porque los paquetes `LL.*` viven en ese feed.
+- Un `GH_PACKAGES_TOKEN` con permiso para leer GitHub Packages (`read:packages`), porque los paquetes `LL.*` viven en ese feed. No uses `GITHUB_TOKEN`: `gh` y Git la leen como credencial de la sesión.
 - Docker con Compose, solo para el ensayo en contenedores.
 - Node 22, solo para la prueba de interfaz.
 
 ## 1. La suite automática
 
 ```bash
-export GITHUB_TOKEN="$(gh auth token)"
+export GH_PACKAGES_TOKEN="<pat-read:packages>"
 dotnet restore Comicteca.slnx
 dotnet build Comicteca.slnx -c Release -warnaserror
 dotnet test Comicteca.slnx -c Release --no-build
@@ -81,7 +81,7 @@ Si algo falla y la página llegó a abrirse, deja una captura en `tests/e2e/arti
 ## 4. Ensayo con contenedores
 
 ```bash
-export GITHUB_TOKEN="$(gh auth token)"
+export GH_PACKAGES_TOKEN="<pat-read:packages>"
 docker compose up -d --build
 docker compose ps                 # api y web en healthy
 curl http://localhost:5094/health

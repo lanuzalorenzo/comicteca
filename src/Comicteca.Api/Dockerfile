@@ -14,7 +14,7 @@ COPY src/Comicteca.Api/Comicteca.Api.csproj src/Comicteca.Api/
 # GitHub Packages exige token incluso para leer paquetes públicos: entra como
 # secreto de BuildKit y no queda en ninguna capa de la imagen.
 RUN --mount=type=secret,id=github_token \
-    GITHUB_TOKEN="$(cat /run/secrets/github_token)" \
+    GH_PACKAGES_TOKEN="$(cat /run/secrets/github_token)" \
     dotnet restore src/Comicteca.Api/Comicteca.Api.csproj
 
 COPY src/ src/
