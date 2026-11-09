@@ -17,6 +17,10 @@ Entrada ligada al [modelo de amenaza](../docs/modelo-de-amenaza.md), a la tabla 
 - `npm run test:cabeceras` contra la pila: 34 comprobaciones, sin violaciones de CSP, con el nonce del importmap comprobado y con la lista de 20 series a 375 px.
 - `npm test` contra los contenedores: alta, baja y validación siguen en verde.
 
+## CI
+
+El run 42612386081 pasó los cinco trabajos sobre el commit `8a41a65`: compilación y 55 pruebas, enlaces, Gitleaks, auditoría de dependencias e interfaz a 375 px. La prueba de cabeceras no corre en el CI porque el CI no levanta contenedores: se ejecuta en el ensayo local.
+
 ## Qué no he probado
 
 - El inicio de sesión con la CSP puesta: sin tenant no hay botón ni token. Que la CSP nombre a MSAL y deje el iframe propio no demuestra que la renovación en silencio funcione; eso cierra con el ensayo de B.1b-1.
