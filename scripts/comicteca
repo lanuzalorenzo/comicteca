@@ -2,7 +2,7 @@
 # Abre Comicteca en el navegador, arrancando los contenedores si están parados.
 set -euo pipefail
 
-repo="/home/tglla/Repositorios/comicteca"
+repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 url="http://localhost:5077/"
 
 if ! curl -sf -o /dev/null --max-time 2 "$url"; then

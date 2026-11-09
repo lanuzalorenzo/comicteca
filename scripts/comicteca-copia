@@ -5,7 +5,7 @@
 set -euo pipefail
 
 destino="${COMICTECA_COPIAS:-$HOME/copias/comicteca}"
-repo="/home/tglla/Repositorios/comicteca"
+repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 fecha="$(date +%F)"
 copia="$destino/comicteca-$fecha.db"
 temporal="$(mktemp -d)"
