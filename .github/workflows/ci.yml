@@ -131,7 +131,7 @@ jobs:
           export ConnectionStrings__Comicteca="Data Source=$RUNNER_TEMP/comicteca-e2e.db"
           export Datos__RutaCsv="$GITHUB_WORKSPACE/data/coleccion.csv"
           export Cors__AllowedOrigins__0="http://localhost:5077"
-          ASPNETCORE_URLS=http://localhost:5094 dotnet run --project src/Comicteca.Api -c Release --no-build --no-launch-profile > "$RUNNER_TEMP/api.log" 2>&1 &
+          ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5094 dotnet run --project src/Comicteca.Api -c Release --no-build --no-launch-profile > "$RUNNER_TEMP/api.log" 2>&1 &
           ASPNETCORE_URLS=http://localhost:5077 dotnet run --project src/Comicteca.Web -c Release --no-build --no-launch-profile > "$RUNNER_TEMP/web.log" 2>&1 &
           trap 'kill $(jobs -p) 2>/dev/null || true' EXIT
           for i in $(seq 1 60); do

@@ -10,7 +10,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Crear_serie_devuelve_created_y_aparece_en_el_listado()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         var respuesta = await cliente.PostAsJsonAsync(
             "/api/series",
@@ -25,7 +25,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Crear_serie_duplicada_devuelve_conflict()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         var peticion = new { titulo = "Serie Duplicada", editorial = "Editorial Z" };
 
         await cliente.PostAsJsonAsync("/api/series", peticion);
@@ -41,7 +41,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [InlineData("Serie Válida", "   ")]
     public async Task Crear_serie_incompleta_devuelve_bad_request(string titulo, string editorial)
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         var respuesta = await cliente.PostAsJsonAsync("/api/series", new { titulo, editorial });
 
@@ -51,7 +51,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Crear_serie_con_titulo_demasiado_largo_devuelve_bad_request()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         var respuesta = await cliente.PostAsJsonAsync(
             "/api/series",
@@ -63,7 +63,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Crear_serie_con_editorial_demasiado_larga_devuelve_bad_request()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         var respuesta = await cliente.PostAsJsonAsync(
             "/api/series",
@@ -75,7 +75,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Agregar_tomo_con_edicion_demasiado_larga_devuelve_bad_request()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         var id = await CrearAsync(cliente, "Serie Con Edicion Larga");
 
         var respuesta = await cliente.PostAsJsonAsync(
@@ -88,7 +88,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Borrar_serie_la_quita_del_listado()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         var id = await CrearAsync(cliente, "Serie Temporal");
 
         var respuesta = await cliente.DeleteAsync($"/api/series/{id}");
@@ -101,7 +101,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Borrar_serie_inexistente_devuelve_not_found()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         var respuesta = await cliente.DeleteAsync($"/api/series/{Guid.NewGuid()}");
 
@@ -111,7 +111,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Agregar_tomo_lo_incluye_en_la_serie()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         var id = await CrearAsync(cliente, "Serie Con Tomo");
 
         var respuesta = await cliente.PostAsJsonAsync(
@@ -127,7 +127,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Agregar_tomo_a_serie_inexistente_devuelve_not_found()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         var respuesta = await cliente.PostAsJsonAsync(
             $"/api/series/{Guid.NewGuid()}/tomos",
@@ -141,7 +141,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [InlineData(-1)]
     public async Task Agregar_tomo_con_numero_no_positivo_devuelve_bad_request(int numero)
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         var id = await CrearAsync(cliente, $"Serie Con Numero Invalido {numero}");
 
         var respuesta = await cliente.PostAsJsonAsync($"/api/series/{id}/tomos", new { numero });
@@ -152,7 +152,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Borrar_tomo_lo_quita_de_la_serie()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         var id = await CrearAsync(cliente, "Serie Para Borrar Tomo");
 
         var creado = await cliente.PostAsJsonAsync($"/api/series/{id}/tomos", new { numero = 1 });
@@ -169,7 +169,7 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
     [Fact]
     public async Task Borrar_tomo_inexistente_devuelve_not_found()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         var id = await CrearAsync(cliente, "Serie Sin Ese Tomo");
 
         var respuesta = await cliente.DeleteAsync($"/api/series/{id}/tomos/{Guid.NewGuid()}");

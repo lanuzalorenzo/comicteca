@@ -15,7 +15,7 @@ public sealed class ControlesCompartidosTests(ApiFactory factory) : IClassFixtur
     [Fact]
     public async Task El_origen_permitido_recibe_la_cabecera_cors()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         using var peticion = new HttpRequestMessage(HttpMethod.Get, "/api/series");
         peticion.Headers.Add("Origin", OrigenPermitido);
 
@@ -28,7 +28,7 @@ public sealed class ControlesCompartidosTests(ApiFactory factory) : IClassFixtur
     [Fact]
     public async Task El_origen_desconocido_no_recibe_la_cabecera_cors()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
         using var peticion = new HttpRequestMessage(HttpMethod.Get, "/api/series");
         peticion.Headers.Add("Origin", "http://desconocido.test");
 
@@ -41,7 +41,7 @@ public sealed class ControlesCompartidosTests(ApiFactory factory) : IClassFixtur
     [Fact]
     public async Task Las_cabeceras_de_seguridad_van_en_una_respuesta_normal()
     {
-        var respuesta = await factory.CreateClient().GetAsync("/api/series");
+        var respuesta = await factory.Cliente().GetAsync("/api/series");
 
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
         Assert.Equal("nosniff", respuesta.Headers.GetValues("X-Content-Type-Options").Single());
@@ -52,7 +52,7 @@ public sealed class ControlesCompartidosTests(ApiFactory factory) : IClassFixtur
     [Fact]
     public async Task Las_cabeceras_de_seguridad_van_en_un_error()
     {
-        var respuesta = await factory.CreateClient()
+        var respuesta = await factory.Cliente()
             .PostAsJsonAsync("/api/series", new { titulo = "", editorial = "" });
 
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
@@ -67,7 +67,7 @@ public sealed class ProblemDetailsTests
     public async Task Una_excepcion_no_controlada_devuelve_problem_details()
     {
         using var factory = new ApiFactoryConFallo();
-        var respuesta = await factory.CreateClient().GetAsync("/api/series");
+        var respuesta = await factory.Cliente().GetAsync("/api/series");
 
         Assert.Equal(HttpStatusCode.InternalServerError, respuesta.StatusCode);
         Assert.Equal("application/problem+json", respuesta.Content.Headers.ContentType?.MediaType);
@@ -105,7 +105,7 @@ public sealed class LimitePeticionesTests(ApiFactory factory) : IClassFixture<Ap
     [Fact]
     public async Task La_peticion_121_se_rechaza_con_429()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         for (var intento = 1; intento <= 120; intento++)
         {

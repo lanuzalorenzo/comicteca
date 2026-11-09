@@ -30,6 +30,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddApiProblemDetails();
 builder.Services.AddApiHealthChecks();
 builder.Services.AddDenyByDefaultCors(builder.Configuration);
+var autenticacion = builder.Services.AgregarAutenticacionDeUnaCuenta(
+    builder.Configuration,
+    builder.Environment);
 builder.Services.AddRemoteIpRateLimiting(opciones =>
 {
     var cupo = builder.Configuration.GetValue<int?>("Limites:PermitLimit");
@@ -53,7 +56,13 @@ app.UseApiProblemDetails();
 app.UseCors("ApiCors");
 app.UseRateLimiter();
 
-app.MapApiHealthChecks().DisableRateLimiting();
+if (autenticacion)
+{
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
+
+app.MapApiHealthChecks().DisableRateLimiting().AllowAnonymous();
 
 app.MapGet("/api/series", async (ISerieReader lector, CancellationToken cancellationToken) =>
     Results.Ok(await lector.ListarAsync(cancellationToken)));

@@ -33,7 +33,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **41 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El run 42248091775 (6 de noviembre de 2026) pasó los cinco trabajos: compilación y 41 pruebas, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables (informativo, no bloqueante). El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **55 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El run 42248091775 (6 de noviembre de 2026) pasó los cinco trabajos con las 41 pruebas de entonces: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables (informativo, no bloqueante). El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
@@ -87,7 +87,7 @@ docker compose ps                 # api y web en healthy
 curl http://localhost:5094/health
 ```
 
-La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`. Compose añade `Cors__AllowedOrigins__0` con el origen de la web; sin esa variable, la API en Production deniega CORS por defecto.
+La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`. Compose añade `Cors__AllowedOrigins__0` con el origen de la web y arranca la API en `Development`, donde la autenticación se apaga para el ensayo local. Esa excepción no vale fuera de Development: la imagen fija `Production` y allí la API no arranca sin `Autenticacion__Authority`, `Autenticacion__Audience` y `Autenticacion__CuentaPermitida`.
 
 El token de `gh auth token` solo vale si la sesión tiene el permiso `read:packages`. Si el restore falla con 403, añádelo con `gh auth refresh -s read:packages` o usa un token que ya lo tenga; el token se pasa como secreto de BuildKit y no queda en la imagen.
 
@@ -104,7 +104,7 @@ docker compose up -d
 docker compose down -v            # esto sí borra la base y el volumen
 ```
 
-La API del contenedor no pide autenticación y solo escucha en tu máquina; no la publiques fuera de loopback.
+La API del contenedor solo escucha en tu máquina y, en este ensayo, corre sin autenticación; no la publiques fuera de loopback ni cambies el entorno sin configurar Entra ID.
 
 ## 5. Checklist manual
 
@@ -129,10 +129,10 @@ En escritorio, a 1440 × 900:
 
 ## 6. Límites
 
-- No hay umbral de cobertura: hay 41 pruebas, no una métrica.
+- No hay umbral de cobertura: hay 55 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
-- La API no tiene autenticación; la escritura solo es aceptable en local hasta el despliegue con Entra ID.
+- La API exige token en Production. En Development se apaga para trabajar y la web local sigue sin sesión; el despliegue queda bloqueado hasta que exista ese inicio de sesión.
 
 ## Problemas típicos
 

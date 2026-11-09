@@ -9,7 +9,7 @@ public sealed class SeriesApiTests(ApiFactory factory) : IClassFixture<ApiFactor
     [Fact]
     public async Task Devuelve_las_series_agrupadas()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         var series = await cliente.GetFromJsonAsync<List<SerieDto>>("/api/series");
 
@@ -30,7 +30,7 @@ public sealed class SeriesApiTests(ApiFactory factory) : IClassFixture<ApiFactor
     [Fact]
     public async Task Health_responde_ok()
     {
-        var cliente = factory.CreateClient();
+        var cliente = factory.Cliente();
 
         var respuesta = await cliente.GetAsync("/health");
 
