@@ -8,6 +8,9 @@
 **/*.db-shm
 **/*.db-wal
 **/appsettings.Local.json
+# Solo el de la web: sus valores del tenant no entran en la imagen. El de la API
+# sí viaja, porque el compose arranca en Development y lo necesita.
+src/Comicteca.Web/wwwroot/appsettings.Development.json
 .env
 tests
 docs

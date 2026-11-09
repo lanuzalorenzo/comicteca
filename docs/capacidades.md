@@ -1,6 +1,6 @@
 # Qué puedo demostrar y qué no
 
-Esta página es la diferencia entre tener el carné de conducir y haber conducido. Todo lo que digo de la Comicteca está aquí con la prueba que lo sostiene, y lo que no he probado aparece como pendiente. La última comprobación es del 6 de noviembre de 2026, en local.
+Esta página es la diferencia entre tener el carné de conducir y haber conducido. Todo lo que digo de la Comicteca está aquí con la prueba que lo sostiene, y lo que no he probado aparece como pendiente. La última comprobación es del 9 de noviembre de 2026, en local.
 
 ## Cómo lo compruebo
 
@@ -34,6 +34,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Límite de 120 peticiones por minuto | `Program.cs`, `LL.Security` | 1 prueba: 120 respuestas correctas y la 121 con 429 | Validado en local y CI (run 42237288900) |
 | Salud anónima | `Program.cs`, `LL.Hosting` | `/health` responde sin token y sin datos de la colección | Validado en local |
 | Autenticación con Entra ID y una sola cuenta | `Autenticacion.cs`, `LL.Security` | 10 pruebas de contrato: 401 sin token en lectura y escritura, 200 con la cuenta permitida, 403 con otra cuenta en lectura y en escritura, 401 con otra clave, otro emisor, otra audiencia o token caducado, y `/health` anónimo con cuerpo `Healthy` | Validado en local el 9 de noviembre de 2026 con emisor de prueba; contra el tenant real, Parcial hasta el ensayo |
+| Sesión en la web con Entra ID | `Web/Autenticacion.cs`, MSAL | Prueba de interfaz a 375 px con la sesión apagada: la web arranca sin valores y el alta y la baja siguen en verde | Parcial: sin probar el botón, el token ni el arranque con `Requerida=true`; falta el registro real |
 | La API no arranca sin autenticación | `Autenticacion.cs` | 4 pruebas de arranque: en Production falla si se apaga `Requerida` y si falta cada uno de `Authority`, `Audience` y `CuentaPermitida` | Validado en local |
 | ProblemDetails ante una excepción | `Program.cs`, `LL.Hosting` | 1 prueba provoca una excepción no controlada y comprueba el 500 con `application/problem+json` | Validado en local y CI (run 42248091775) |
 | No hay secretos en el código | `.gitleaks.toml` | `gitleaks detect` | Validado: sin hallazgos |
@@ -55,7 +56,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 - La interfaz no la he probado con lector de pantalla ni en Safari.
 - El CORS no protege la API de otros clientes: solo limita a los navegadores.
 - La API exige un token de Entra ID de la cuenta permitida en Production. En Development se apaga sin comprobar la dirección de escucha —compose y CI la atan a loopback—; desactivarla en cualquier otro entorno impide arrancar. La validación se ha probado con un emisor de prueba: falta un token real del tenant, que se comprobará en el ensayo.
-- La web todavía no inicia sesión: en local habla con la API sin token (Development). Con la autenticación puesta en Production, la pantalla no podría leer hasta que exista ese inicio de sesión; el despliegue queda bloqueado por ello.
+- La web ya tiene el inicio de sesión montado —botón de entrada y salida y el token en cada llamada—, sin probar todavía. Los valores del registro de aplicación no están en el repositorio: la API los lee de `Autenticacion__Authority`, `Autenticacion__Audience` y `Autenticacion__CuentaPermitida`, y la web de `src/Comicteca.Web/wwwroot/appsettings.Development.json`, ignorado por Git porque WebAssembly no lee variables de entorno. En local, sin ellos, arranca sin sesión con `Requerida=false`. El registro y los valores están en [`entra-id.md`](entra-id.md); falta ejecutarlo y probar una llamada autenticada desde el navegador: el despliegue sigue bloqueado hasta entonces.
 - El consumo de los paquetes `LL.*` está validado en local y en CI. El ensayo con Docker necesita un token con `read:packages` para el secreto de BuildKit; con ese permiso se repitió el 6 de noviembre de 2026 y la pila arrancó sana.
 - El límite por IP no es una defensa completa: un ataque distribuido lo esquiva y el umbral no está calibrado con carga.
 - El detalle por endpoint, la amenaza que cubre cada control y lo que queda abierto están en [modelo-de-amenaza.md](modelo-de-amenaza.md).

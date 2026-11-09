@@ -9,11 +9,12 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
 | API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 25 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras, 429 y excepción no controlada con ProblemDetails | `dotnet test` |
 | Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
+| Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque sin `Authority`, `Audience`, `CuentaPermitida` o con `Requerida` apagada fuera de Development | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
 | Contenedores | `compose.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base | Manual, con Docker |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
 
-Las tres primeras están automatizadas: dominio y API en el trabajo de compilación y pruebas, e interfaz en su propio trabajo del CI. El ensayo con contenedores y la prueba manual no lo están.
+Las de dominio, API, autenticación y proveedor van en el trabajo de compilación y pruebas; la de interfaz, en su propio trabajo del CI. El ensayo con contenedores y la prueba manual no están automatizados.
 
 ## Requisitos
 
@@ -59,6 +60,8 @@ dotnet run --project src/Comicteca.Api
 ```
 
 Abre siempre la web por `http://localhost:5077`. El CORS de la API permite ese origen; `http://127.0.0.1:5077` no está en la lista y la lista no cargará.
+
+Para probar con una sesión de Entra ID, el registro de aplicación y los valores van en [`entra-id.md`](entra-id.md). Sin ellos la web arranca sin sesión y la API trabaja sin token en Development.
 
 ## 3. Prueba de interfaz
 
@@ -132,7 +135,7 @@ En escritorio, a 1440 × 900:
 - No hay umbral de cobertura: hay 55 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
-- La API exige token en Production. En Development se apaga para trabajar y la web local sigue sin sesión; el despliegue queda bloqueado hasta que exista ese inicio de sesión.
+- La API exige token en Production. En Development se apaga para trabajar y la web local trabaja sin sesión salvo que se le den los valores del registro; el despliegue queda bloqueado hasta que la sesión del navegador se pruebe contra el tenant real.
 
 ## Problemas típicos
 

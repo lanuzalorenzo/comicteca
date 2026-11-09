@@ -3,12 +3,30 @@
 @using System.Text.Json
 @using Comicteca.Web.Models
 @inject HttpClient Http
+@inject NavigationManager Navegacion
+@inject EstadoDeSesion EstadoSesion
 
 <PageTitle>Comicteca</PageTitle>
 
 <header class="cabecera">
     <h1>Comicteca</h1>
     <p class="resumen">@Series.Count series · @TotalTomos tomos</p>
+    @if (EstadoSesion.Disponible)
+    {
+        <AuthorizeView>
+            <Authorized>
+                <p class="sesion">
+                    <span>@context.User.Identity?.Name</span>
+                    <button type="button" class="boton boton-secundario" @onclick="CerrarSesion">Cerrar sesión</button>
+                </p>
+            </Authorized>
+            <NotAuthorized>
+                <p class="sesion">
+                    <button type="button" class="boton" @onclick="AbrirSesion">Iniciar sesión</button>
+                </p>
+            </NotAuthorized>
+        </AuthorizeView>
+    }
 </header>
 
 @if (Cargando)
@@ -502,4 +520,10 @@ else
         var etiqueta = tomo.Numero is null ? "Tomo único" : $"Tomo {tomo.Numero}";
         return string.IsNullOrWhiteSpace(tomo.Edicion) ? etiqueta : $"{etiqueta} · {tomo.Edicion}";
     }
+
+    private void AbrirSesion() =>
+        Navegacion.NavigateToLogin($"{Autenticacion.RutaSesion}/login");
+
+    private void CerrarSesion() =>
+        Navegacion.NavigateToLogout($"{Autenticacion.RutaSesion}/logout");
 }

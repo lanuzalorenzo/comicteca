@@ -51,6 +51,7 @@ La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con
 | [`docs/datos.md`](docs/datos.md) | De dónde salen los datos y qué puedo afirmar |
 | [`docs/capacidades.md`](docs/capacidades.md) | Qué está probado y qué no |
 | [`docs/pruebas.md`](docs/pruebas.md) | Cómo se prueba en local: suite, interfaz, contenedores y checklist manual |
+| [`docs/entra-id.md`](docs/entra-id.md) | Registro de aplicación en Entra ID y dónde se escriben sus valores |
 | [`docs/plan.md`](docs/plan.md) | Los pasos que faltan |
 
 ## Datos

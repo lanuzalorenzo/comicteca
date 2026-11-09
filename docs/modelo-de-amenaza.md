@@ -18,7 +18,7 @@ La API tiene seis rutas. Todas exigen un token de Entra ID de la cuenta permitid
 | `POST` | `/api/series/{id}/tomos` | Añade un tomo | Escritura |
 | `DELETE` | `/api/series/{id}/tomos/{tomoId}` | Quita un tomo | Escritura |
 
-La web es un cliente Blazor WebAssembly: no guarda credenciales ni firma peticiones. Todavía no inicia sesión: en Development llama a la API sin token y en Production la API la rechazaría, así que el despliegue espera a ese inicio de sesión.
+La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma peticiones; pide el token a Entra ID y lo pone en la cabecera. El inicio de sesión está montado pero sin probar contra un tenant real: mientras tanto, en Development trabaja sin token y en Production la API la rechazaría. El despliegue espera a que esa sesión se valide.
 
 ## 2. STRIDE
 
