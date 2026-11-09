@@ -83,13 +83,9 @@ El repositorio es privado hoy y puede abrirse más adelante. Todo lo que se escr
 
 **Aviso importante:** el CSV real estuvo en el historial desde el primer commit. El 3 de noviembre de 2026 se reescribió para sustituirlo por el conjunto inventado en todos los commits. Antes de abrir el repositorio hay que comprobar que no reaparece en ningún clon, fork ni objeto inalcanzable del remoto.
 
-Antes de cambiar la visibilidad:
+Antes de cambiar la visibilidad, sigue la guía pública [Pasar un repositorio de privado a público](https://github.com/lanuzalorenzo/core/blob/main/docs/publicar-un-repositorio.md). Aquí solo queda lo propio de este repositorio:
 
-1. Comprobar que el CSV y las cifras de `docs/datos.md` son los inventados, y que no queda ningún dato real en el historial.
-2. Buscar rutas absolutas, nombres de usuario y referencias a repos privados.
-3. Revisar la identidad de autor y committer de los commits: nombre y correo se publican con el historial.
-4. Pasar el revisor y el escaneo de secretos sobre el historial completo.
-5. Activar la protección de `main` con los checks del CI; en un repositorio público es gratuita.
+1. Comprobar que el CSV y las cifras de `docs/datos.md` son los inventados y que ni la documentación ni la bitácora citan la colección real. El aviso de arriba cubre el historial, clones, forks y objetos inalcanzables.
 
 La documentación publicada —README, `docs/` y bitácora— no menciona asistentes ni generación automática: el trabajo se firma como propio. `AGENTS.md` y `.opencode/` son herramientas y se publican como tales.
 
@@ -145,7 +141,7 @@ Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `da
 - Commit y push requieren autorización explícita del propietario, aunque el agente pueda hacerlos.
 - Un cambio de más de un archivo, o que toque reglas, CI, seguridad o publicación, pasa por el revisor antes de commitear.
 - Si un cambio contradice un ADR o una cifra de `capacidades.md`, se actualizan en el mismo lote. No se deja la documentación mintiendo.
-- No se reescribe el historial salvo para retirar datos personales antes de abrir el repositorio, y se documenta el motivo en el commit.
+- No se reescribe el historial: si aparece un dato sensible, se rota, se sanea el estado actual y se documenta la exposición. La reescritura del 3 de noviembre ya ocurrió y queda explicada en §Público y privado.
 
 ## Integración continua
 
