@@ -64,6 +64,14 @@ El estado es **Validado en local y CI** para los puntos 1 a 6 y 8; Compose queda
 
 B.1 introduce autenticación, así que la razón por la que este ADR descartaba la validación JWT deja de valer. Comicteca adopta `AddHardenedJwtBearer` de `LL.Security`: firma, emisor, audiencia y vigencia, más una política por defecto de una sola cuenta (`oid`). Montar el JWT en casa habría repetido lo que el paquete ya prueba. No cambia el resto del ADR: siguen fuera `UseApiTransportSecurity` (B.2) y la autorización por objeto, porque hay una sola cuenta.
 
+## Enmienda del 9 de noviembre de 2026 (segunda)
+
+**La CSP de la API sale del paquete.** `LL.Security` 0.2.0 añade `ContentSecurityPolicy`: compone la política por directivas, valida el nombre y los valores y escribe la cabecera en la misma pasada que el resto. La política sigue siendo de la aplicación —una API JSON y una web no admiten la misma—, pero la composición y su prueba viven una vez.
+
+La API adopta `ContentSecurityPolicy.DenyAll()` y mantiene su `Permissions-Policy` en las opciones del paquete; `CabecerasDeRespuesta.cs` desaparece. La web conserva la suya en `docker/cabeceras.conf`: no la sirve una aplicación .NET y su política es distinta (`frame-ancestors 'self'`, MSAL y el origen de la API).
+
+Con esto, la enmienda anterior queda matizada: el paquete no impone una CSP, pero sí la construye y la prueba. Lo específico de cada aplicación se queda en su política, no en un middleware propio.
+
 ## Qué no cambia
 
 - El dominio, los DTOs, el `DbContext`, las migraciones, el cargador del CSV y los lectores y escritores de EF siguen en Comicteca.

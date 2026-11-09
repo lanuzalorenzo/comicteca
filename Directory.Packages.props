@@ -7,7 +7,7 @@
   <ItemGroup Label="Controles compartidos">
     <!-- Versión exacta: una actualización de shared-dotnet pasa por el mismo CI. -->
     <PackageVersion Include="LL.Hosting" Version="0.1.0" />
-    <PackageVersion Include="LL.Security" Version="0.1.0" />
+    <PackageVersion Include="LL.Security" Version="0.2.0" />
   </ItemGroup>
 
   <ItemGroup Label="Aplicación">
