@@ -9,6 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Kestrel aplica el mismo tope a los cuerpos sin Content-Length; el middleware
+// de UseLimiteDeCuerpo cubre el caso normal y el servidor de pruebas.
+builder.WebHost.ConfigureKestrel(opciones => opciones.Limits.MaxRequestBodySize = LimiteDeCuerpo.Bytes);
+
 var usarSqlServer = ConfiguracionDatos.UsaSqlServer(builder.Configuration["Datos:Proveedor"]);
 var cadena = ConfiguracionDatos.Cadena(builder.Configuration.GetConnectionString("Comicteca"), usarSqlServer);
 
@@ -50,12 +54,15 @@ if (app.Environment.IsDevelopment())
 }
 
 // El orden importa: las cabeceras se escriben cuando empieza la respuesta y el
-// manejador de excepciones va antes que el resto del pipeline.
+// manejador de excepciones va antes que el resto del pipeline. El limitador va
+// antes que el tope de cuerpo para que un cuerpo grande también cuente en la
+// cuota; CORS, antes que ambos, para que el 413 y el 429 lleguen al navegador.
 app.UseSecurityHeaders();
 app.UseCabecerasDeRespuesta();
 app.UseApiProblemDetails();
 app.UseCors("ApiCors");
 app.UseRateLimiter();
+app.UseLimiteDeCuerpo();
 
 if (autenticacion)
 {

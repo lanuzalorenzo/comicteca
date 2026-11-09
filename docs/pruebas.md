@@ -7,7 +7,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Nivel | Dónde | Qué comprueba | Cómo se lanza |
 |---|---|---|---|
 | Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
-| API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 25 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras, 429 y excepción no controlada con ProblemDetails | `dotnet test` |
+| API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 28 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras, 413, 429, `X-Forwarded-For` sin cuota nueva y excepción no controlada con ProblemDetails | `dotnet test` |
 | Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
 | Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque sin `Authority`, `Audience`, `CuentaPermitida` o con `Requerida` apagada fuera de Development | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
@@ -35,7 +35,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **55 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El run 42248091775 (6 de noviembre de 2026) pasó los cinco trabajos con las 41 pruebas de entonces: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables (informativo, no bloqueante). El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **58 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El run 42248091775 (6 de noviembre de 2026) pasó los cinco trabajos con las 41 pruebas de entonces: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables (informativo, no bloqueante). El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
@@ -111,7 +111,23 @@ El token de `gh auth token` solo vale si la sesión tiene el permiso `read:packa
 
 Resultado observado el 6 de noviembre de 2026 con ese permiso: `api` y `web` en `healthy`, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series.
 
-El 9 de noviembre de 2026, con la CSP puesta, `npm run test:cabeceras` pasó 30 comprobaciones: cabeceras en el HTML, en un recurso de `/_framework/` y en la API, y la lista cargando a 375 px sin violaciones de CSP. `npm test` siguió en verde contra los contenedores.
+El 9 de noviembre de 2026, con la CSP puesta, `npm run test:cabeceras` pasó 34 comprobaciones: cabeceras en el HTML, en un recurso de `/_framework/` y en la API, y la lista cargando a 375 px sin violaciones de CSP. `npm test` siguió en verde contra los contenedores.
+
+Los límites también se comprueban a mano contra el contenedor:
+
+```bash
+python3 -c "print('{\"titulo\":\"' + 'a'*20000 + '\",\"editorial\":\"E\"}')" \
+  | curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:5094/api/series \
+    -H "Content-Type: application/json" --data-binary @-                         # 413
+
+for i in $(seq 1 120); do curl -s -o /dev/null -w "%{http_code}\n" \
+  http://localhost:5094/api/series; done | sort | uniq -c   # 120 respuestas 200
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5094/api/series        # 429
+curl -s -o /dev/null -w "%{http_code}\n" -H "X-Forwarded-For: 198.51.100.7" \
+  http://localhost:5094/api/series                                               # 429
+```
+
+El cuerpo grande se comprueba después que la cuota: el limitador va antes que el tope, así que esas peticiones también cuentan para el 429. El 429 se reinicia al cabo de un minuto o al reiniciar la API.
 
 Para comprobar que la base sobrevive:
 
@@ -149,7 +165,7 @@ En escritorio, a 1440 × 900:
 
 ## 6. Límites
 
-- No hay umbral de cobertura: hay 55 pruebas, no una métrica.
+- No hay umbral de cobertura: hay 58 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
 - La API exige token en Production. En Development se apaga para trabajar y la web local trabaja sin sesión salvo que se le den los valores del registro; el despliegue queda bloqueado hasta que la sesión del navegador se pruebe contra el tenant real.

@@ -69,7 +69,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 |---|---|---|---|
 | Inicio de sesión con Entra ID, una sola cuenta | Suplantación, manipulación, divulgación | Sin token, 401; con token de otra cuenta, 403; la suite de contrato sigue en verde | Validado en local con emisor de prueba; Parcial contra el tenant real |
 | Cabeceras y CSP | Divulgación, configuración insegura | Cabeceras en respuesta normal y en error, con prueba automática en los contenedores; CSP de la web con Blazor cargando y el nonce comprobado | Validado en local; renovación de MSAL y HTTPS pendientes (B.2b) |
-| Límite por IP y tamaño de cuerpo | Denegación, flujos sensibles | Ráfaga que recibe 429 con prueba automática; falta el 413 por cuerpo excesivo | Parcial |
+| Límite por IP y tamaño de cuerpo | Denegación, flujos sensibles | Ráfaga que recibe 429, 413 por cuerpo mayor de 16 KB y `X-Forwarded-For` que no abre cuota, con prueba automática y en el contenedor | Validado en local y contenedor |
 | Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Diseño |
 | Registro de escrituras y copia restaurable | Repudio | Cada alta y baja deja rastro con fecha y origen; una copia se restaura | Diseño |
 | Identidad gestionada y Key Vault | Divulgación, elevación | La configuración de despliegue no contiene contraseñas | Diseño |

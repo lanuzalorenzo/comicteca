@@ -130,3 +130,66 @@ public sealed class LimitePeticionesTests(ApiFactory factory) : IClassFixture<Ap
         Assert.Equal(HttpStatusCode.OK, salud.StatusCode);
     }
 }
+
+public sealed class CuotaPorIpTests(ApiFactory factory) : IClassFixture<ApiFactory>
+{
+    [Fact]
+    public async Task X_Forwarded_For_no_abre_cuota_nueva()
+    {
+        var cliente = factory.Cliente();
+
+        for (var intento = 1; intento <= 120; intento++)
+        {
+            using var peticion = new HttpRequestMessage(HttpMethod.Get, "/api/series");
+            peticion.Headers.Add("X-Forwarded-For", $"203.0.113.{intento % 250}");
+
+            var permitida = await cliente.SendAsync(peticion);
+            Assert.Equal(HttpStatusCode.OK, permitida.StatusCode);
+        }
+
+        using var otra = new HttpRequestMessage(HttpMethod.Get, "/api/series");
+        otra.Headers.Add("X-Forwarded-For", "198.51.100.7");
+
+        var rechazada = await cliente.SendAsync(otra);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, rechazada.StatusCode);
+    }
+}
+
+public sealed class LimiteDeCuerpoTests(ApiFactory factory) : IClassFixture<ApiFactory>
+{
+    [Fact]
+    public async Task Un_cuerpo_mayor_de_16_KB_recibe_413()
+    {
+        var cliente = factory.Cliente();
+        var peticion = new
+        {
+            titulo = new string('a', 20 * 1024),
+            editorial = "Editorial de prueba"
+        };
+
+        var respuesta = await cliente.PostAsJsonAsync("/api/series", peticion);
+        var cuerpo = await respuesta.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, respuesta.StatusCode);
+        Assert.Equal("application/problem+json", respuesta.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("16 KB", cuerpo);
+        Assert.Equal("nosniff", respuesta.Headers.GetValues("X-Content-Type-Options").Single());
+        Assert.Contains("frame-ancestors 'none'", respuesta.Headers.GetValues("Content-Security-Policy").Single());
+    }
+
+    [Fact]
+    public async Task Una_escritura_normal_sigue_pasando()
+    {
+        var cliente = factory.Cliente();
+        var titulo = $"Serie límite {Guid.NewGuid():N}";
+
+        var respuesta = await cliente.PostAsJsonAsync("/api/series", new { titulo, editorial = "Editorial" });
+
+        Assert.Equal(HttpStatusCode.Created, respuesta.StatusCode);
+
+        var creada = await respuesta.Content.ReadFromJsonAsync<Dictionary<string, Guid>>();
+        Assert.NotNull(creada);
+        await cliente.DeleteAsync($"/api/series/{creada["id"]}");
+    }
+}
