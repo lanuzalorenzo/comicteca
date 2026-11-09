@@ -100,50 +100,22 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Configurar Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: tests/e2e/package-lock.json
-
       - name: Restaurar dependencias .NET
         run: dotnet restore Comicteca.slnx
 
       - name: Compilar en Release
         run: dotnet build Comicteca.slnx -c Release --no-restore -warnaserror
 
-      - name: Instalar dependencias de la prueba
-        run: npm ci
-        working-directory: tests/e2e
-
       - name: Auditar dependencias de la prueba
         run: npm audit --audit-level=high
         working-directory: tests/e2e
 
-      - name: Instalar Chromium
-        run: npx playwright install --with-deps chromium
-        working-directory: tests/e2e
-
-      - name: Arrancar la API y la web, y probar la interfaz
-        run: |
-          set -euo pipefail
-          export ConnectionStrings__Comicteca="Data Source=$RUNNER_TEMP/comicteca-e2e.db"
-          export Datos__RutaCsv="$GITHUB_WORKSPACE/data/coleccion.csv"
-          export Cors__AllowedOrigins__0="http://localhost:5077"
-          ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5094 dotnet run --project src/Comicteca.Api -c Release --no-build --no-launch-profile > "$RUNNER_TEMP/api.log" 2>&1 &
-          ASPNETCORE_URLS=http://localhost:5077 dotnet run --project src/Comicteca.Web -c Release --no-build --no-launch-profile > "$RUNNER_TEMP/web.log" 2>&1 &
-          trap 'kill $(jobs -p) 2>/dev/null || true' EXIT
-          for i in $(seq 1 60); do
-            if curl -sf http://localhost:5094/health >/dev/null && curl -sf http://localhost:5077/ >/dev/null; then
-              npm test --prefix tests/e2e
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "La API o la web no arrancaron a tiempo"
-          cat "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/web.log"
-          exit 1
+      - name: Arrancar los servicios y probar la interfaz
+        uses: lanuzalorenzo/core/actions/browser-e2e@v1.5
+        with:
+          working-directory: tests/e2e
+          start-script: tests/e2e/start.sh
+          wait-urls: http://localhost:5094/health, http://localhost:5077/
 
       - name: Subir la captura y los registros si falla
         if: failure()

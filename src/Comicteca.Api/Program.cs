@@ -57,8 +57,14 @@ if (app.Environment.IsDevelopment())
 // manejador de excepciones va antes que el resto del pipeline. El limitador va
 // antes que el tope de cuerpo para que un cuerpo grande también cuente en la
 // cuota; CORS, antes que ambos, para que el 413 y el 429 lleguen al navegador.
-app.UseSecurityHeaders();
-app.UseCabecerasDeRespuesta();
+// La CSP del servicio es restrictiva: sus respuestas son JSON y no deben cargar
+// nada. La web tiene la suya, más amplia, en `docker/cabeceras.conf`.
+var cabeceras = new SecurityHeadersOptions
+{
+    Csp = ContentSecurityPolicy.DenyAll(),
+};
+cabeceras.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+app.UseSecurityHeaders(cabeceras);
 app.UseApiProblemDetails();
 app.UseCors("ApiCors");
 app.UseRateLimiter();
