@@ -60,6 +60,8 @@ El estado es **Validado en local y CI** para los puntos 1 a 6 y 8; Compose queda
 
 ## Enmienda del 9 de noviembre de 2026
 
+**CSP y `Permissions-Policy` no salen del paquete.** `LL.Security` pone `nosniff`, `DENY` y `no-referrer`, pero no una CSP: depende de la aplicación (Blazor, MSAL y el origen de su API), así que no es un control genérico. La API añade `Content-Security-Policy` y `Permissions-Policy` en `CabecerasDeRespuesta.cs` y la web pone las suyas en `docker/cabeceras.conf`, con `frame-ancestors 'self'` y `X-Frame-Options: SAMEORIGIN` porque MSAL renueva el token en un iframe que vuelve a la propia página. Esto no contradice la adopción de `LL.Security`: el paquete sigue cubriendo CORS, cabeceras comunes y límite; lo específico de la aplicación se queda en la aplicación.
+
 B.1 introduce autenticación, así que la razón por la que este ADR descartaba la validación JWT deja de valer. Comicteca adopta `AddHardenedJwtBearer` de `LL.Security`: firma, emisor, audiencia y vigencia, más una política por defecto de una sola cuenta (`oid`). Montar el JWT en casa habría repetido lo que el paquete ya prueba. No cambia el resto del ADR: siguen fuera `UseApiTransportSecurity` (B.2) y la autorización por objeto, porque hay una sola cuenta.
 
 ## Qué no cambia

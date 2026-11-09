@@ -47,6 +47,11 @@ public sealed class ControlesCompartidosTests(ApiFactory factory) : IClassFixtur
         Assert.Equal("nosniff", respuesta.Headers.GetValues("X-Content-Type-Options").Single());
         Assert.Equal("DENY", respuesta.Headers.GetValues("X-Frame-Options").Single());
         Assert.Equal("no-referrer", respuesta.Headers.GetValues("Referrer-Policy").Single());
+        Assert.Contains("camera=()", respuesta.Headers.GetValues("Permissions-Policy").Single());
+
+        var csp = respuesta.Headers.GetValues("Content-Security-Policy").Single();
+        Assert.Contains("default-src 'none'", csp);
+        Assert.Contains("frame-ancestors 'none'", csp);
     }
 
     [Fact]
@@ -58,6 +63,8 @@ public sealed class ControlesCompartidosTests(ApiFactory factory) : IClassFixtur
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
         Assert.Equal("nosniff", respuesta.Headers.GetValues("X-Content-Type-Options").Single());
         Assert.Equal("DENY", respuesta.Headers.GetValues("X-Frame-Options").Single());
+        Assert.Contains("frame-ancestors 'none'", respuesta.Headers.GetValues("Content-Security-Policy").Single());
+        Assert.Contains("geolocation=()", respuesta.Headers.GetValues("Permissions-Policy").Single());
     }
 }
 

@@ -13,6 +13,7 @@ RUN dotnet publish src/Comicteca.Web/Comicteca.Web.csproj -c Release -o /app/pub
 FROM nginx:1.27-alpine AS final
 
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/cabeceras.conf /etc/nginx/snippets/cabeceras.conf
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
 
 EXPOSE 80

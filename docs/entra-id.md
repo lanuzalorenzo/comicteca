@@ -87,6 +87,20 @@ el claim `oid` de un token emitido para ese usuario.
 5. `cd tests/e2e && npm test`, con la sesión **apagada**: el guion no entra en
    Entra ID y espera el formulario y las fichas a la vista. Probar la interfaz
    con sesión es B.1b-2, todavía pendiente.
+6. Preflight de CORS con la cabecera `Authorization`, que el navegador manda
+   antes de la primera llamada autenticada:
+
+   ```bash
+   curl -i -X OPTIONS http://localhost:5094/api/series \
+     -H "Origin: http://localhost:5077" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: authorization,content-type"
+   ```
+
+   Tiene que responder 204 con `Access-Control-Allow-Origin:
+   http://localhost:5077` y `Access-Control-Allow-Headers` que incluya
+   `Authorization`. Sin esa cabecera el navegador bloquea la escritura aunque
+   el token sea válido.
 
 Sin el paso 3 no se puede decir que la sesión funciona: la fila de
 `docs/capacidades.md` sigue **Parcial** hasta entonces.
@@ -99,7 +113,7 @@ Sin el paso 3 no se puede decir que la sesión funciona: la fila de
 | `invalid_scope` al entrar | El scope no está en *Expose an API* o falta el consentimiento |
 | La ventana de Entra no vuelve, `AADSTS50011` | URI de redirección distinta de `http://localhost:5077/authentication/login-callback` |
 | 403 con otra cuenta | `CuentaPermitida` mal copiada |
-| La sesión no persiste al recargar | Cache de MSAL bloqueada por la CSP de B.2, todavía sin poner |
+| La sesión no se renueva sola | La CSP no admite `https://login.microsoftonline.com` en `connect-src` o `frame-src`, o no deja el iframe propio: `frame-ancestors 'self'` y `X-Frame-Options: SAMEORIGIN` |
 
 ## 7. Lo que este documento no cubre
 
@@ -109,7 +123,31 @@ Sin el paso 3 no se puede decir que la sesión funciona: la fila de
   `appsettings.json` publicado hoy dice `false` y la web desplegada tal cual
   arranca sin sesión. Decidirlo toca B.2 y la configuración de despliegue.
 - El secreto de la API en el despliegue: llega con identidad gestionada (B.6).
-- La CSP de B.2: al ponerla, `login.microsoftonline.com` tiene que quedar en
-  `connect-src` y `frame-src` o el inicio de sesión se rompe.
-- El preflight de CORS con la cabecera `Authorization`: no se ha probado,
-  porque no ha habido todavía una llamada autenticada desde el navegador.
+- La CSP va puesta en la API y en la web (`docker/cabeceras.conf`), con
+  `login.microsoftonline.com` en `connect-src` y `frame-src`. La prueba
+  `tests/e2e/prueba-cabeceras.js` la comprueba en los contenedores. Lo que
+  falta es repetir el inicio de sesión con la CSP activa y confirmar que MSAL
+  renueva el token en silencio.
+
+## 8. Evidencias que hay que guardar
+
+El registro se hace una vez, pero se demuestra con capturas y salidas. Nada de
+esto se versiona: los identificadores del directorio se quedan en los
+`appsettings` ignorados y en el registro privado de planificación.
+
+| Paso | Evidencia | Qué demuestra |
+|---|---|---|
+| 2. API registrada | Captura de *Expose an API* con `api://comicteca-api` y el scope `acceso` | Audiencia y scope del recurso |
+| 2. Versión del token | Captura del *Manifest* con `accessTokenAcceptedVersion: 2` | El `aud` coincidirá con `Autenticacion__Audience` |
+| 3. Web registrada | Captura de *Authentication* con las dos URI de redirección y la plataforma *Single-page application* | MSAL puede volver del inicio de sesión |
+| 3. Permiso concedido | Captura de *API permissions* con el consentimiento de administrador en verde | El cliente puede pedir el scope |
+| 4. Valores locales | Salida de `env` filtrada por `Autenticacion__` (los valores, no el token) y el `appsettings.Development.json` de la web | La configuración está fuera del repositorio |
+| 5. Sin sesión | `curl -i http://localhost:5094/api/series` → 401 | La API exige token |
+| 5. Con la cuenta permitida | Captura de la lista cargada, del alta de una serie y del borrado | La sesión sirve para leer y escribir |
+| 5. Con otra cuenta | Captura del 403 | La lista de uno se aplica |
+| 5. Interfaz | `npm test` a 375 px en verde con la sesión apagada | La interfaz sin token sigue igual |
+| 5. Preflight | Salida del `curl -i -X OPTIONS` del apartado 5 | El navegador puede mandar `Authorization` |
+
+Con todo eso, B.1b-1 pasa a **Validado** y la entrada de bitácora cita las
+capturas. Antes no: un registro hecho sin probar el inicio de sesión sigue
+siendo **Parcial**.

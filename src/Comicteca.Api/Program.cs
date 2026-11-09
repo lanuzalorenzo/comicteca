@@ -52,6 +52,7 @@ if (app.Environment.IsDevelopment())
 // El orden importa: las cabeceras se escriben cuando empieza la respuesta y el
 // manejador de excepciones va antes que el resto del pipeline.
 app.UseSecurityHeaders();
+app.UseCabecerasDeRespuesta();
 app.UseApiProblemDetails();
 app.UseCors("ApiCors");
 app.UseRateLimiter();

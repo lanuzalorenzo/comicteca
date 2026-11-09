@@ -12,6 +12,7 @@ Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no
 - Da de alta y de baja series y tomos desde la pantalla o por API.
 - Está pensada para el móvil y crece hasta tres columnas en escritorio, con tema oscuro; prueba automática a 375 px y medición en Chromium a 1440 px.
 - CORS, cabeceras de seguridad, límite por IP, ProblemDetails y salud vienen de los paquetes compartidos `LL.Security` y `LL.Hosting`.
+- La CSP y `Permissions-Policy` son propias: dependen de Blazor, de MSAL y del origen de la API, y viven en `src/Comicteca.Api/CabecerasDeRespuesta.cs` y `docker/cabeceras.conf`.
 
 ## Cómo se arranca
 

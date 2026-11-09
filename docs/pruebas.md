@@ -11,6 +11,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
 | Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque sin `Authority`, `Audience`, `CuentaPermitida` o con `Requerida` apagada fuera de Development | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
+| Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | Cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, y la interfaz cargando con la CSP puesta sin violaciones | `npm run test:cabeceras` con la pila en contenedores |
 | Contenedores | `compose.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base | Manual, con Docker |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
 
@@ -88,13 +89,29 @@ export GH_PACKAGES_TOKEN="<pat-read:packages>"
 docker compose up -d --build
 docker compose ps                 # api y web en healthy
 curl http://localhost:5094/health
+cd tests/e2e && npm run test:cabeceras
 ```
+
+`prueba-cabeceras.js` recorre la web, un recurso de `/_framework/` y la API,
+comprueba `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
+`Permissions-Policy` y `Content-Security-Policy`, y abre la lista a 375 px para
+confirmar que Blazor no choca con la CSP: no basta con que la cabecera nombre a
+MSAL, el inicio de sesión real se prueba en el ensayo de B.1b-1. Falla si el
+navegador registra una violación. Es la prueba que cierra B.2a; la CSP de la web
+vive en `docker/cabeceras.conf` y la de la API en `CabecerasDeRespuesta.cs`.
+
+La CSP de la web fija el origen de la API en `http://localhost:5094`. Si cambias
+`ApiBaseUrl` en `src/Comicteca.Web/wwwroot/appsettings.json`, cambia también
+`connect-src` en `docker/cabeceras.conf` o el navegador bloqueará las llamadas.
+Al desplegar hay que sustituirlo por el origen real.
 
 La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`. Compose añade `Cors__AllowedOrigins__0` con el origen de la web y arranca la API en `Development`, donde la autenticación se apaga para el ensayo local. Esa excepción no vale fuera de Development: la imagen fija `Production` y allí la API no arranca sin `Autenticacion__Authority`, `Autenticacion__Audience` y `Autenticacion__CuentaPermitida`.
 
 El token de `gh auth token` solo vale si la sesión tiene el permiso `read:packages`. Si el restore falla con 403, añádelo con `gh auth refresh -s read:packages` o usa un token que ya lo tenga; el token se pasa como secreto de BuildKit y no queda en la imagen.
 
 Resultado observado el 6 de noviembre de 2026 con ese permiso: `api` y `web` en `healthy`, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series.
+
+El 9 de noviembre de 2026, con la CSP puesta, `npm run test:cabeceras` pasó 30 comprobaciones: cabeceras en el HTML, en un recurso de `/_framework/` y en la API, y la lista cargando a 375 px sin violaciones de CSP. `npm test` siguió en verde contra los contenedores.
 
 Para comprobar que la base sobrevive:
 

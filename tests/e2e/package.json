@@ -3,7 +3,8 @@
   "private": true,
   "description": "Prueba de interfaz de Comicteca en Chromium a 375 px",
   "scripts": {
-    "test": "node prueba-web.js"
+    "test": "node prueba-web.js",
+    "test:cabeceras": "node prueba-cabeceras.js"
   },
   "devDependencies": {
     "playwright": "1.65.0"
