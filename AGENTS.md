@@ -151,8 +151,8 @@ Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `da
 
 El repositorio es privado, pero se comporta como público. `.github/workflows/ci.yml` ejecuta cinco trabajos en cada push y en cada PR:
 
-- **Compilación y pruebas:** la acción `dotnet` de `lanuzalorenzo/core` (`@v1.3`) restaura, compila en Release con los avisos como errores, verifica el formato y ejecuta `dotnet test`. Publica el `.trx` y declara `packages: read` para el feed `LL.*`.
-- **Documentación:** la acción `check-links` de `lanuzalorenzo/core` (`@v1.3`) valida los enlaces relativos y las anclas.
+- **Compilación y pruebas:** la acción `dotnet` de `lanuzalorenzo/core` (`@v1.4`) restaura, compila en Release con los avisos como errores, verifica el formato y ejecuta `dotnet test`. Publica el `.trx` y declara `packages: read` para el feed `LL.*`.
+- **Documentación:** la acción `check-links` de `lanuzalorenzo/core` (`@v1.4`) valida los enlaces relativos y las anclas.
 - **Interfaz:** la acción `browser-e2e` de `lanuzalorenzo/core` (`@v1.5`) instala Chromium, arranca la API y la web con una base temporal y ejecuta `tests/e2e` a 375 px. También restaura los paquetes con `packages: read`.
 - **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` (`@v1.4`) escanea el historial completo.
 - **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas en NuGet o altas y críticas en npm. El trabajo que restaura declara `packages: read`.

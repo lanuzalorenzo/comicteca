@@ -35,11 +35,11 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **58 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El run 42248091775 (6 de noviembre de 2026) pasó los cinco trabajos con las 41 pruebas de entonces: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables (informativo, no bloqueante). El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **58 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El run 42248091775 (6 de noviembre de 2026) pasó los cinco trabajos con las 41 pruebas de entonces: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables (informativo, no bloqueante). El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core` (`@v1.4`) con `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
-El CI añade una comprobación de enlaces relativos y anclas con la acción `check-links` de `lanuzalorenzo/core` (`@v1.3`). No está en la lista local porque depende de ese repositorio; si tocas la documentación, puedes ejecutar su script con la raíz del proyecto y omitiendo `src/Comicteca.Web/wwwroot` y `src/Comicteca.Web/obj`, que contienen rutas generadas al compilar y publicar la web.
+El CI añade una comprobación de enlaces relativos y anclas con la acción `check-links` de `lanuzalorenzo/core` (`@v1.4`). No está en la lista local porque depende de ese repositorio; si tocas la documentación, puedes ejecutar su script con la raíz del proyecto y omitiendo `src/Comicteca.Web/wwwroot` y `src/Comicteca.Web/obj`, que contienen rutas generadas al compilar y publicar la web.
 
 ## 2. Arrancar la aplicación
 

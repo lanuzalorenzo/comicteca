@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Compilar, verificar el formato y probar
-        uses: lanuzalorenzo/core/actions/dotnet@v1.3
+        uses: lanuzalorenzo/core/actions/dotnet@v1.4
         with:
           solution: Comicteca.slnx
 
@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Comprobar enlaces y anclas
-        uses: lanuzalorenzo/core/actions/check-links@v1.3
+        uses: lanuzalorenzo/core/actions/check-links@v1.4
         with:
           root: .
           skip: src/Comicteca.Web/wwwroot,src/Comicteca.Web/obj
