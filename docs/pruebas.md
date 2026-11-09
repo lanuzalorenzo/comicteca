@@ -98,7 +98,7 @@ comprueba `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
 confirmar que Blazor no choca con la CSP: no basta con que la cabecera nombre a
 MSAL, el inicio de sesión real se prueba en el ensayo de B.1b-1. Falla si el
 navegador registra una violación. Es la prueba que cierra B.2a; la CSP de la web
-vive en `docker/cabeceras.conf` y la de la API en `CabecerasDeRespuesta.cs`.
+vive en `docker/cabeceras.conf` y la de la API se compone con `LL.Security`.
 
 La CSP de la web fija el origen de la API en `http://localhost:5094`. Si cambias
 `ApiBaseUrl` en `src/Comicteca.Web/wwwroot/appsettings.json`, cambia también
