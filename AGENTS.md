@@ -154,12 +154,18 @@ El repositorio es privado, pero se comporta como público. `.github/workflows/ci
 - **Compilación y pruebas:** la acción `dotnet` de `lanuzalorenzo/core` (`@v1.3`) restaura, compila en Release con los avisos como errores, verifica el formato y ejecuta `dotnet test`. Publica el `.trx` y declara `packages: read` para el feed `LL.*`.
 - **Documentación:** la acción `check-links` de `lanuzalorenzo/core` (`@v1.3`) valida los enlaces relativos y las anclas.
 - **Interfaz:** Chromium a 375 px contra la API y la web arrancadas con una base temporal. También restaura los paquetes con `packages: read`.
-- **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` (`@v1.3`) escanea el historial completo.
+- **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` (`@v1.4`) escanea el historial completo.
 - **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas en NuGet o altas y críticas en npm. El trabajo que restaura declara `packages: read`.
 
 Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión. El registro `github-packages` de `dependabot.yml` usa el secreto de Dependabot `LL_PACKAGES_TOKEN`, un PAT con `read:packages`, para proponer también actualizaciones de `LL.*`. La primera ejecución con `GITHUB_TOKEN` falló porque Dependabot no resuelve ese token; desde el 07/11 usa el secreto `LL_PACKAGES_TOKEN` y `nuget in /.` ya no falla por credenciales.
 
 La protección de `main` no está activa: GitHub exige un plan de pago para proteger ramas de repositorios privados. Al abrir el repositorio se activa con los checks obligatorios, rama actualizada y fusión por squash. Mientras tanto, el hook local de Gitleaks sigue siendo obligatorio en cada clon.
+
+## Plataforma compartida
+
+Las acciones de `lanuzalorenzo/core` y los paquetes `LL.*` de `shared-dotnet` se consumen por versión publicada y fijada; no se copia su código.
+
+Un control que falte se resuelve en la plataforma, no aquí: si es general y ya está validado en esta aplicación, sube al paquete o a la acción con su prueba, en genérico y sin datos ni referencias a este repositorio. Si depende de la aplicación, se queda, y el motivo va en el commit; el ADR es para una decisión estructural. Una versión nueva se adopta en su propio cambio, con el CI en verde; no se usan rangos flotantes.
 
 ## Decisiones abiertas
 
