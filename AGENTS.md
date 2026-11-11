@@ -156,7 +156,7 @@ El repositorio es público y el CI se comporta como tal. `.github/workflows/ci.y
 
 Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión. El registro `github-packages` de `dependabot.yml` usa el secreto de Dependabot `LL_PACKAGES_TOKEN`, un PAT con `read:packages`, para proponer también actualizaciones de `LL.*`. La primera ejecución con `GITHUB_TOKEN` falló porque Dependabot no resuelve ese token; desde el 07/11 usa el secreto `LL_PACKAGES_TOKEN` y `nuget in /.` ya no falla por credenciales.
 
-La protección de `main` está activa desde la apertura: pull request obligatoria, los cinco checks del CI, rama actualizada y sin bypass; la fusión es por squash. Se comprueba con `gh api repos/lanuzalorenzo/comicteca/branches/main/protection`. El hook local de Gitleaks sigue siendo obligatorio en cada clon: protege antes del push, no después.
+La protección de `main` es la misma regla que en el resto de repositorios públicos: un ruleset `main` con pull request obligatoria, los cinco checks del CI, rama actualizada, historial lineal y sin bypass, y la fusión solo por squash. Se comprueba con `gh api repos/lanuzalorenzo/comicteca/rulesets`. El hook local de Gitleaks sigue siendo obligatorio en cada clon: protege antes del push, no después.
 
 ## Plataforma compartida
 
