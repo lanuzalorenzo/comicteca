@@ -132,8 +132,9 @@ Sin el paso 3 no se puede decir que la sesión funciona: la fila de
 ## 8. Evidencias que hay que guardar
 
 El registro se hace una vez, pero se demuestra con capturas y salidas. Nada de
-esto se versiona: los identificadores del directorio se quedan en los
-`appsettings` ignorados y en el registro privado de planificación.
+esto se versiona: los identificadores del directorio se quedan en el
+`appsettings` ignorado de la web, en el entorno de la API y en las notas
+locales del propietario.
 
 | Paso | Evidencia | Qué demuestra |
 |---|---|---|

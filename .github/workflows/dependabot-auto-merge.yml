@@ -40,7 +40,7 @@ jobs:
           if gh pr merge "$PR" --auto --squash; then
             exit 0
           fi
-          # Sin auto-merge nativo (repo privado sin plan de pago): se espera
+          # Respaldo por si `gh pr merge --auto` no está disponible: se espera
           # a que el CI complete y se fusiona el mismo commit validado.
           for _ in $(seq 1 60); do
             total=$(gh pr view "$PR" --json statusCheckRollup -q '.statusCheckRollup | length')

@@ -1,6 +1,6 @@
 # Guía para agentes: Comicteca
 
-Herramienta personal para llevar la colección de cómics y, más adelante, avisar de las novedades de las series que sigo. Nace como uso propio: el repositorio es privado y contiene datos personales de lectura, no un producto para terceros.
+Herramienta personal para llevar la colección de cómics y, más adelante, avisar de las novedades de las series que sigo. Nace como uso propio: no es un producto para terceros y lo que queda en el repositorio es el conjunto inventado de demostración.
 
 ## Propósito y alcance
 
@@ -49,13 +49,14 @@ La API elige el proveedor con `Datos:Proveedor` (`Sqlite` por defecto, o `SqlSer
 | `docs/modelo-de-amenaza.md` | Amenazas por endpoint, controles y huecos |
 | `docs/entra-id.md` | Registro de las aplicaciones en Entra ID, valores de la sesión y evidencias que hay que guardar |
 | `docs/plan.md` | Fases, condiciones de cierre y riesgos |
+| `SECURITY.md` | Cómo avisar de una vulnerabilidad y qué entra en el alcance |
 | `bitacora/` | Una entrada por hito, con resultado observado |
 
 La bitácora no es un diario: se escribe al cerrar un hito, va ligada a una evidencia y no repite lo que ya dicen los ADR o `capacidades.md`. El motivo de cada cambio vive en el commit.
 
 ## Backlog y comando
 
-El backlog no vive aquí. Este repositorio puede abrirse y las prioridades no se publican: viven en el registro privado de planificación, junto con el diario y las reglas transversales.
+El backlog no vive aquí: las prioridades, el diario y las reglas transversales se deciden fuera del repositorio y no se publican.
 
 - La documentación versionada —README, `docs/`, bitácora— solo describe lo que cualquiera puede leer.
 - Las herramientas locales, como `/retomar`, viven en `.opencode/`, que no se versiona.
@@ -70,24 +71,23 @@ El backlog no vive aquí. Este repositorio puede abrirse y las prioridades no se
 
 ## Público y privado
 
-El repositorio es privado hoy y puede abrirse más adelante. Todo lo que se escribe debe poder publicarse tal cual, salvo los datos.
+El repositorio es público desde el 11 de noviembre de 2026. Todo lo que se escribe se publica tal cual, salvo los datos.
 
 | Pieza | ¿Publicable? | Condición |
 |---|---|---|
 | Código, pruebas y CI | Sí | Sin credenciales ni rutas personales; el handle de GitHub del feed es público y necesario |
 | `README.md`, `docs/`, `bitacora/` | Sí | Sin datos reales ni enlaces a repos privados |
 | `data/coleccion.csv` | Sí | Es el conjunto inventado de demostración; cargar la colección real lo vuelve no publicable |
-| `AGENTS.md` y `.opencode/` | Sí | Son herramientas del repositorio, no documentación |
+| `AGENTS.md` | Sí | Es una herramienta del repositorio, no documentación |
+| `.opencode/` | No | Herramientas locales, ignoradas por Git |
 | `NuGet.config` | Sí | Sin credenciales: lee `%GH_PACKAGES_TOKEN%` del entorno |
-| Base local, `appsettings.Local.json` | No | Ignorados por Git |
+| Base local, `appsettings.Local.json`, `src/Comicteca.Web/wwwroot/appsettings.Development.json` | No | Ignorados por Git; el último guarda los valores de Entra ID |
 
-**Aviso importante:** el CSV real estuvo en el historial desde el primer commit. El 3 de noviembre de 2026 se reescribió para sustituirlo por el conjunto inventado en todos los commits. Antes de abrir el repositorio hay que comprobar que no reaparece en ningún clon, fork ni objeto inalcanzable del remoto.
+**Aviso importante:** el CSV real estuvo en el historial desde el primer commit. El 3 de noviembre de 2026 se reescribió para sustituirlo por el conjunto inventado en todos los commits. Antes de abrir, el 11 de noviembre de 2026, se comprobó que el CSV del árbol era el inventado, que `forkCount` era 0 en la API de GitHub y que Gitleaks no encontraba nada en 56 commits; el CI `43091975270` repite el escaneo sobre el historial completo con el repositorio ya público. Los clones ajenos y los objetos inalcanzables del remoto no se pueden comprobar desde GitHub: si el CSV reaparece en un clon, ya no se corrige desde aquí.
 
-Antes de cambiar la visibilidad, sigue la guía pública [Pasar un repositorio de privado a público](https://github.com/lanuzalorenzo/core/blob/main/docs/publicar-un-repositorio.md). Aquí solo queda lo propio de este repositorio:
+El procedimiento seguido es la guía pública [Pasar un repositorio de privado a público](https://github.com/lanuzalorenzo/core/blob/main/docs/publicar-un-repositorio.md). Lo propio de este repositorio, ya cumplido, queda como referencia: el CSV y las cifras de `docs/datos.md` son los inventados, y ni la documentación ni la bitácora citan la colección real.
 
-1. Comprobar que el CSV y las cifras de `docs/datos.md` son los inventados y que ni la documentación ni la bitácora citan la colección real. El aviso de arriba cubre el historial, clones, forks y objetos inalcanzables.
-
-La documentación publicada —README, `docs/` y bitácora— no menciona asistentes ni generación automática: el trabajo se firma como propio. `AGENTS.md` y `.opencode/` son herramientas y se publican como tales.
+La documentación publicada —README, `docs/` y bitácora— no menciona asistentes ni generación automática: el trabajo se firma como propio. `AGENTS.md` es una herramienta y se publica como tal; `.opencode/`, las herramientas locales, no se versiona.
 
 ## Identidad visual
 
@@ -139,23 +139,24 @@ Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `da
 
 - No se escriben credenciales ni cadenas reales. El hook de Gitleaks y el CI son la red, no la excusa para saltarse la regla.
 - Commit y push requieren autorización explícita del propietario, aunque el agente pueda hacerlos.
+- Los cambios entran por rama y pull request: `main` no admite push directo.
 - Un cambio de más de un archivo, o que toque reglas, CI, seguridad o publicación, pasa por el revisor antes de commitear.
 - Si un cambio contradice un ADR o una cifra de `capacidades.md`, se actualizan en el mismo lote. No se deja la documentación mintiendo.
 - No se reescribe el historial: si aparece un dato sensible, se rota, se sanea el estado actual y se documenta la exposición. La reescritura del 3 de noviembre ya ocurrió y queda explicada en §Público y privado.
 
 ## Integración continua
 
-El repositorio es privado, pero se comporta como público. `.github/workflows/ci.yml` ejecuta cinco trabajos en cada push y en cada PR:
+El repositorio es público y el CI se comporta como tal. `.github/workflows/ci.yml` ejecuta cinco trabajos en cada push y en cada PR:
 
 - **Compilación y pruebas:** la acción `dotnet` de `lanuzalorenzo/core` restaura, compila en Release con los avisos como errores, verifica el formato y ejecuta `dotnet test`. Publica el `.trx` y declara `packages: read` para el feed `LL.*`.
 - **Documentación:** la acción `check-links` de `lanuzalorenzo/core` valida los enlaces relativos y las anclas.
 - **Interfaz:** la acción `browser-e2e` de `lanuzalorenzo/core` instala Chromium, arranca la API y la web con una base temporal y ejecuta `tests/e2e` a 375 px. También restaura los paquetes con `packages: read`.
 - **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` escanea el historial completo.
-- **Dependencias:** auditoría de paquetes NuGet directos y transitivos y de las dependencias npm de la prueba de interfaz; falla si hay vulnerabilidades conocidas en NuGet o altas y críticas en npm. El trabajo que restaura declara `packages: read`.
+- **Dependencias:** auditoría de paquetes NuGet directos y transitivos, que hoy solo informa, y de las dependencias npm de la prueba de interfaz con `npm audit --audit-level=high`, que falla con altas y críticas. El trabajo que restaura declara `packages: read`.
 
 Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión. El registro `github-packages` de `dependabot.yml` usa el secreto de Dependabot `LL_PACKAGES_TOKEN`, un PAT con `read:packages`, para proponer también actualizaciones de `LL.*`. La primera ejecución con `GITHUB_TOKEN` falló porque Dependabot no resuelve ese token; desde el 07/11 usa el secreto `LL_PACKAGES_TOKEN` y `nuget in /.` ya no falla por credenciales.
 
-La protección de `main` no está activa: GitHub exige un plan de pago para proteger ramas de repositorios privados. Al abrir el repositorio se activa con los checks obligatorios, rama actualizada y fusión por squash. Mientras tanto, el hook local de Gitleaks sigue siendo obligatorio en cada clon.
+La protección de `main` está activa desde la apertura: pull request obligatoria, los cinco checks del CI, rama actualizada y sin bypass; la fusión es por squash. Se comprueba con `gh api repos/lanuzalorenzo/comicteca/branches/main/protection`. El hook local de Gitleaks sigue siendo obligatorio en cada clon: protege antes del push, no después.
 
 ## Plataforma compartida
 
