@@ -98,7 +98,7 @@ cd tests/e2e && npm run test:cabeceras
 comprueba `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
 `Permissions-Policy` y `Content-Security-Policy`, y abre la lista a 375 px para
 confirmar que Blazor no choca con la CSP: no basta con que la cabecera nombre a
-MSAL, el inicio de sesión real se prueba en el ensayo de B.1b-1. Falla si el
+MSAL, con la CSP activa falta comprobar que el token se renueva en silencio. Falla si el
 navegador registra una violación. Es la prueba que cierra B.2a; la CSP de la web
 vive en `docker/cabeceras.conf` y la de la API se compone con `LL.Security`.
 
@@ -170,7 +170,7 @@ En escritorio, a 1440 × 900:
 - No hay umbral de cobertura: hay 58 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
-- La API exige token en Production. En Development se apaga para trabajar y la web local trabaja sin sesión salvo que se le den los valores del registro; el despliegue queda bloqueado hasta que la sesión del navegador se pruebe contra el tenant real.
+- La API exige token en Production. En Development se apaga para trabajar y la web local trabaja sin sesión salvo que se le den los valores del registro; la sesión del navegador ya se probó contra el tenant real el 12 de noviembre de 2026 y el despliegue espera al alta y la baja desde la interfaz y al cierre de sesión limpio.
 
 ## Problemas típicos
 
