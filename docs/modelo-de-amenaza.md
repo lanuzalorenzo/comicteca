@@ -2,7 +2,7 @@
 
 Una casa no se protege cambiando la cerradura: se protege sabiendo por dónde se entra. Esta página hace eso con la API: recorre cada puerta, dice qué podría pasar por ella y qué control la cierra. No es un inventario de herramientas, sino la lista de lo que hoy frena un ataque, lo que solo está diseñado y lo que sigue abierto.
 
-**Última revisión:** 9 de noviembre de 2026.
+**Última revisión:** 12 de noviembre de 2026.
 **Alcance:** la API (`/health` y `/api/series`), la web que la consume y la base de datos local y de Azure SQL. Quedan fuera la cuenta de Azure, la suscripción y el pipeline de despliegue: no se protegen desde el código.
 
 ## 1. Puertas de entrada
@@ -18,16 +18,16 @@ La API tiene seis rutas. Todas exigen un token de Entra ID de la cuenta permitid
 | `POST` | `/api/series/{id}/tomos` | Añade un tomo | Escritura |
 | `DELETE` | `/api/series/{id}/tomos/{tomoId}` | Quita un tomo | Escritura |
 
-La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma peticiones; pide el token a Entra ID y lo pone en la cabecera. El inicio de sesión está montado pero sin probar contra un tenant real: mientras tanto, en Development trabaja sin token y en Production la API la rechazaría. El despliegue espera a que esa sesión se valide.
+La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma peticiones; pide el token a Entra ID y lo pone en la cabecera. El 12 de noviembre de 2026 se probó contra el tenant real: la web lista con la cuenta permitida y la API rechaza sin token y con una cuenta no permitida. Faltan el alta y la baja desde la interfaz y un cierre de sesión que vuelva al inicio.
 
 ## 2. STRIDE
 
 | Familia | Escenario concreto | Control | Estado |
 |---|---|---|---|
-| Suplantación | Alguien se hace pasar por el propietario y llama a la API | Inicio de sesión con Entra ID y validación de firma, emisor, audiencia y vigencia | Validado en local con emisor de prueba; Parcial contra el tenant real |
+| Suplantación | Alguien se hace pasar por el propietario y llama a la API | Inicio de sesión con Entra ID y validación de firma, emisor, audiencia y vigencia | Parcial: validado con emisor de prueba y contra el tenant real el 12 de noviembre de 2026; falta el alta y la baja desde la interfaz |
 | Manipulación | Añadir o borrar series y tomos sin permiso | La misma autenticación y una sola cuenta permitida; consultas parametrizadas por EF Core | Validado en local la primera; Parcial la segunda |
 | Repudio | Borrar una serie y no poder decir quién ni cuándo | Registro de altas y bajas con fecha y origen | Diseño |
-| Divulgación | Leer la colección desde cualquier cliente que tenga la dirección | Autenticación y HTTPS en el despliegue | Parcial: autenticación validada en local; HTTPS pendiente (B.2) |
+| Divulgación | Leer la colección desde cualquier cliente que tenga la dirección | Autenticación y HTTPS en el despliegue | Parcial: autenticación probada contra el tenant real el 12 de noviembre de 2026; HTTPS pendiente (B.2) |
 | Denegación | Ráfagas de peticiones o cuerpos enormes | Límite por IP y tamaño máximo de cuerpo | Parcial: 429 validado, falta el 413 |
 | Elevación | El usuario de la aplicación puede crear tablas en la base | Usuario sin DDL; las migraciones con otro usuario | Diseño |
 
@@ -36,7 +36,7 @@ La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma petic
 | Categoría | Aquí | Estado |
 |---|---|---|
 | API1 BOLA | No aplica: una cuenta y una colección; no hay objetos de otros usuarios que alcanzar | Validado (excepción revisada) |
-| API2 Autenticación rota | Aplica: toda ruta salvo `/health` exige token y la cuenta permitida | Parcial: validado en local con emisor de prueba; sin probar contra el tenant real |
+| API2 Autenticación rota | Aplica: toda ruta salvo `/health` exige token y la cuenta permitida | Parcial: probado contra el tenant real el 12 de noviembre de 2026 —401 sin token, 403 con otra cuenta, 200 con la permitida—; falta el alta y la baja desde la interfaz |
 | API3 Autorización de propiedades | Los contratos de entrada solo declaran los campos que se aceptan; el identificador no se asigna desde el cuerpo | Parcial: sin prueba negativa |
 | API4 Consumo sin límite | Aplica: cuota de 120 peticiones por minuto; falta tamaño máximo de cuerpo | Parcial |
 | API5 BFLA | No aplica: un solo rol, sin operaciones privilegiadas | Validado (excepción revisada) |
@@ -67,7 +67,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 
 | Control | Amenaza que cubre | Qué lo demostrará | Estado |
 |---|---|---|---|
-| Inicio de sesión con Entra ID, una sola cuenta | Suplantación, manipulación, divulgación | Sin token, 401; con token de otra cuenta, 403; la suite de contrato sigue en verde | Validado en local con emisor de prueba; Parcial contra el tenant real |
+| Inicio de sesión con Entra ID, una sola cuenta | Suplantación, manipulación, divulgación | Sin token, 401; con token de otra cuenta, 403; la suite de contrato sigue en verde | Parcial: validado con emisor de prueba y probado contra el tenant real el 12 de noviembre de 2026 —401 sin token, 403 con otra cuenta, 200 con la permitida—; falta el alta y la baja desde la interfaz |
 | Cabeceras y CSP | Divulgación, configuración insegura | Cabeceras en respuesta normal y en error, con prueba automática en los contenedores; CSP de la web con Blazor cargando y el nonce comprobado | Validado en local; renovación de MSAL y HTTPS pendientes (B.2b) |
 | Límite por IP y tamaño de cuerpo | Denegación, flujos sensibles | Ráfaga que recibe 429, 413 por cuerpo mayor de 16 KB y `X-Forwarded-For` que no abre cuota, con prueba automática y en el contenedor | Validado en local y contenedor |
 | Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Diseño |
@@ -83,7 +83,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 - **La auditoría será un registro de aplicación**, no una prueba inmutable ni firmada.
 - **SQLite en local no tiene copia automática.** En Azure la copia la pone la plataforma y hay que comprobarla, no darla por hecha.
 - **El umbral del límite no está calibrado** y no hay pruebas de carga.
-- **La cobertura no se mide:** hay 55 pruebas .NET y 14 comprobaciones de interfaz, sin umbral.
+- **La cobertura no se mide:** hay 58 pruebas .NET y 14 comprobaciones de interfaz, sin umbral.
 - **El CORS solo limita navegadores.** No autentica ni protege de otros clientes.
 
 ## 7. Cómo se mantiene
