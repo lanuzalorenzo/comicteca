@@ -73,7 +73,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 | Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Diseño |
 | Registro de escrituras y copia restaurable | Repudio | Cada alta y baja deja rastro con fecha y origen; una copia se restaura | Diseño |
 | Identidad gestionada y Key Vault | Divulgación, elevación | La configuración de despliegue no contiene contraseñas | Diseño |
-| SAST y escaneo de imagen | Configuración insegura, cadena de suministro | CodeQL y Trivy en verde en el CI | Pendiente: trabajos configurados, sin run en verde todavía |
+| SAST y escaneo de imagen | Configuración insegura, cadena de suministro | CodeQL y Trivy en verde en el CI | Validado: run 43246451547 en verde (12 de noviembre de 2026), con los dos SARIF publicados |
 
 ## 6. Riesgos residuales
 
