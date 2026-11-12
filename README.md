@@ -54,6 +54,7 @@ La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, con
 | [`docs/pruebas.md`](docs/pruebas.md) | Cómo se prueba en local: suite, interfaz, contenedores y checklist manual |
 | [`docs/entra-id.md`](docs/entra-id.md) | Registro de aplicación en Entra ID y dónde se escriben sus valores |
 | [`docs/plan.md`](docs/plan.md) | Los pasos que faltan |
+| [`SECURITY.md`](SECURITY.md) | Cómo avisar de una vulnerabilidad |
 
 ## Datos
 
