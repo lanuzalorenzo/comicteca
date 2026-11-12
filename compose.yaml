@@ -34,10 +34,10 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "127.0.0.1:5077:80"
+      - "127.0.0.1:5077:8080"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/"]
       interval: 5s
       timeout: 3s
       retries: 12

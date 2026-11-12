@@ -82,6 +82,70 @@ jobs:
       - name: Informe de dependencias vulnerables
         run: dotnet list Comicteca.slnx package --vulnerable --include-transitive
 
+  sast:
+    name: Análisis estático (CodeQL)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v7
+
+      - name: Analizar con CodeQL y publicar el SARIF
+        uses: lanuzalorenzo/core/actions/sast@v1.6
+        with:
+          languages: csharp
+
+  container-scan:
+    name: Imágenes de contenedor (Trivy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v7
+
+      - name: Revisar la base musl de los Dockerfiles
+        uses: lanuzalorenzo/core/actions/check-sshd-baseline@v1.6
+        with:
+          root: .
+
+      - name: Construir la imagen de la API
+        run: docker build --secret id=github_token,env=GH_PACKAGES_TOKEN --tag comicteca-api:ci --file src/Comicteca.Api/Dockerfile .
+
+      - name: Construir la imagen de la web
+        run: docker build --tag comicteca-web:ci --file src/Comicteca.Web/Dockerfile .
+
+      - name: Comprobar que la web no corre como root
+        run: |
+          uid="$(docker run --rm --entrypoint id comicteca-web:ci -u)"
+          echo "uid de la web: $uid"
+          test "$uid" != "0"
+
+      - name: Escanear la imagen de la API
+        uses: lanuzalorenzo/core/actions/scan@v1.6
+        with:
+          scan-type: image
+          image-ref: comicteca-api:ci
+          category: trivy-api
+
+      - name: Escanear la imagen de la web
+        uses: lanuzalorenzo/core/actions/scan@v1.6
+        with:
+          scan-type: image
+          image-ref: comicteca-web:ci
+          category: trivy-web
+
   web-e2e:
     name: Interfaz en navegador (375 px)
     runs-on: ubuntu-latest

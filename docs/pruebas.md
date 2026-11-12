@@ -13,6 +13,8 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
 | Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | Cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, y la interfaz cargando con la CSP puesta sin violaciones | `npm run test:cabeceras` con la pila en contenedores |
 | Contenedores | `compose.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base | Manual, con Docker |
+| Análisis estático | `.github/workflows/ci.yml` | CodeQL con `security-extended` sobre C# y SARIF publicado | Trabajo «Análisis estático (CodeQL)» del CI |
+| Imágenes | `.github/workflows/ci.yml`, `src/Comicteca.Api/Dockerfile`, `src/Comicteca.Web/Dockerfile` | Baseline de sshd sobre musl, Trivy sobre las dos imágenes con SARIF, y `id -u` distinto de 0 en la web | Trabajo «Imágenes de contenedor (Trivy)» del CI |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
 
 Las de dominio, API, autenticación y proveedor van en el trabajo de compilación y pruebas; la de interfaz, en su propio trabajo del CI. El ensayo con contenedores y la prueba manual no están automatizados.
@@ -35,7 +37,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **58 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz y revisa los enlaces de la documentación. El run 42248091775 (6 de noviembre de 2026) pasó los cinco trabajos con las 41 pruebas de entonces: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables (informativo, no bloqueante). El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **58 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
