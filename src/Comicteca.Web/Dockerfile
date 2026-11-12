@@ -16,4 +16,11 @@ COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/cabeceras.conf /etc/nginx/snippets/cabeceras.conf
 COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
 
-EXPOSE 80
+# nginx:alpine arranca como root y baja a `nginx`; aquí el maestro ya corre sin
+# privilegios. El pid y la caché van a rutas que ese usuario puede escribir.
+RUN sed -i -e 's|^pid .*|pid /tmp/nginx.pid;|' -e '/^user /d' /etc/nginx/nginx.conf \
+    && chown -R nginx:nginx /var/cache/nginx
+
+USER nginx
+
+EXPOSE 8080

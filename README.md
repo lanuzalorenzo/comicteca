@@ -75,6 +75,6 @@ La guía completa —arranque, prueba de interfaz en Chromium a 375 px, ensayo c
 
 ## Integración continua
 
-El CI repite esa comprobación en cada push y en cada pull request, junto con la revisión de enlaces y anclas de la documentación, el escaneo de secretos del historial completo, la auditoría de dependencias NuGet y la prueba de interfaz en Chromium a 375 px. La mayor parte del trabajo lo hacen las acciones de [`lanuzalorenzo/core`](https://github.com/lanuzalorenzo/core): compilar y probar, revisar enlaces, escanear secretos y arrancar la pila para la prueba de navegador.
+El CI repite esa comprobación en cada push y en cada pull request, junto con la revisión de enlaces y anclas de la documentación, el escaneo de secretos del historial completo, el análisis estático con CodeQL, la auditoría de dependencias NuGet, el escaneo de las imágenes de la API y la web con Trivy y la prueba de interfaz en Chromium a 375 px. Los dos escaneos publican su SARIF en el análisis de código del repositorio. La mayor parte del trabajo lo hacen las acciones de [`lanuzalorenzo/core`](https://github.com/lanuzalorenzo/core): compilar y probar, revisar enlaces, escanear secretos, analizar el código, escanear las imágenes y arrancar la pila para la prueba de navegador.
 
 Los controles comunes —CORS, cabeceras de seguridad, límite por IP, ProblemDetails y salud— no se copian aquí: vienen de los paquetes `LL.Security` y `LL.Hosting`, publicados en el feed de GitHub Packages del propietario y fijados por versión, nunca por rango flotante.

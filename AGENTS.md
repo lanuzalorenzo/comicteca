@@ -119,7 +119,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Los mismos pasos corren en `.github/workflows/ci.yml`, que declara `packages: read` para restaurar los paquetes `LL.*`. El CI añade la comprobación de enlaces de la documentación y el escaneo de secretos con las acciones de `lanuzalorenzo/core`, y el trabajo «Interfaz en navegador (375 px)» arranca la API y la web y ejecuta `tests/e2e` con Chromium; el procedimiento completo está en `docs/pruebas.md`.
+Los mismos pasos corren en `.github/workflows/ci.yml`, que declara `packages: read` para restaurar los paquetes `LL.*`. El CI añade la comprobación de enlaces de la documentación, el escaneo de secretos con las acciones de `lanuzalorenzo/core`, el análisis estático con CodeQL y el escaneo de las imágenes con Trivy —ambos publican SARIF—, y el trabajo «Interfaz en navegador (375 px)» arranca la API y la web y ejecuta `tests/e2e` con Chromium; el procedimiento completo está en `docs/pruebas.md`.
 
 Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotnet run --project src/Comicteca.Web` (puerto 5077). La misma pila en contenedores: `export GH_PACKAGES_TOKEN="<pat-de-solo-lectura>" && docker compose up -d --build`, con la base en el volumen `comicteca_datos`. El token viaja al `Dockerfile` como secreto de BuildKit para leer GitHub Packages. La web lee la URL de la API de `wwwroot/appsettings.json`.
 
@@ -146,17 +146,19 @@ Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `da
 
 ## Integración continua
 
-El repositorio es público y el CI se comporta como tal. `.github/workflows/ci.yml` ejecuta cinco trabajos en cada push y en cada PR:
+El repositorio es público y el CI se comporta como tal. `.github/workflows/ci.yml` ejecuta siete trabajos en cada push y en cada PR:
 
 - **Compilación y pruebas:** la acción `dotnet` de `lanuzalorenzo/core` restaura, compila en Release con los avisos como errores, verifica el formato y ejecuta `dotnet test`. Publica el `.trx` y declara `packages: read` para el feed `LL.*`.
 - **Documentación:** la acción `check-links` de `lanuzalorenzo/core` valida los enlaces relativos y las anclas.
 - **Interfaz:** la acción `browser-e2e` de `lanuzalorenzo/core` instala Chromium, arranca la API y la web con una base temporal y ejecuta `tests/e2e` a 375 px. También restaura los paquetes con `packages: read`.
 - **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` escanea el historial completo.
 - **Dependencias:** auditoría de paquetes NuGet directos y transitivos, que hoy solo informa, y de las dependencias npm de la prueba de interfaz con `npm audit --audit-level=high`, que falla con altas y críticas. El trabajo que restaura declara `packages: read`.
+- **Análisis estático:** la acción `sast` de `lanuzalorenzo/core` ejecuta CodeQL con `security-extended` sobre C# y publica el SARIF; el trabajo declara `security-events: write`.
+- **Imágenes:** la acción `check-sshd-baseline` revisa los Dockerfiles, se construyen la API y la web y la acción `scan` pasa Trivy sobre cada imagen publicando su SARIF. Un paso comprueba con `id -u` que la web no arranca como root.
 
 Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los cinco checks en verde; las major quedan para revisión. El registro `github-packages` de `dependabot.yml` usa el secreto de Dependabot `LL_PACKAGES_TOKEN`, un PAT con `read:packages`, para proponer también actualizaciones de `LL.*`. La primera ejecución con `GITHUB_TOKEN` falló porque Dependabot no resuelve ese token; desde el 07/11 usa el secreto `LL_PACKAGES_TOKEN` y `nuget in /.` ya no falla por credenciales.
 
-La protección de `main` es la misma regla que en el resto de repositorios públicos: un ruleset `main` con pull request obligatoria, los cinco checks del CI, rama actualizada, historial lineal y sin bypass, y la fusión solo por squash. Se comprueba con `gh api repos/lanuzalorenzo/comicteca/rulesets`. El hook local de Gitleaks sigue siendo obligatorio en cada clon: protege antes del push, no después.
+La protección de `main` es la misma regla que en el resto de repositorios públicos: un ruleset `main` con pull request obligatoria, los cinco checks del CI, rama actualizada, historial lineal y sin bypass, y la fusión solo por squash. Se comprueba con `gh api repos/lanuzalorenzo/comicteca/rulesets`. Los trabajos de análisis estático e imágenes todavía no están en el ruleset: se añaden cuando estén en verde. El hook local de Gitleaks sigue siendo obligatorio en cada clon: protege antes del push, no después.
 
 ## Plataforma compartida
 

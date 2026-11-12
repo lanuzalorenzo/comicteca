@@ -57,7 +57,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 | CORS con lista de orígenes y denegación por defecto | `src/Comicteca.Api/appsettings.Development.json`, `Program.cs`, `LL.Security` | Prueba automática del origen permitido y del denegado; solo limita navegadores |
 | OpenAPI solo en Development | `Program.cs` | En desarrollo se publica el documento; en producción no |
 | Consultas parametrizadas por EF Core | `Infrastructure` | Las pone el marco; sin prueba de inyección |
-| Contenedor de la API sin usuario privilegiado | `src/Comicteca.Api/Dockerfile` | Solo la API; la web corre sobre nginx sin usuario propio |
+| Contenedores de la API y la web sin usuario privilegiado | `src/Comicteca.Api/Dockerfile`, `src/Comicteca.Web/Dockerfile` | Dos: la API con `APP_UID` y la web con `nginx` en el puerto 8080; el CI comprueba que la web no arranca con `id -u` 0 |
 | Puertos atados a loopback | `compose.yaml` | Solo en local; el despliegue cambia la barrera |
 | Sin secretos en el historial | `.gitleaks.toml`, CI | Cubre el historial alcanzable; no un clon ya hecho |
 | Dependencias auditadas | CI | NuGet y npm; no cubre la imagen |
@@ -73,13 +73,13 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 | Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Diseño |
 | Registro de escrituras y copia restaurable | Repudio | Cada alta y baja deja rastro con fecha y origen; una copia se restaura | Diseño |
 | Identidad gestionada y Key Vault | Divulgación, elevación | La configuración de despliegue no contiene contraseñas | Diseño |
-| SAST y escaneo de imagen | Configuración insegura, cadena de suministro | CodeQL y Trivy en verde en el CI | Pendiente |
+| SAST y escaneo de imagen | Configuración insegura, cadena de suministro | CodeQL y Trivy en verde en el CI | Pendiente: trabajos configurados, sin run en verde todavía |
 
 ## 6. Riesgos residuales
 
 - **Un token robado da acceso total.** La cuenta es una; el segundo factor y el acceso condicional viven en Entra ID, no en esta API.
 - **El límite por IP es local.** Un ataque distribuido lo esquiva; no hay WAF ni puerta gestionada delante.
-- **El contenedor de la web corre sobre nginx sin usuario propio.** Solo sirve archivos estáticos, pero es un privilegio que no hace falta.
+- **El contenedor de la web ya no corre como root.** Sirve archivos estáticos como `nginx` en el puerto 8080; queda comprobarlo en el despliegue, no solo en local.
 - **La auditoría será un registro de aplicación**, no una prueba inmutable ni firmada.
 - **SQLite en local no tiene copia automática.** En Azure la copia la pone la plataforma y hay que comprobarla, no darla por hecha.
 - **El umbral del límite no está calibrado** y no hay pruebas de carga.
