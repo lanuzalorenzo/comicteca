@@ -125,9 +125,10 @@ Sin el paso 3 no se puede decir que la sesión funciona: la fila de
 - El registro real: ejecutado el 12 de noviembre de 2026 contra el tenant. Queda repetirlo en el entorno de despliegue.
 - Los valores del registro en el publish: WebAssembly no lee variables de
   entorno, así que la web publicada necesita su `appsettings` con los valores.
-  Qué archivo y de dónde salen en el despliegue sigue sin decidirse
-  (`publish-sesion`) y es cosa del propietario; desde el 13 de noviembre de 2026
-  la web sin valores no arranca, en vez de arrancar sin sesión.
+  De dónde salen en el despliegue sigue sin decidirse (`publish-sesion`): las
+  opciones y la recomendación están en el
+  [ADR 0007](adr/0007-valores-de-sesion-en-el-despliegue.md). Desde el 13 de
+  noviembre de 2026 la web sin valores no arranca, en vez de arrancar sin sesión.
 - El secreto de la API en el despliegue: llega con identidad gestionada (B.6).
 - La CSP va puesta en la API y en la web (`docker/cabeceras.conf`), con
   `login.microsoftonline.com` en `connect-src` y `frame-src`. La prueba
