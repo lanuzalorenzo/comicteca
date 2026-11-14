@@ -122,7 +122,7 @@ La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, pub
 
 El token de `gh auth token` solo vale si la sesión tiene el permiso `read:packages`. Si el restore falla con 403, añádelo con `gh auth refresh -s read:packages` o usa un token que ya lo tenga; el token se pasa como secreto de BuildKit y no queda en la imagen.
 
-Resultado observado el 6 de noviembre de 2026 con ese permiso: `api` y `web` en `healthy`, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series.
+Resultado observado el 6 de noviembre de 2026 con ese permiso: `api` y `web` en `healthy`, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series. El 14 de noviembre de 2026, ya con la autenticación obligatoria y valores de prueba, la pila volvió a arrancar: API `healthy`, `/health` en `Healthy`, `/api/series` con 401 y las 36 comprobaciones de cabeceras en verde contra el compose real. Falta repetirlo con los valores del tenant y con el login del navegador.
 
 El 9 de noviembre de 2026, con la CSP puesta, `npm run test:cabeceras` pasó 34 comprobaciones: cabeceras en el HTML, en un recurso de `/_framework/` y en la API, y la lista cargando a 375 px sin violaciones de CSP. Desde el 13 de noviembre de 2026 tiene 36 comprobaciones y no inicia sesión —la CSP solo admite el tenant de Microsoft y abrirla a un emisor de prueba sería debilitarla—: comprueba el 401 de la API sin token, el nonce del importmap contra la cabecera y que Blazor arranca sin violaciones. Los datos con sesión real los cubre la prueba de interfaz, que corre sin CSP.
 
