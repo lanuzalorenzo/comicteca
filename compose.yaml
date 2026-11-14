@@ -11,9 +11,11 @@ services:
       ConnectionStrings__Comicteca: "Data Source=/data/comicteca.db"
       Datos__RutaCsv: "/app/data/coleccion.csv"
       Cors__AllowedOrigins__0: "http://localhost:5077"
-      # Ensayo local en loopback: sin tenant de Entra ID. La imagen sigue
-      # fijando Production; cualquier despliegue real exige Autenticacion__*.
-      ASPNETCORE_ENVIRONMENT: "Development"
+      # Sin estos tres valores la API no arranca: ya no hay interruptor que la
+      # deje abierta. Se leen del entorno del host y nunca se versionan.
+      Autenticacion__Authority: "${AUTENTICACION_AUTHORITY:?falta AUTENTICACION_AUTHORITY}"
+      Autenticacion__Audience: "${AUTENTICACION_AUDIENCE:?falta AUTENTICACION_AUDIENCE}"
+      Autenticacion__CuentaPermitida: "${AUTENTICACION_CUENTA_PERMITIDA:?falta AUTENTICACION_CUENTA_PERMITIDA}"
     volumes:
       - datos:/data
     ports:

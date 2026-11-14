@@ -30,7 +30,6 @@ public class ApiFactory : WebApplicationFactory<Program>
         // El código de producción no distingue entornos: solo cambia el emisor
         // de los tokens, que aquí es una clave de prueba.
         builder.UseEnvironment("Production");
-        builder.UseSetting("Autenticacion:Requerida", "true");
         builder.UseSetting("Autenticacion:Authority", Authority);
         builder.UseSetting("Autenticacion:Audience", Audience);
         builder.UseSetting("Autenticacion:CuentaPermitida", CuentaPermitida);

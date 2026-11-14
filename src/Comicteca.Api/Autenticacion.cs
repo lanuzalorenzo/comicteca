@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 namespace Comicteca.Api;
 
 /// <summary>
-/// Entra ID con una sola cuenta permitida. La API no arranca sin emisor,
-/// audiencia y cuenta: un despliegue incompleto falla en vez de quedarse
-/// abierto. Solo Development puede arrancar sin autenticación.
+/// Entra ID con una sola cuenta permitida. No hay forma de desactivarlo: sin
+/// emisor, audiencia y cuenta la API no arranca. El desarrollo tampoco tiene
+/// una puerta propia; solo cambia el emisor al que se apunta.
 /// </summary>
 public static class Autenticacion
 {
@@ -16,27 +16,13 @@ public static class Autenticacion
 
     /// <summary>
     /// Registra JWT con firma, emisor, audiencia y vigencia, y una política por
-    /// defecto que exige la cuenta permitida. Devuelve false únicamente en
-    /// Development, donde el trabajo local puede prescindir del token; el código
-    /// no comprueba la dirección de escucha.
+    /// defecto que exige la cuenta permitida. Lanza si falta algún valor: un
+    /// arranque incompleto falla en vez de quedarse abierto.
     /// </summary>
-    public static bool AgregarAutenticacionDeUnaCuenta(
+    public static void AgregarAutenticacionDeUnaCuenta(
         this IServiceCollection servicios,
-        IConfiguration configuracion,
-        IHostEnvironment entorno)
+        IConfiguration configuracion)
     {
-        if (!configuracion.GetValue("Autenticacion:Requerida", true))
-        {
-            if (!entorno.IsDevelopment())
-            {
-                throw new InvalidOperationException(
-                    "Autenticacion:Requerida solo se puede desactivar en Development. " +
-                    $"El entorno actual es {entorno.EnvironmentName}.");
-            }
-
-            return false;
-        }
-
         var authority = configuracion["Autenticacion:Authority"];
         var audience = configuracion["Autenticacion:Audience"];
         var cuenta = configuracion["Autenticacion:CuentaPermitida"];
@@ -47,7 +33,8 @@ public static class Autenticacion
         {
             throw new InvalidOperationException(
                 "Faltan Autenticacion:Authority, Autenticacion:Audience o " +
-                "Autenticacion:CuentaPermitida. Sin ellas la API no arranca.");
+                "Autenticacion:CuentaPermitida. Sin ellas la API no arranca: " +
+                "no hay forma de desactivar la autenticación.");
         }
 
         servicios.AddHardenedJwtBearer(opciones =>
@@ -66,7 +53,5 @@ public static class Autenticacion
                 .RequireAuthenticatedUser()
                 .RequireClaim(ClaimCuenta, cuenta)
                 .Build());
-
-        return true;
     }
 }
