@@ -1,8 +1,10 @@
+<img src="assets/iconos/comicteca.svg" width="64" alt="Icono de Comicteca">
+
 # Comicteca
 
 Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no guarda los tebeos, dice cuáles tengo, de qué editorial y en qué número. La empecé porque seguía las novedades en una web de pago y solo necesitaba una cosa de ella: saber cuándo sale el siguiente tomo de las series que leo.
 
-**Estado:** la carga, el listado y la escritura desde la web y por API funcionan en local con el conjunto de demostración: 20 series y 65 filas (4 de noviembre de 2026). El despliegue está pendiente y los avisos de novedades, en diseño.
+> **Estado (2026-11-04).** La carga, el listado y la escritura desde la web y por API funcionan en local con el conjunto de demostración: 20 series y 65 filas. El despliegue está pendiente y los avisos de novedades, en diseño.
 
 ## Qué hace hoy
 
