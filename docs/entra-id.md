@@ -65,7 +65,6 @@ por Git; WebAssembly no lee variables de entorno):
 ```json
 {
   "Autenticacion": {
-    "Requerida": true,
     "Authority": "https://login.microsoftonline.com/<tenant-id>/v2.0",
     "ClientId": "<client-id-de-Comicteca-Web>",
     "ApiScope": "api://comicteca-api/acceso"
@@ -73,7 +72,8 @@ por Git; WebAssembly no lee variables de entorno):
 }
 ```
 
-`ClientId` es el de la **web**, no el de la API.
+`ClientId` es el de la **web**, no el de la API. `Requerida` ya no existe: la
+sesión no se apaga (ADR 0006).
 
 El `oid` de la cuenta permitida es el claim `oid` de un token emitido para ese
 usuario. El token, o su parte central, se decodifica en local —el apartado 9 explica
@@ -82,15 +82,16 @@ cómo—; no se pega en servicios de terceros.
 ## 5. Cómo se comprueba
 
 1. `dotnet run --project src/Comicteca.Api` y `dotnet run --project
-   src/Comicteca.Web`, con `Autenticacion:Requerida=true` en los dos.
+   src/Comicteca.Web`, con los valores de la API en el entorno y los de la web en
+   `appsettings.Development.json`. Sin ellos no arrancan.
 2. Sin sesión, la lista no debe cargar: la API responde 401.
 3. **Iniciar sesión**, entrar con la cuenta permitida y verificar que la lista
    carga, que se da de alta una serie y se borra.
 4. Con otra cuenta: 403.
-5. `cd tests/e2e && npm test`, con la sesión **apagada**: el guion no entra en
-   Entra ID y espera el formulario y las fichas a la vista. La interfaz con sesión se
-   ejecutó el 12 de noviembre de 2026; quedan pendientes el alta y la baja desde el
-   botón y un cierre de sesión que vuelva al inicio.
+5. `cd tests/e2e && bash start.sh` y `npm test`: la prueba levanta su propio
+   emisor OIDC, entra por él y da de alta y de baja serie y tomo con sesión a
+   375 px. El emisor de prueba no es Entra ID: prueba el mismo camino —MSAL,
+   token, JWKS y la cuenta permitida— sin depender del tenant.
 6. Preflight de CORS con la cabecera `Authorization`, que el navegador manda
    antes de la primera llamada autenticada:
 
@@ -122,10 +123,11 @@ Sin el paso 3 no se puede decir que la sesión funciona: la fila de
 ## 7. Lo que este documento no cubre
 
 - El registro real: ejecutado el 12 de noviembre de 2026 contra el tenant. Queda repetirlo en el entorno de despliegue.
-- El valor de producción de `Requerida` y los valores del registro en el
-  publish: WebAssembly no lee variables de entorno, así que el
-  `appsettings.json` publicado hoy dice `false` y la web desplegada tal cual
-  arranca sin sesión. Decidirlo toca B.2 y la configuración de despliegue.
+- Los valores del registro en el publish: WebAssembly no lee variables de
+  entorno, así que la web publicada necesita su `appsettings` con los valores.
+  Qué archivo y de dónde salen en el despliegue sigue sin decidirse
+  (`publish-sesion`) y es cosa del propietario; desde el 13 de noviembre de 2026
+  la web sin valores no arranca, en vez de arrancar sin sesión.
 - El secreto de la API en el despliegue: llega con identidad gestionada (B.6).
 - La CSP va puesta en la API y en la web (`docker/cabeceras.conf`), con
   `login.microsoftonline.com` en `connect-src` y `frame-src`. La prueba
@@ -150,7 +152,7 @@ locales del propietario.
 | 5. Sin sesión | `curl -i http://localhost:5094/api/series` → 401 | La API exige token |
 | 5. Con la cuenta permitida | Captura de la lista cargada, del alta de una serie desde la interfaz y del borrado | La sesión sirve para leer y escribir |
 | 5. Con otra cuenta | Captura del 403 | La lista de uno se aplica |
-| 5. Interfaz | `npm test` a 375 px en verde con la sesión apagada | La interfaz sin token sigue igual |
+| 5. Interfaz | `npm test` a 375 px en verde con el emisor de prueba y sesión | La interfaz sin token falla: la API devuelve 401 |
 | 5. Preflight | Salida del `curl -i -X OPTIONS` del apartado 5 | El navegador puede mandar `Authorization` |
 
 Con todo eso, y solo entonces, la sesión pasa a **Validado** y la entrada de
