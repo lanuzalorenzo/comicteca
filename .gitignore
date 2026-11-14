@@ -33,6 +33,8 @@ tests/e2e/artifacts/
 appsettings.Local.json
 # Valores del registro de Entra ID de la web: solo en local
 src/Comicteca.Web/wwwroot/appsettings.Development.json
+# Valores de sesión de la imagen de la web: solo en local
+src/Comicteca.Web/wwwroot/appsettings.Production.json
 
 # Herramientas locales de OpenCode: no se versionan
 .opencode/

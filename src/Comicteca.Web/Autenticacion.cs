@@ -1,19 +1,14 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 
 namespace Comicteca.Web;
 
-/// <summary>Si la web tiene configurada la sesión de Entra ID.</summary>
-public sealed record EstadoDeSesion(bool Disponible);
-
 /// <summary>
 /// Entra ID como cliente público en el navegador: PKCE y sin secreto, porque
 /// en WebAssembly no hay dónde guardarlo. Los valores del registro no se
-/// versionan; el repositorio lleva marcadores y el valor real llega por un
-/// appsettings de Development que Git ignora. Sin valores y con
-/// Autenticacion:Requerida=true la web no arranca, igual que la API.
+/// versionan; el repositorio no los lleva y llegan por un appsettings que Git
+/// ignora. Sin valores la web no arranca, igual que la API: no hay sesión
+/// opcional.
 /// </summary>
 public static class Autenticacion
 {
@@ -21,11 +16,11 @@ public static class Autenticacion
     public const string RutaSesion = "authentication";
 
     /// <summary>
-    /// Registra MSAL y el portador del token. Devuelve false cuando no hay
-    /// valores y la sesión no es obligatoria, para que el trabajo local siga
-    /// sin tenant, como hace la API en Development.
+    /// Registra MSAL y el portador del token. Lanza si falta algún valor: en
+    /// el navegador no hay variables de entorno que rellenar y una pantalla sin
+    /// sesión sería una pantalla sin datos.
     /// </summary>
-    public static bool AgregarSesionDeEntra(
+    public static void AgregarSesionDeEntra(
         this IServiceCollection servicios,
         IConfiguration configuracion)
     {
@@ -37,17 +32,10 @@ public static class Autenticacion
             || string.IsNullOrWhiteSpace(cliente)
             || string.IsNullOrWhiteSpace(ambito))
         {
-            if (configuracion.GetValue("Autenticacion:Requerida", true))
-            {
-                throw new InvalidOperationException(
-                    "Faltan Autenticacion:Authority, Autenticacion:ClientId o " +
-                    "Autenticacion:ApiScope. Sin ellas la web no arranca.");
-            }
-
-            servicios.AddAuthorizationCore();
-            servicios.AddScoped<AuthenticationStateProvider, ProveedorSinSesion>();
-
-            return false;
+            throw new InvalidOperationException(
+                "Faltan Autenticacion:Authority, Autenticacion:ClientId o " +
+                "Autenticacion:ApiScope. Sin ellas la web no arranca: " +
+                "no hay forma de desactivar la autenticación.");
         }
 
         servicios.AddMsalAuthentication(opciones =>
@@ -56,31 +44,40 @@ public static class Autenticacion
             opciones.ProviderOptions.Authentication.ClientId = cliente;
             opciones.ProviderOptions.DefaultAccessTokenScopes.Add(ambito);
             opciones.ProviderOptions.LoginMode = "redirect";
+
+            // MSAL valida el emisor contra el descubrimiento de la instancia de
+            // Microsoft. Un emisor propio se declara aquí; con el tenant real la
+            // lista va vacía y la validación no se relaja.
+            var conocidas = configuracion
+                .GetSection("Autenticacion:AuthoritiesConocidas")
+                .Get<string[]>() ?? [];
+            foreach (var conocida in conocidas)
+            {
+                // Solo direcciones locales: la lista existe para la prueba de
+                // interfaz y no puede aceptar un emisor público.
+                if (!Uri.TryCreate(conocida, UriKind.Absolute, out var emisor) || !emisor.IsLoopback)
+                {
+                    throw new InvalidOperationException(
+                        $"Autenticacion:AuthoritiesConocidas solo admite emisores locales, y «{conocida}» " +
+                        "no lo es. Es una facilidad de la prueba de interfaz, no una forma de aceptar " +
+                        "un emisor ajeno.");
+                }
+            }
+
+            if (conocidas.Length > 0)
+            {
+                opciones.ProviderOptions.Authentication.KnownAuthorities = conocidas;
+            }
         });
         servicios.AddAuthorizationCore();
         servicios.AddScoped<PortadorDeToken>();
-
-        return true;
     }
-}
-
-/// <summary>
-/// Sesión apagada: el estado en cascada necesita un proveedor aunque nadie
-/// haya entrado. Devuelve siempre una identidad anónima.
-/// </summary>
-public sealed class ProveedorSinSesion : AuthenticationStateProvider
-{
-    private static readonly Task<AuthenticationState> Anonimo =
-        Task.FromResult(new AuthenticationState(
-            new ClaimsPrincipal(new ClaimsIdentity())));
-
-    public override Task<AuthenticationState> GetAuthenticationStateAsync() => Anonimo;
 }
 
 /// <summary>
 /// Pone el token de la sesión en cada llamada a la API. Si MSAL pide pasar por
 /// el inicio de sesión, la petición no se envía sin credencial: se corta y se
-/// navega al login. Sin sesión configurada no hay portador que montar.
+/// navega al login.
 /// </summary>
 public sealed class PortadorDeToken(
     IAccessTokenProvider proveedor,

@@ -3,6 +3,21 @@ const { chromium } = require('playwright');
 const WEB = process.env.COMICTECA_WEB ?? 'http://localhost:5077';
 const API = process.env.COMICTECA_API ?? 'http://localhost:5094';
 
+// Esta prueba mira cabeceras y CSP, no datos: no inicia sesión. La web no
+// arranca sin valores de sesión y Git no los lleva, así que se sirven
+// interceptados; da igual que el emisor no exista, porque MSAL no llega a
+// llamarlo: la CSP del contenedor solo admite el tenant de Microsoft y un
+// emisor de prueba exigiría abrirla. Los datos con sesión real los cubre
+// `npm test`, que corre sin CSP.
+const CONFIGURACION = {
+  ApiBaseUrl: API,
+  Autenticacion: {
+    Authority: 'https://login.microsoftonline.com/comicteca-pruebas/v2.0',
+    ClientId: 'comicteca-cabeceras',
+    ApiScope: 'api://comicteca-e2e/acceso'
+  }
+};
+
 let comprobaciones = 0;
 
 function check(condicion, mensaje) {
@@ -69,18 +84,46 @@ async function esperarServidor(url, intentos = 60) {
     comprobarCabecerasComunes(html, 'web (HTML)', 'SAMEORIGIN');
     comprobarCsp('web (HTML)', html);
 
+    // nginx sustituye el nonce del importmap por petición: se compara el del
+    // documento con el de la cabecera, sin necesidad de un navegador.
+    const cuerpo = await html.text();
+    const nonceHtml = /<script type="importmap"[^>]*nonce="([^"]+)"/.exec(cuerpo)?.[1] ?? '';
+    const nonceCabecera = /'nonce-([^']+)'/.exec(cabecera(html, 'content-security-policy'))?.[1] ?? '';
+    check(nonceHtml.length > 0, 'el importmap en línea lleva nonce');
+    check(nonceHtml === nonceCabecera, 'el nonce del importmap coincide con el de la cabecera CSP');
+
+    // Un recurso real de /_framework/, sacado del propio HTML.
+    const recurso = /src="(_framework\/[^"]+\.js)"/.exec(cuerpo)?.[1] ?? '';
+    check(recurso.length > 0, 'el HTML referencia un recurso de /_framework/');
+    const framework = await fetch(`${WEB}/${recurso}`);
+    check(framework.ok, `la web sirve ${recurso}`);
+    comprobarCabecerasComunes(framework, 'web (/_framework/)', 'SAMEORIGIN');
+    comprobarCsp('web (/_framework/)', framework);
+
     const api = await fetch(`${API}/api/series`);
-    check(api.ok, `la API responde ${api.status}`);
+    check(api.status === 401, `la API responde ${api.status} sin sesión`);
     comprobarCabecerasComunes(api, 'API');
     const cspApi = cabecera(api, 'content-security-policy');
     check(cspApi.includes("default-src 'none'"), 'API: CSP default-src none');
     check(cspApi.includes("frame-ancestors 'none'"), "API: CSP frame-ancestors 'none'");
 
+    // El navegador solo responde a una pregunta que el fetch no puede: si
+    // Blazor carga y ejecuta bajo esa CSP sin violaciones.
     navegador = await chromium.launch();
     const pagina = await navegador.newPage({ viewport: { width: 375, height: 812 } });
+    const servirConfiguracion = (respuesta) => respuesta.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(CONFIGURACION)
+    });
+    await pagina.route('**/appsettings.json', servirConfiguracion);
+    await pagina.route('**/appsettings.Production.json', servirConfiguracion);
+    await pagina.route('**/appsettings.Development.json', (respuesta) => respuesta.fulfill({
+      contentType: 'application/json',
+      body: '{}'
+    }));
+
     const violaciones = [];
     const erroresPagina = [];
-
     pagina.on('console', (mensaje) => {
       if (mensaje.type() !== 'error') return;
       if (/content security policy|refused to/i.test(mensaje.text())) {
@@ -89,32 +132,19 @@ async function esperarServidor(url, intentos = 60) {
     });
     pagina.on('pageerror', (error) => erroresPagina.push(error.message));
 
-    const framework = [];
-    pagina.on('response', (respuesta) => {
-      if (respuesta.url().includes('/_framework/')) framework.push(respuesta);
-    });
+    await pagina.goto(WEB, { waitUntil: 'load' });
+    // El arranque de Blazor basta para saber si la CSP lo bloquea: el área de
+    // la aplicación deja de estar vacía aunque la sesión no llegue a Entra ID.
+    await pagina.waitForFunction(
+      () => (document.querySelector('#app')?.children.length ?? 0) > 0,
+      undefined,
+      { timeout: 30000 });
+    check(true, 'Blazor arranca y pinta bajo la CSP puesta');
 
-    const navegacion = await pagina.goto(WEB, { waitUntil: 'domcontentloaded' });
-    await pagina.getByRole('heading', { name: 'Nueva serie' }).waitFor({ timeout: 30000 });
-    await pagina.locator('.ficha').first().waitFor({ timeout: 30000 });
-
-    const series = await pagina.locator('.ficha').count();
-    check(series > 0, `la interfaz carga ${series} series con la CSP puesta`);
-
-    const nonceImportmap = await pagina.evaluate(
-      () => document.querySelector('script[type="importmap"]')?.nonce ?? '');
-    const nonceCabecera = /'nonce-([^']+)'/.exec(cabecera(navegacion, 'content-security-policy'))?.[1] ?? '';
-    check(nonceImportmap.length > 0, 'el importmap en línea lleva el nonce de la CSP');
-    check(nonceImportmap === nonceCabecera,
-      'el nonce del importmap coincide con el de la cabecera CSP');
-
+    check(await pagina.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      'sin desbordamiento horizontal a 375 px');
     check(erroresPagina.length === 0,
       `sin excepciones de JavaScript${erroresPagina.length ? `: ${erroresPagina[0]}` : ''}`);
-
-    check(framework.length > 0, 'la web sirve al menos un recurso de /_framework/');
-    comprobarCabecerasComunes(framework[0], 'web (/_framework/)', 'SAMEORIGIN');
-    comprobarCsp('web (/_framework/)', framework[0]);
-
     check(violaciones.length === 0,
       `sin violaciones de CSP${violaciones.length ? `: ${violaciones[0]}` : ''}`);
 

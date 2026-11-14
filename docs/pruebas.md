@@ -9,9 +9,9 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
 | API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 28 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras, 413, 429, `X-Forwarded-For` sin cuota nueva y excepción no controlada con ProblemDetails | `dotnet test` |
 | Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
-| Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque sin `Authority`, `Audience`, `CuentaPermitida` o con `Requerida` apagada fuera de Development | `dotnet test` |
-| Interfaz | `tests/e2e/prueba-web.js` | 14 comprobaciones en Chromium a 375 px: alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con la API y la web arrancadas |
-| Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | Cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, y la interfaz cargando con la CSP puesta sin violaciones | `npm run test:cabeceras` con la pila en contenedores |
+| Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque, que falla si falta `Authority`, `Audience`, `CuentaPermitida` o los tres. No hay interruptor que la desactive | `dotnet test` |
+| Interfaz | `tests/e2e/prueba-web.js` | 16 comprobaciones en Chromium a 375 px con sesión: la API rechaza la lectura sin token, la web entra por el emisor de prueba, y cubre alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con el emisor y la pila arrancados con `start.sh` |
+| Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | 36 comprobaciones: cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, el nonce del importmap contra el de la cabecera, el 401 de la API sin token y Blazor arrancando a 375 px sin violaciones de CSP | `npm run test:cabeceras` con la pila en contenedores |
 | Contenedores | `compose.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base | Manual, con Docker |
 | Análisis estático | `.github/workflows/ci.yml` | CodeQL con `security-extended` sobre C# y SARIF publicado | Trabajo «Análisis estático (CodeQL)» del CI |
 | Imágenes | `.github/workflows/ci.yml`, `src/Comicteca.Api/Dockerfile`, `src/Comicteca.Web/Dockerfile` | Baseline de sshd sobre musl, Trivy sobre las dos imágenes con SARIF, y `id -u` distinto de 0 en la web | Trabajo «Imágenes de contenedor (Trivy)» del CI |
@@ -48,11 +48,17 @@ El CI añade una comprobación de enlaces relativos y anclas con la acción `che
 En dos terminales:
 
 ```bash
+# Los valores del registro están en entra-id.md; sin ellos la API no arranca.
+export Autenticacion__Authority="https://login.microsoftonline.com/<tenant>/v2.0"
+export Autenticacion__Audience="api://comicteca-api"
+export Autenticacion__CuentaPermitida="<object id de la cuenta>"
 dotnet run --project src/Comicteca.Api    # http://localhost:5094
 dotnet run --project src/Comicteca.Web    # http://localhost:5077
 ```
 
-La primera vez, la API crea la base, aplica las migraciones y carga `data/coleccion.csv`. La web lee la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json`.
+La primera vez, la API crea la base, aplica las migraciones y carga `data/coleccion.csv`. La web lee la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json` y la sesión de `wwwroot/appsettings.Development.json`, que Git ignora porque WebAssembly no lee variables de entorno.
+
+Desde el 13 de noviembre de 2026 no hay forma de arrancar sin sesión (ADR 0006): si falta alguno de los tres valores, la API lanza una excepción con el nombre de la clave y la web no arranca. Para probar sin tenant, la sección 3 levanta un emisor OIDC de prueba con esos valores puestos.
 
 Para usar otra base o otro CSV, sin tocar los archivos:
 
@@ -64,40 +70,45 @@ dotnet run --project src/Comicteca.Api
 
 Abre siempre la web por `http://localhost:5077`. El CORS de la API permite ese origen; `http://127.0.0.1:5077` no está en la lista y la lista no cargará.
 
-Para probar con una sesión de Entra ID, el registro de aplicación y los valores van en [`entra-id.md`](entra-id.md). Sin ellos la web arranca sin sesión y la API trabaja sin token en Development.
-
 ## 3. Prueba de interfaz
 
-Con la API y la web arrancadas, en otra terminal:
+La prueba no puede correr sin sesión: la autenticación ya no se apaga. Autentica contra un emisor OIDC de prueba que vive en `tests/e2e` y solo existe aquí —HTTPS con un certificado efímero, firma RSA, JWKS y PKCE— y la API confía en ese certificado únicamente durante la prueba. `start.sh` levanta el emisor, la API y la web en `Production`; la prueba sirve un `appsettings` interceptado que apunta al emisor, así que el repositorio no guarda valores.
 
 ```bash
 cd tests/e2e
 npm ci
 npm audit --audit-level=high
 npx playwright install chromium   # solo la primera vez
+RUNNER_TEMP=/tmp bash start.sh &  # emisor, API y web; corta con kill al terminar
 npm test
 ```
 
-Qué hace: comprueba que no hay desbordamiento horizontal a 375 px, da de alta una serie, comprueba que aparece sin recargar, le añade un tomo, repite la serie para ver el 409, prueba un número 0, borra el tomo y la serie, y verifica que la lista vuelve al estado inicial, que la página no se ha recargado y que no hubo excepciones de JavaScript. El CI añade esta auditoría y la prueba a la suite de .NET.
+Qué hace: comprueba que la API responde 401 sin token y que la web entra por el emisor de prueba y muestra el nombre de la cuenta; después, que no hay desbordamiento horizontal a 375 px, da de alta una serie, comprueba que aparece sin recargar, le añade un tomo, repite la serie para ver el 409, prueba un número 0, borra el tomo y la serie, y verifica que la lista vuelve al estado inicial, que la página no se ha recargado y que no hubo excepciones de JavaScript. El CI añade esta auditoría y la prueba a la suite de .NET.
 
-Se puede apuntar a otra dirección con `COMICTECA_WEB` y `COMICTECA_API`, pero solo cambia lo que usa el guion para esperar y limpiar: la dirección de la API que consume la aplicación se cambia en `src/Comicteca.Web/wwwroot/appsettings.json`. Si usas otra base, arranca la API con el CSV de demostración.
+Se puede apuntar a otra dirección con `COMICTECA_WEB` y `COMICTECA_API`, pero solo cambia lo que usa el guion para esperar: la dirección de la API que consume la aplicación llega en el `appsettings` interceptado. Los valores del emisor —autoridad, audiencia, ámbito, cuenta y nombre— están en `tests/e2e/emisor.json`, que leen el emisor, `start.sh` y la prueba.
 
-Si algo falla y la página llegó a abrirse, deja una captura en `tests/e2e/artifacts/fallo.png` y limpia la serie de prueba por la API. La captura puede mostrar la colección cargada: úsala con el conjunto de demostración o no la compartas. En el CI corre en el trabajo «Interfaz en navegador (375 px)», que arranca la API con una base temporal, la web y Chromium.
+Si algo falla y la página llegó a abrirse, deja una captura en `tests/e2e/artifacts/fallo.png`. La serie de prueba se borra dentro de la propia prueba; si falla antes, queda en la base temporal de `$RUNNER_TEMP`, que se descarta. La captura puede mostrar la colección cargada: úsala con el conjunto de demostración o no la compartas. En el CI corre en el trabajo «Interfaz en navegador (375 px)», que arranca el emisor, la API con una base temporal, la web y Chromium.
 
 ## 4. Ensayo con contenedores
 
 ```bash
 export GH_PACKAGES_TOKEN="<pat-read:packages>"
+export AUTENTICACION_AUTHORITY="https://login.microsoftonline.com/<tenant>/v2.0"
+export AUTENTICACION_AUDIENCE="api://comicteca-api"
+export AUTENTICACION_CUENTA_PERMITIDA="<object id de la cuenta>"
 docker compose up -d --build
 docker compose ps                 # api y web en healthy
 curl http://localhost:5094/health
 cd tests/e2e && npm run test:cabeceras
 ```
 
+Compose no arranca sin esas tres variables: las declara con `${...:?}` para que se detenga con el nombre de la que falta, en vez de levantar una API abierta. La imagen de la web no lleva valores de sesión en el repositorio: para usar la web del contenedor en el navegador hay que dejar `src/Comicteca.Web/wwwroot/appsettings.Production.json` —ignorado por Git— antes de construirla o no pintará nada. `prueba-cabeceras.js` no lo necesita: sirve su propia configuración interceptada. La pila de compose es para el ensayo, no para la prueba de interfaz: esta última usa el emisor de prueba de la sección 3.
+
 `prueba-cabeceras.js` recorre la web, un recurso de `/_framework/` y la API,
 comprueba `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
-`Permissions-Policy` y `Content-Security-Policy`, y abre la lista a 375 px para
-confirmar que Blazor no choca con la CSP: no basta con que la cabecera nombre a
+`Permissions-Policy` y `Content-Security-Policy`, compara el nonce del importmap
+con el de la cabecera y abre la interfaz a 375 px para confirmar que Blazor
+arranca bajo la CSP sin violaciones: no basta con que la cabecera nombre a
 MSAL, con la CSP activa falta comprobar que el token se renueva en silencio. Falla si el
 navegador registra una violación. Es la prueba que cierra B.2a; la CSP de la web
 vive en `docker/cabeceras.conf` y la de la API se compone con `LL.Security`.
@@ -107,13 +118,13 @@ La CSP de la web fija el origen de la API en `http://localhost:5094`. Si cambias
 `connect-src` en `docker/cabeceras.conf` o el navegador bloqueará las llamadas.
 Al desplegar hay que sustituirlo por el origen real.
 
-La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`. Compose añade `Cors__AllowedOrigins__0` con el origen de la web y arranca la API en `Development`, donde la autenticación se apaga para el ensayo local. Esa excepción no vale fuera de Development: la imagen fija `Production` y allí la API no arranca sin `Autenticacion__Authority`, `Autenticacion__Audience` y `Autenticacion__CuentaPermitida`.
+La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`. Compose añade `Cors__AllowedOrigins__0` con el origen de la web y exige `AUTENTICACION_AUTHORITY`, `AUTENTICACION_AUDIENCE` y `AUTENTICACION_CUENTA_PERMITIDA` en el entorno del host: sin ellas `docker compose up` se detiene con el nombre de la que falta. La imagen fija `Production` y ya no hay entorno donde la autenticación se apague.
 
 El token de `gh auth token` solo vale si la sesión tiene el permiso `read:packages`. Si el restore falla con 403, añádelo con `gh auth refresh -s read:packages` o usa un token que ya lo tenga; el token se pasa como secreto de BuildKit y no queda en la imagen.
 
 Resultado observado el 6 de noviembre de 2026 con ese permiso: `api` y `web` en `healthy`, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series.
 
-El 9 de noviembre de 2026, con la CSP puesta, `npm run test:cabeceras` pasó 34 comprobaciones: cabeceras en el HTML, en un recurso de `/_framework/` y en la API, y la lista cargando a 375 px sin violaciones de CSP. `npm test` siguió en verde contra los contenedores.
+El 9 de noviembre de 2026, con la CSP puesta, `npm run test:cabeceras` pasó 34 comprobaciones: cabeceras en el HTML, en un recurso de `/_framework/` y en la API, y la lista cargando a 375 px sin violaciones de CSP. Desde el 13 de noviembre de 2026 tiene 36 comprobaciones y no inicia sesión —la CSP solo admite el tenant de Microsoft y abrirla a un emisor de prueba sería debilitarla—: comprueba el 401 de la API sin token, el nonce del importmap contra la cabecera y que Blazor arranca sin violaciones. Los datos con sesión real los cubre la prueba de interfaz, que corre sin CSP.
 
 Los límites también se comprueban a mano contra el contenedor:
 
@@ -123,13 +134,13 @@ python3 -c "print('{\"titulo\":\"' + 'a'*20000 + '\",\"editorial\":\"E\"}')" \
     -H "Content-Type: application/json" --data-binary @-                         # 413
 
 for i in $(seq 1 120); do curl -s -o /dev/null -w "%{http_code}\n" \
-  http://localhost:5094/api/series; done | sort | uniq -c   # 120 respuestas 200
+  http://localhost:5094/api/series; done | sort | uniq -c   # 120 respuestas 401
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:5094/api/series        # 429
 curl -s -o /dev/null -w "%{http_code}\n" -H "X-Forwarded-For: 198.51.100.7" \
   http://localhost:5094/api/series                                               # 429
 ```
 
-El cuerpo grande se comprueba después que la cuota: el limitador va antes que el tope, así que esas peticiones también cuentan para el 429. El 429 se reinicia al cabo de un minuto o al reiniciar la API.
+Sin token las respuestas son 401 porque el limitador va antes que la autenticación; con un `Authorization` válido son 200. El cuerpo grande se comprueba después que la cuota: el limitador va antes que el tope, así que esas peticiones también cuentan para el 429. El 429 se reinicia al cabo de un minuto o al reiniciar la API.
 
 Para comprobar que la base sobrevive:
 
@@ -142,7 +153,7 @@ docker compose up -d
 docker compose down -v            # esto sí borra la base y el volumen
 ```
 
-La API del contenedor solo escucha en tu máquina y, en este ensayo, corre sin autenticación; no la publiques fuera de loopback ni cambies el entorno sin configurar Entra ID.
+La API del contenedor solo escucha en tu máquina y exige token igual que fuera de él: sin las tres variables no arranca. No la publiques fuera de loopback.
 
 ## 5. Checklist manual
 
@@ -170,7 +181,7 @@ En escritorio, a 1440 × 900:
 - No hay umbral de cobertura: hay 58 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
-- La API exige token en Production. En Development se apaga para trabajar y la web local trabaja sin sesión salvo que se le den los valores del registro; la sesión del navegador ya se probó contra el tenant real el 12 de noviembre de 2026 y el despliegue espera al alta y la baja desde la interfaz y al cierre de sesión limpio.
+- La API y la web exigen token en todos los entornos: en Development ya no se apaga y no hay forma de arrancarlas sin los valores del registro. La sesión del navegador se probó contra el tenant real el 12 de noviembre de 2026 y, desde el 13, la prueba de interfaz entra con el emisor de prueba y da de alta y de baja con sesión; el despliegue sigue esperando al cierre de sesión limpio.
 
 ## Problemas típicos
 

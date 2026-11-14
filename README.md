@@ -17,16 +17,23 @@ Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no
 ## Cómo se arranca
 
 ```bash
+# Sin los tres valores del registro —entra-id.md— la API no arranca.
+export Autenticacion__Authority="https://login.microsoftonline.com/<tenant>/v2.0"
+export Autenticacion__Audience="api://comicteca-api"
+export Autenticacion__CuentaPermitida="<object id>"
 dotnet run --project src/Comicteca.Api   # http://localhost:5094
 dotnet run --project src/Comicteca.Web   # http://localhost:5077
 ```
 
-La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La web toma la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json`.
+La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La web toma la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json` y la sesión de un `appsettings.Development.json` que Git ignora. La autenticación no se apaga en ningún entorno: sin valores, la aplicación falla en vez de arrancar abierta.
 
 ### Con Docker
 
 ```bash
 export GH_PACKAGES_TOKEN="<pat-read:packages>"
+export AUTENTICACION_AUTHORITY="https://login.microsoftonline.com/<tenant>/v2.0"
+export AUTENTICACION_AUDIENCE="api://comicteca-api"
+export AUTENTICACION_CUENTA_PERMITIDA="<object id>"
 docker compose up -d --build
 ```
 

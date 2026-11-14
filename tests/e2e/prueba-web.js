@@ -2,11 +2,26 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('playwright');
 
+const emisor = require('./emisor.json');
+
 const WEB = process.env.COMICTECA_WEB ?? 'http://localhost:5077';
 const API = process.env.COMICTECA_API ?? 'http://localhost:5094';
 const ARTIFACTS = path.join(__dirname, 'artifacts');
 const TITULO = `Serie E2E ${Date.now()}`;
 const EDITORIAL = 'Editorial E2E';
+
+// La web lee su sesión de un appsettings que Git ignora. La prueba lo sirve
+// interceptado, apuntando al emisor de `emisor.json`: así el repositorio no
+// guarda valores y el navegador recorre el mismo camino que con Entra ID.
+const CONFIGURACION = {
+  ApiBaseUrl: API,
+  Autenticacion: {
+    Authority: emisor.authority,
+    ClientId: emisor.clientId,
+    ApiScope: emisor.scope,
+    AuthoritiesConocidas: [new URL(emisor.authority).origin]
+  }
+};
 
 function check(condicion, mensaje) {
   if (!condicion) throw new Error(`FALLO: ${mensaje}`);
@@ -26,18 +41,6 @@ async function esperarServidor(url, intentos = 60) {
   throw new Error(`No responde ${url}`);
 }
 
-async function limpiar() {
-  try {
-    const respuesta = await fetch(`${API}/api/series`);
-    if (!respuesta.ok) return;
-    const series = await respuesta.json();
-    const creada = series.find((serie) => serie.titulo === TITULO);
-    if (creada) await fetch(`${API}/api/series/${creada.id}`, { method: 'DELETE' });
-  } catch {
-    // La limpieza no debe tapar el fallo original.
-  }
-}
-
 (async () => {
   let navegador;
   let pagina;
@@ -46,8 +49,29 @@ async function limpiar() {
     await esperarServidor(`${API}/health`);
     await esperarServidor(WEB);
 
+    const anonimo = await fetch(`${API}/api/series`);
+    check(anonimo.status === 401, 'la API rechaza la lectura sin sesión');
+
     navegador = await chromium.launch();
-    pagina = await navegador.newPage({ viewport: { width: 375, height: 812 } });
+    // El emisor de prueba usa un certificado efímero: el navegador lo acepta
+    // solo en esta prueba.
+    const contexto = await navegador.newContext({
+      viewport: { width: 375, height: 812 },
+      ignoreHTTPSErrors: true
+    });
+    pagina = await contexto.newPage();
+
+    const servirConfiguracion = (respuesta) => respuesta.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify(CONFIGURACION)
+    });
+    await pagina.route('**/appsettings.json', servirConfiguracion);
+    await pagina.route('**/appsettings.Production.json', servirConfiguracion);
+    await pagina.route('**/appsettings.Development.json', (respuesta) => respuesta.fulfill({
+      contentType: 'application/json',
+      body: '{}'
+    }));
+
     const erroresPagina = [];
     pagina.on('pageerror', (error) => {
       erroresPagina.push(error.message);
@@ -58,8 +82,18 @@ async function limpiar() {
     });
 
     await pagina.goto(WEB, { waitUntil: 'domcontentloaded' });
-    await pagina.getByRole('heading', { name: 'Nueva serie' }).waitFor({ timeout: 30000 });
-    await pagina.locator('.ficha').first().waitFor({ timeout: 30000 });
+    // La web no tiene pantalla sin sesión: la primera llamada a la API pide el
+    // inicio de sesión y vuelve por el emisor. Si un día dejara de redirigir,
+    // el botón sigue estando ahí y la prueba lo pulsa.
+    try {
+      await pagina.locator('.ficha').first().waitFor({ timeout: 30000 });
+    } catch {
+      await pagina.getByRole('button', { name: 'Iniciar sesión' }).click();
+      await pagina.getByRole('heading', { name: 'Nueva serie' }).waitFor({ timeout: 60000 });
+      await pagina.locator('.ficha').first().waitFor({ timeout: 30000 });
+    }
+    check(await pagina.getByText(emisor.nombre).count() === 1,
+      'la sesión del emisor de prueba llega a la interfaz');
     await pagina.evaluate(() => { window.__sinRecarga = true; });
 
     check(await pagina.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
@@ -123,7 +157,7 @@ async function limpiar() {
       'sigue sin desbordamiento horizontal a 375 px');
     check(erroresPagina.length === 0, 'sin errores de JavaScript en la página');
 
-    console.log('PRUEBA DE INTERFAZ A 375 px: OK');
+    console.log('PRUEBA DE INTERFAZ A 375 px CON SESIÓN: OK');
   } catch (error) {
     if (pagina) {
       fs.mkdirSync(ARTIFACTS, { recursive: true });
@@ -133,7 +167,6 @@ async function limpiar() {
     console.error(error);
     process.exitCode = 1;
   } finally {
-    await limpiar();
     if (navegador) await navegador.close();
   }
 })();

@@ -2,12 +2,12 @@
 
 Una casa no se protege cambiando la cerradura: se protege sabiendo por dónde se entra. Esta página hace eso con la API: recorre cada puerta, dice qué podría pasar por ella y qué control la cierra. No es un inventario de herramientas, sino la lista de lo que hoy frena un ataque, lo que solo está diseñado y lo que sigue abierto.
 
-**Última revisión:** 12 de noviembre de 2026.
+**Última revisión:** 13 de noviembre de 2026.
 **Alcance:** la API (`/health` y `/api/series`), la web que la consume y la base de datos local y de Azure SQL. Quedan fuera la cuenta de Azure, la suscripción y el pipeline de despliegue: no se protegen desde el código.
 
 ## 1. Puertas de entrada
 
-La API tiene seis rutas. Todas exigen un token de Entra ID de la cuenta permitida salvo `/health`, que es anónimo y no devuelve datos. En Production la API no arranca sin emisor, audiencia y cuenta; en Development se apaga para trabajar, sin comprobar la dirección de escucha, y el compose y el CI la atan a loopback. La barrera es la autenticación; el loopback solo acota el ensayo local.
+La API tiene seis rutas. Todas exigen un token de Entra ID de la cuenta permitida salvo `/health`, que es anónimo y no devuelve datos. La API no arranca sin emisor, audiencia y cuenta en ningún entorno: no hay interruptor que la deje abierta (ADR 0006), y `compose` se niega a arrancar sin esos valores. La barrera es la autenticación; el loopback solo acota el ensayo local.
 
 | Método | Ruta | Qué hace | Datos que toca |
 |---|---|---|---|
@@ -83,7 +83,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 - **La auditoría será un registro de aplicación**, no una prueba inmutable ni firmada.
 - **SQLite en local no tiene copia automática.** En Azure la copia la pone la plataforma y hay que comprobarla, no darla por hecha.
 - **El umbral del límite no está calibrado** y no hay pruebas de carga.
-- **La cobertura no se mide:** hay 58 pruebas .NET y 14 comprobaciones de interfaz, sin umbral.
+- **La cobertura no se mide:** hay 58 pruebas .NET y 16 comprobaciones de interfaz, sin umbral.
 - **El CORS solo limita navegadores.** No autentica ni protege de otros clientes.
 
 ## 7. Cómo se mantiene

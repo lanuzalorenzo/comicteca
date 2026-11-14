@@ -9,7 +9,8 @@
 **/*.db-wal
 **/appsettings.Local.json
 # Solo el de la web: sus valores del tenant no entran en la imagen. El de la API
-# sí viaja, porque el compose arranca en Development y lo necesita.
+# no se carga: la imagen corre en Production y sus valores llegan por variables de
+# entorno, o el arranque falla.
 src/Comicteca.Web/wwwroot/appsettings.Development.json
 .env
 tests

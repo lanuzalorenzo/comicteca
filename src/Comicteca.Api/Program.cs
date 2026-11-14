@@ -34,9 +34,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddApiProblemDetails();
 builder.Services.AddApiHealthChecks();
 builder.Services.AddDenyByDefaultCors(builder.Configuration);
-var autenticacion = builder.Services.AgregarAutenticacionDeUnaCuenta(
-    builder.Configuration,
-    builder.Environment);
+builder.Services.AgregarAutenticacionDeUnaCuenta(builder.Configuration);
 builder.Services.AddRemoteIpRateLimiting(opciones =>
 {
     var cupo = builder.Configuration.GetValue<int?>("Limites:PermitLimit");
@@ -70,11 +68,8 @@ app.UseCors("ApiCors");
 app.UseRateLimiter();
 app.UseLimiteDeCuerpo();
 
-if (autenticacion)
-{
-    app.UseAuthentication();
-    app.UseAuthorization();
-}
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapApiHealthChecks().DisableRateLimiting().AllowAnonymous();
 

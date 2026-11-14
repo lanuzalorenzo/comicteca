@@ -1,0 +1,9 @@
+{
+  "puerto": 5095,
+  "authority": "https://127.0.0.1:5095/comicteca/v2.0",
+  "audience": "api://comicteca-e2e",
+  "scope": "api://comicteca-e2e/acceso",
+  "clientId": "comicteca-web-e2e",
+  "cuenta": "33333333-3333-3333-3333-333333333333",
+  "nombre": "Cuenta de prueba"
+}

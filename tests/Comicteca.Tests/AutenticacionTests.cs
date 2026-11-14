@@ -4,8 +4,6 @@ using System.Security.Cryptography;
 using Comicteca.Api;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Hosting;
 
 namespace Comicteca.Tests;
 
@@ -106,23 +104,11 @@ public sealed class AutenticacionTests(ApiFactory factory) : IClassFixture<ApiFa
         Assert.Equal("Healthy", await respuesta.Content.ReadAsStringAsync());
     }
 
-    [Fact]
-    public void Produccion_no_arranca_con_la_autenticacion_apagada()
-    {
-        var error = Assert.Throws<InvalidOperationException>(() =>
-            AutenticacionCon(new Dictionary<string, string?>
-            {
-                ["Autenticacion:Requerida"] = "false"
-            }));
-
-        Assert.Contains("Production", error.Message, StringComparison.Ordinal);
-    }
-
     [Theory]
     [InlineData("Authority")]
     [InlineData("Audience")]
     [InlineData("CuentaPermitida")]
-    public void Produccion_no_arranca_sin_configuracion(string campo)
+    public void No_arranca_sin_configuracion(string campo)
     {
         var error = Assert.Throws<InvalidOperationException>(() =>
             AutenticacionCon(new Dictionary<string, string?>
@@ -133,19 +119,21 @@ public sealed class AutenticacionTests(ApiFactory factory) : IClassFixture<ApiFa
             }));
 
         Assert.Contains("Faltan", error.Message, StringComparison.Ordinal);
+        Assert.Contains("no hay forma de desactivar", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void No_arranca_sin_ninguna_configuracion()
+    {
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            AutenticacionCon(new Dictionary<string, string?>()));
+
+        Assert.Contains("Faltan", error.Message, StringComparison.Ordinal);
     }
 
     private static void AutenticacionCon(IDictionary<string, string?> valores)
     {
         var configuracion = new ConfigurationBuilder().AddInMemoryCollection(valores).Build();
-        new ServiceCollection().AgregarAutenticacionDeUnaCuenta(configuracion, new Entorno("Production"));
-    }
-
-    private sealed class Entorno(string nombre) : IHostEnvironment
-    {
-        public string EnvironmentName { get; set; } = nombre;
-        public string ApplicationName { get; set; } = "Comicteca.Tests";
-        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
-        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+        new ServiceCollection().AgregarAutenticacionDeUnaCuenta(configuracion);
     }
 }

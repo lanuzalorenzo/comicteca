@@ -1,5 +1,7 @@
 # 9 de noviembre de 2026 — La API pide token
 
+> **Nota del 13 de noviembre de 2026:** el interruptor `Autenticacion:Requerida` que describe esta entrada ya no existe; lo retira el [ADR 0006](../docs/adr/0006-autenticacion-siempre.md). Lo que sigue es lo que se observó ese día.
+
 Entrada ligada al [ADR 0004](../docs/adr/0004-controles-compartidos.md), al [modelo de amenaza](../docs/modelo-de-amenaza.md) y a la tabla de [capacidades](../docs/capacidades.md). El motivo del cambio va en el commit; aquí queda lo que se vio funcionar.
 
 ## Resultado observado
