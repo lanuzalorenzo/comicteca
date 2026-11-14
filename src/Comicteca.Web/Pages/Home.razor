@@ -4,6 +4,7 @@
 @using Comicteca.Web.Models
 @inject HttpClient Http
 @inject NavigationManager Navegacion
+@inject AuthenticationStateProvider EstadoDeAutenticacion
 
 <PageTitle>Comicteca</PageTitle>
 
@@ -25,7 +26,11 @@
     </AuthorizeView>
 </header>
 
-@if (Cargando)
+@if (SinSesion)
+{
+    <p class="aviso">Inicia sesión para ver la colección.</p>
+}
+else if (Cargando)
 {
     <p class="aviso">Cargando la colección…</p>
 }
@@ -175,6 +180,7 @@ else
 
     private List<SerieDto> Series { get; set; } = [];
     private bool Cargando { get; set; } = true;
+    private bool SinSesion { get; set; }
     private string? Error { get; set; }
     private string? Mensaje { get; set; }
     private string? ErrorAccion { get; set; }
@@ -204,7 +210,20 @@ else
                 serie.Titulo.Contains(Filtro, StringComparison.OrdinalIgnoreCase) ||
                 serie.Editorial.Contains(Filtro, StringComparison.OrdinalIgnoreCase)).ToList();
 
-    protected override Task OnInitializedAsync() => CargarAsync();
+    // Sin sesión no se llama a la API: la petición acabaría en un 401 que
+    // redirige al emisor y el cierre de sesión no tendría dónde volver.
+    protected override async Task OnInitializedAsync()
+    {
+        var estado = await EstadoDeAutenticacion.GetAuthenticationStateAsync();
+        if (estado.User.Identity?.IsAuthenticated == true)
+        {
+            await CargarAsync();
+            return;
+        }
+
+        Cargando = false;
+        SinSesion = true;
+    }
 
     private async Task CargarAsync()
     {

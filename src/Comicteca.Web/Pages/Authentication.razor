@@ -1,11 +1,29 @@
 ﻿@page "/authentication/{Accion}"
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject NavigationManager Navegacion
 
 <PageTitle>Comicteca</PageTitle>
 
-<RemoteAuthenticatorView Action="@Accion" />
+<RemoteAuthenticatorView Action="@Accion">
+    <LogOutSucceeded>
+        <p class="aviso">Has cerrado la sesión.</p>
+    </LogOutSucceeded>
+</RemoteAuthenticatorView>
 
 @code {
     [Parameter]
     public string? Accion { get; set; }
+
+    /// <summary>
+    /// Al volver del cierre de sesión la vista se quedaba en el callback: la
+    /// sesión se limpiaba pero no había navegación. Volver al inicio deja la
+    /// pantalla con el botón de entrar, sin llamar a la API.
+    /// </summary>
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && Accion == "logout-callback")
+        {
+            Navegacion.NavigateTo(string.Empty, replace: true);
+        }
+    }
 }
