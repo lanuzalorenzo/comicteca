@@ -9,4 +9,4 @@ Aquí guardo las decisiones que van a durar: qué elegí, qué otras opciones te
 | [Por qué la API va en un contenedor y el aviso en Functions](0003-hospedaje-de-la-api.md) | Aceptada |
 | [Consumir los controles compartidos, no extraer paquetes](0004-controles-compartidos.md) | Aceptada (implementada; CI verde y Compose validado en local) |
 | [Compilación y paquetes centralizados](0005-compilacion-y-paquetes-centralizados.md) | Aceptada |
-| [La autenticación no se apaga nunca](0006-autenticacion-siempre.md) | Aceptada (implementada y validada en local el 13 de noviembre de 2026) |
+| [La autenticación no se apaga nunca](0006-autenticacion-siempre.md) | Aceptada (implementada; CI en verde el 14 de noviembre de 2026) |

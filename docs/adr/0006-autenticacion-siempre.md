@@ -1,7 +1,7 @@
 # 0006 — La autenticación no se apaga nunca
 
 **Fecha:** 13 de noviembre de 2026
-**Estado:** Aceptada (implementada y validada en local el 13 de noviembre de 2026; el CI de la rama queda pendiente)
+**Estado:** Aceptada (implementada y validada en local el 13 de noviembre de 2026; CI en verde el 14 de noviembre de 2026, run `43585948696`)
 
 ## De qué iba
 
