@@ -82,16 +82,13 @@ async function esperarServidor(url, intentos = 60) {
     });
 
     await pagina.goto(WEB, { waitUntil: 'domcontentloaded' });
-    // La web no tiene pantalla sin sesión: la primera llamada a la API pide el
-    // inicio de sesión y vuelve por el emisor. Si un día dejara de redirigir,
-    // el botón sigue estando ahí y la prueba lo pulsa.
-    try {
-      await pagina.locator('.ficha').first().waitFor({ timeout: 30000 });
-    } catch {
-      await pagina.getByRole('button', { name: 'Iniciar sesión' }).click();
-      await pagina.getByRole('heading', { name: 'Nueva serie' }).waitFor({ timeout: 60000 });
-      await pagina.locator('.ficha').first().waitFor({ timeout: 30000 });
-    }
+    // Sin sesión no hay llamada a la API: la web pide entrar y espera.
+    await pagina.getByText('Inicia sesión para ver la colección.').waitFor({ timeout: 30000 });
+    check(true, 'sin sesión la web pide entrar y no llama a la API');
+
+    await pagina.getByRole('button', { name: 'Iniciar sesión' }).click();
+    await pagina.getByRole('heading', { name: 'Nueva serie' }).waitFor({ timeout: 60000 });
+    await pagina.locator('.ficha').first().waitFor({ timeout: 30000 });
     check(await pagina.getByText(emisor.nombre).count() === 1,
       'la sesión del emisor de prueba llega a la interfaz');
     await pagina.evaluate(() => { window.__sinRecarga = true; });
@@ -153,6 +150,13 @@ async function esperarServidor(url, intentos = 60) {
 
     check(await pagina.locator('.ficha').count() === seriesIniciales, 'la lista vuelve al estado inicial');
     check(await pagina.evaluate(() => window.__sinRecarga === true), 'ninguna acción recargó la página');
+
+    // El cierre de sesión limpia y vuelve al inicio: sin sesión no queda
+    // llamada que rebote al emisor ni vista colgada.
+    await pagina.getByRole('button', { name: 'Cerrar sesión' }).click();
+    await pagina.getByText('Inicia sesión para ver la colección.').waitFor({ timeout: 30000 });
+    check(await pagina.locator('.ficha').count() === 0,
+      'el cierre de sesión deja de mostrar la colección y no rebota');
     check(await pagina.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       'sigue sin desbordamiento horizontal a 375 px');
     check(erroresPagina.length === 0, 'sin errores de JavaScript en la página');

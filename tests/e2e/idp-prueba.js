@@ -207,8 +207,9 @@ function cerrarSesion(url, respuesta) {
   }
   const vuelta = new URL(destino);
   const estado = url.searchParams.get('state');
-  if (estado) vuelta.searchParams.set('state', estado);
-  redirigir(respuesta, vuelta.toString());
+  // MSAL lee la respuesta del cierre de sesión del hash (serverResponseType
+  // por defecto es fragment), igual que hace Entra ID.
+  redirigir(respuesta, estado ? `${vuelta.toString()}#state=${estado}` : vuelta.toString());
 }
 
 const servidor = https.createServer({ cert: fs.readFileSync(CERT), key: fs.readFileSync(CLAVE) },
