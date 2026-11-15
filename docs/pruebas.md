@@ -96,13 +96,17 @@ export GH_PACKAGES_TOKEN="<pat-read:packages>"
 export AUTENTICACION_AUTHORITY="https://login.microsoftonline.com/<tenant>/v2.0"
 export AUTENTICACION_AUDIENCE="api://comicteca-api"
 export AUTENTICACION_CUENTA_PERMITIDA="<object id de la cuenta>"
+# Los tres de la web: sin ellos no hay sesión en el navegador.
+export AUTENTICACION_CLIENT_ID="<client id de Comicteca Web>"
+export AUTENTICACION_API_SCOPE="api://comicteca-api/acceso"
+scripts/comicteca-sesion
 docker compose up -d --build
 docker compose ps                 # api y web en healthy
 curl http://localhost:5094/health
 cd tests/e2e && npm run test:cabeceras
 ```
 
-Compose no arranca sin esas tres variables: las declara con `${...:?}` para que se detenga con el nombre de la que falta, en vez de levantar una API abierta. La imagen de la web se construye sin valores de sesión: se escriben al publicar con `Autenticacion__Authority`, `Autenticacion__ClientId` y `Autenticacion__ApiScope` en el entorno ([ADR 0007](adr/0007-valores-de-sesion-en-el-despliegue.md)), y para la web del contenedor en el navegador todavía hace falta decidir cómo llegan, porque la imagen no los lleva. `prueba-cabeceras.js` no lo necesita: sirve su propia configuración interceptada. La pila de compose es para el ensayo, no para la prueba de interfaz: esta última usa el emisor de prueba de la sección 3.
+Compose no arranca sin las tres variables de la API: las declara con `${...:?}` para que se detenga con el nombre de la que falta, en vez de levantar una API abierta. La imagen de la web se construye sin valores de sesión, porque WebAssembly no lee variables de entorno ([ADR 0007](adr/0007-valores-de-sesion-en-el-despliegue.md)). `scripts/comicteca-sesion` escribe esos valores en `.sesion/appsettings.Production.json` —ignorado por Git— y Compose lo monta en solo lectura en `/usr/share/nginx/html/appsettings.Production.json`. Si el archivo no existe, `docker compose up` se detiene nombrando la ruta en vez de crear un directorio vacío; para apuntar a otro sitio, `SESION_WEB_ARCHIVO`. `prueba-cabeceras.js` no lo necesita: sirve su propia configuración interceptada. La pila de compose es para el ensayo, no para la prueba de interfaz: esta última usa el emisor de prueba de la sección 3.
 
 `prueba-cabeceras.js` recorre la web, un recurso de `/_framework/` y la API,
 comprueba `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
