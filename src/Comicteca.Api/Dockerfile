@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY NuGet.config ./
+COPY global.json ./
 COPY Directory.Build.props ./
 COPY Directory.Packages.props ./
 COPY .editorconfig ./
