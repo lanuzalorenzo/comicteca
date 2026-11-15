@@ -17,6 +17,9 @@ src/Comicteca.Web/wwwroot/appsettings.Development.json
 src/Comicteca.Web/wwwroot/appsettings.Production.json
 # Y el que monta la pila de contenedores, por lo mismo.
 .sesion
+# El certificado del perfil de producción: la clave privada no viaja al daemon
+# ni a la caché de BuildKit en cada `up --build`.
+.tls
 .env
 tests
 docs

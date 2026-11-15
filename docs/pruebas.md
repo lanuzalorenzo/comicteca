@@ -11,8 +11,8 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
 | Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque, que falla si falta `Authority`, `Audience`, `CuentaPermitida` o los tres. No hay interruptor que la desactive | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 18 comprobaciones en Chromium a 375 px con sesión: la API rechaza la lectura sin token, sin sesión la web no llama a la API, la entrada por el emisor de prueba, alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, el cierre de sesión que vuelve al inicio, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con el emisor y la pila arrancados con `start.sh` |
-| Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | 36 comprobaciones: cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, el nonce del importmap contra el de la cabecera, el 401 de la API sin token y Blazor arrancando a 375 px sin violaciones de CSP | `npm run test:cabeceras` con la pila en contenedores |
-| Contenedores | `compose.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base | Manual, con Docker |
+| Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | 36 comprobaciones en el ensayo local y 46 sobre HTTPS —las mismas más HSTS en tres respuestas, el 301 del HTTP y dos de `connect-src` que el perfil local no necesita—: cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, el nonce del importmap contra el de la cabecera, el 401 de la API sin token y Blazor arrancando a 375 px sin violaciones de CSP | `npm run test:cabeceras` con la pila en contenedores |
+| Contenedores | `compose.yaml`, `compose.prod.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base; el perfil de producción añade TLS, el proxy de la API y el 301 del HTTP | Manual, con Docker |
 | Análisis estático | `.github/workflows/ci.yml` | CodeQL con `security-extended` sobre C# y SARIF publicado | Trabajo «Análisis estático (CodeQL)» del CI |
 | Imágenes | `.github/workflows/ci.yml`, `src/Comicteca.Api/Dockerfile`, `src/Comicteca.Web/Dockerfile` | Baseline de sshd sobre musl, Trivy sobre las dos imágenes con SARIF, y `id -u` distinto de 0 en la web | Trabajo «Imágenes de contenedor (Trivy)» del CI |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
@@ -24,6 +24,7 @@ Las de dominio, API, autenticación y proveedor van en el trabajo de compilació
 - .NET 10 SDK.
 - Un `GH_PACKAGES_TOKEN` con permiso para leer GitHub Packages (`read:packages`), porque los paquetes `LL.*` viven en ese feed. No uses `GITHUB_TOKEN`: `gh` y Git la leen como credencial de la sesión.
 - Docker con Compose, solo para el ensayo en contenedores.
+- `mkcert` en el `PATH`, solo para el perfil de producción con HTTPS.
 - Node 22, solo para la prueba de interfaz.
 
 ## 1. La suite automática
@@ -114,13 +115,14 @@ comprueba `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
 con el de la cabecera y abre la interfaz a 375 px para confirmar que Blazor
 arranca bajo la CSP sin violaciones: no basta con que la cabecera nombre a
 MSAL, con la CSP activa falta comprobar que el token se renueva en silencio. Falla si el
-navegador registra una violación. Es la prueba que cierra B.2a; la CSP de la web
-vive en `docker/cabeceras.conf` y la de la API se compone con `LL.Security`.
+navegador registra una violación. Es la prueba que cierra B.2a; las CSP de la web viven en `docker/cabeceras.conf` (ensayo local) y en `docker/cabeceras.prod.conf` (perfil HTTPS), y la de la API se compone con `LL.Security`.
 
-La CSP de la web fija el origen de la API en `http://localhost:5094`. Si cambias
+La CSP del ensayo local fija el origen de la API en `http://localhost:5094`. Si cambias
 `ApiBaseUrl` en `src/Comicteca.Web/wwwroot/appsettings.json`, cambia también
 `connect-src` en `docker/cabeceras.conf` o el navegador bloqueará las llamadas.
-Al desplegar hay que sustituirlo por el origen real.
+El perfil de producción no lleva ese origen: con proxy es el mismo origen y usa
+`connect-src 'self'` en `docker/cabeceras.prod.conf`, donde no hay que tocar nada
+al desplegar salvo el host y el puerto.
 
 La web queda en `http://localhost:5077` y la API en `http://localhost:5094`, publicadas solo en loopback. La base vive en el volumen `comicteca_datos`. Compose añade `Cors__AllowedOrigins__0` con el origen de la web y exige `AUTENTICACION_AUTHORITY`, `AUTENTICACION_AUDIENCE` y `AUTENTICACION_CUENTA_PERMITIDA` en el entorno del host: sin ellas `docker compose up` se detiene con el nombre de la que falta. La imagen fija `Production` y ya no hay entorno donde la autenticación se apague.
 
@@ -129,6 +131,33 @@ El token de `gh auth token` solo vale si la sesión tiene el permiso `read:packa
 Resultado observado el 6 de noviembre de 2026 con ese permiso: `api` y `web` en `healthy`, `/health` responde `Healthy`, la web devuelve 200 y `/api/series` lista 20 series. El 14 de noviembre de 2026, ya con la autenticación obligatoria, la pila volvió a arrancar: API `healthy`, `/health` en `Healthy`, `/api/series` con 401 y las 36 comprobaciones de cabeceras en verde contra el compose real. Con los valores del tenant en la imagen, la web del contenedor redirige al `authorize` del tenant correcto, con su `client_id`, la URI de vuelta y el ámbito. Falta completar el login y el alta con la cuenta real.
 
 El 9 de noviembre de 2026, con la CSP puesta, `npm run test:cabeceras` pasó 34 comprobaciones: cabeceras en el HTML, en un recurso de `/_framework/` y en la API, y la lista cargando a 375 px sin violaciones de CSP. Desde el 13 de noviembre de 2026 tiene 36 comprobaciones y no inicia sesión —la CSP solo admite el tenant de Microsoft y abrirla a un emisor de prueba sería debilitarla—: comprueba el 401 de la API sin token, el nonce del importmap contra la cabecera y que Blazor arranca sin violaciones. Los datos con sesión real los cubre la prueba de interfaz, que corre sin CSP.
+
+### Perfil de producción con HTTPS
+
+`compose.prod.yaml` es un archivo aparte, no un override del anterior. Cambia la topología: nginx sirve HTTPS y hace de proxy de `/api` y `/health`, y la API deja de publicarse. Se levanta solo con `-f compose.prod.yaml`.
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"   # mkcert instalado sin privilegios
+scripts/comicteca-tls                   # certificado en .tls/, ignorado por Git
+API_BASE_URL="https://comicteca.localhost:5443" scripts/comicteca-sesion
+docker compose -f compose.prod.yaml up -d --build
+docker compose -f compose.prod.yaml ps  # api y web en healthy
+curl -sS -o /dev/null -w "%{http_code} -> %{redirect_url}\n" http://comicteca.localhost:5080/
+cd tests/e2e && NODE_EXTRA_CA_CERTS="$PWD/../../.tls/ca.pem" \
+  COMICTECA_WEB="https://comicteca.localhost:5443" \
+  COMICTECA_WEB_HTTP="http://comicteca.localhost:5080" npm run test:cabeceras
+```
+
+- **Un solo origen.** El navegador solo habla con nginx: la CSP del perfil usa `connect-src 'self'` y no hace falta CORS. La API sigue exigiendo token y `ApiBaseUrl` llega por `appsettings.Production.json`, que `scripts/comicteca-sesion` escribe con `API_BASE_URL`.
+- **`comicteca.localhost`, no `localhost`.** HSTS se aplica por host: lo aprendido para `localhost` alcanzaría a todos sus servicios, sea cual sea su puerto. El 5080 solo responde 301 al 5443.
+- **Límite conocido del ensayo:** HSTS reescribe la URL conservando el puerto, así que quien lo tenga aprendido para este host pedirá `https://comicteca.localhost:5080`, donde no hay TLS. En un despliegue real el par es 80→443 y el caso no existe; aquí, además, Chromium no aplica HSTS a `*.localhost` —no está comprobado en otros navegadores—, y el 301 cubre el primer acceso y a los clientes que no aplican HSTS.
+- **Certificado de desarrollo.** `mkcert` emite el par para ese nombre y `.tls/` se monta en solo lectura; nada de eso se versiona. La clave queda en 644 porque nginx corre como su propio usuario dentro del contenedor. Sin `mkcert -install`, el navegador pedirá confirmar el certificado; la prueba lo acepta con `NODE_EXTRA_CA_CERTS`.
+- **IPv6.** `comicteca.localhost` resuelve a `::1` en esta máquina, así que los puertos se publican en `127.0.0.1` y en `[::1]`.
+- **HSTS se queda en el borde.** `AddHeader` en nginx, no `UseHsts()` en la API: con TLS terminado delante, la API no debe redirigir. La extensión de transporte de `LL.Hosting` sigue sin adoptarse ([ADR 0004](adr/0004-controles-compartidos.md)).
+
+- **El límite por IP pasa a ser un cubo compartido.** La API recibe todas las peticiones con la dirección del contenedor de nginx y no confía en `X-Forwarded-For`, así que las 120 peticiones por minuto cuentan para el navegador entero y no por origen. `site.prod.conf` reenvía la cabecera para cuando el paquete admita declarar el proxy; hoy no se consume. Es la decisión que el ADR 0004 deja abierta antes de desplegar, no un efecto nuevo del transporte.
+
+Resultado observado el 15 de noviembre de 2026: `api` y `web` en `healthy`; `/health` responde `Healthy` a través del proxy; `/api/series` sin token responde 401; el 5080 devuelve 301 al 5443; y `npm run test:cabeceras` pasa **46 comprobaciones** sobre HTTPS —las 36 de siempre más HSTS en el documento, en `/_framework/` y en la API, el 301 del HTTP y su destino, y el par de `connect-src 'self'` y «sin 5094» que el perfil local no necesita—. La misma prueba contra el ensayo local sigue en 36.
 
 Los límites también se comprueban a mano contra el contenedor:
 

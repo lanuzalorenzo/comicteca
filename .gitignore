@@ -37,6 +37,8 @@ src/Comicteca.Web/wwwroot/appsettings.Development.json
 src/Comicteca.Web/wwwroot/appsettings.Production.json
 # El que monta la pila de contenedores: lo escribe scripts/comicteca-sesion
 .sesion/
+# Certificado TLS del perfil de producción: lo emite scripts/comicteca-tls
+.tls/
 
 # Herramientas locales de OpenCode: no se versionan
 .opencode/
