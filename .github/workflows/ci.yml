@@ -126,6 +126,10 @@ jobs:
       - name: Informe de dependencias vulnerables
         run: dotnet list Comicteca.slnx package --vulnerable --include-transitive
 
+      - name: Informe de paquetes desactualizados
+        run: dotnet list Comicteca.slnx package --outdated
+        continue-on-error: true
+
   sast:
     name: Análisis estático (CodeQL)
     runs-on: ubuntu-latest
