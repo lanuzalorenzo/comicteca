@@ -45,6 +45,7 @@ La API elige el proveedor con `Datos:Proveedor` (`Sqlite` por defecto, o `SqlSer
 | `docs/adr/` | Decisiones con alternativas y consecuencias |
 | `docs/datos.md` | Origen del CSV, limpieza, cifras y límites |
 | `docs/capacidades.md` | Qué se puede afirmar y con qué prueba |
+| `docs/plataforma.md` | Versión de .NET, qué se evaluó y no se usa, y cuándo se revisa |
 | `docs/pruebas.md` | Cómo se prueba en local: suite, interfaz, contenedores y checklist |
 | `docs/modelo-de-amenaza.md` | Amenazas por endpoint, controles y huecos |
 | `docs/entra-id.md` | Registro de las aplicaciones en Entra ID, valores de la sesión y evidencias que hay que guardar |
@@ -152,7 +153,7 @@ El repositorio es público y el CI se comporta como tal. `.github/workflows/ci.y
 - **Documentación:** la acción `check-links` de `lanuzalorenzo/core` valida los enlaces relativos y las anclas.
 - **Interfaz:** la acción `browser-e2e` de `lanuzalorenzo/core` instala Chromium, arranca el emisor OIDC de prueba, la API y la web con una base temporal y ejecuta `tests/e2e` a 375 px con sesión. También restaura los paquetes con `packages: read`.
 - **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` escanea el historial completo.
-- **Dependencias:** auditoría de paquetes NuGet directos y transitivos, que hoy solo informa, y de las dependencias npm de la prueba de interfaz con `npm audit --audit-level=high`, que falla con altas y críticas. El trabajo que restaura declara `packages: read`.
+- **Dependencias:** auditoría de paquetes NuGet directos y transitivos, que hoy solo informa, informe de paquetes desactualizados, que tampoco bloquea, y de las dependencias npm de la prueba de interfaz con `npm audit --audit-level=high`, que falla con altas y críticas. El trabajo que restaura declara `packages: read`.
 - **Análisis estático:** la acción `sast` de `lanuzalorenzo/core` ejecuta CodeQL con `security-extended` sobre C# y publica el SARIF; el trabajo declara `security-events: write`.
 - **Imágenes:** la acción `check-sshd-baseline` revisa los Dockerfiles, se construyen la API y la web y la acción `scan` pasa Trivy sobre cada imagen publicando su SARIF. Un paso comprueba con `id -u` que la web no arranca como root.
 
