@@ -41,6 +41,11 @@ en WebAssembly no se puede guardar, así que no se crea ni se configura.
    `http://localhost:5077/authentication/logout-callback`. El origen solo no
    basta: MSAL vuelve a esas rutas. Tienen que coincidir carácter a carácter,
    sin barra final. Si cambias el puerto de la web, cambia los dos valores.
+   El perfil de producción de `compose.prod.yaml` sirve
+   `https://comicteca.localhost:5443`; si quieres iniciar sesión real desde ahí,
+   registra también `https://comicteca.localhost:5443/authentication/login-callback`
+   y `.../logout-callback`. Sin ellas, Entra ID responde `AADSTS50011`. La prueba
+   de cabeceras no las necesita: intercepta la configuración y no inicia sesión.
 3. **API permissions** → **Add a permission** → **My APIs** → `Comicteca API`
    → permiso delegado `acceso` → **Grant admin consent**.
 4. No crees **Certificates & secrets**: no hay ninguno que usar.
@@ -130,7 +135,8 @@ Sin el paso 3 no se puede decir que la sesión funciona: la fila de
   ([ADR 0007](adr/0007-valores-de-sesion-en-el-despliegue.md)). Sin valores la web
   no arranca, en vez de arrancar sin sesión.
 - El secreto de la API en el despliegue: llega con identidad gestionada (B.6).
-- La CSP va puesta en la API y en la web (`docker/cabeceras.conf`), con
+- La CSP va puesta en la API y en la web (`docker/cabeceras.conf` en el ensayo
+  y `docker/cabeceras.prod.conf` en el perfil HTTPS), con
   `login.microsoftonline.com` en `connect-src` y `frame-src`. La prueba
   `tests/e2e/prueba-cabeceras.js` la comprueba en los contenedores. Lo que
   falta es repetir el inicio de sesión con la CSP activa y confirmar que MSAL
