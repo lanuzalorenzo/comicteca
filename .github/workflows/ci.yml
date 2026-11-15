@@ -33,6 +33,50 @@ jobs:
         with:
           solution: Comicteca.slnx
 
+      # La web publicada no lleva valores en el repositorio: se escriben al
+      # publicar (ADR 0007). Se comprueban las cuatro caras, porque un cambio en
+      # el .csproj puede dejarlas en verde sin que nadie mire.
+      - name: Comprobar los valores de sesión del publish
+        run: |
+          EMPTY="$RUNNER_TEMP/publicada-vacia/wwwroot/appsettings.Production.json"
+          dotnet publish src/Comicteca.Web/Comicteca.Web.csproj -c Release --no-restore \
+            -o "$RUNNER_TEMP/publicada-vacia"
+          test "$(cat "$EMPTY")" = "{ }" \
+            || { echo "Sin valores debería publicarse vacío" >&2; exit 1; }
+
+          CON="$RUNNER_TEMP/publicada-con/wwwroot/appsettings.Production.json"
+          Autenticacion__Authority="https://login.example.test/v2.0" \
+          Autenticacion__ClientId="00000000-0000-0000-0000-000000000000" \
+          Autenticacion__ApiScope="api://comicteca-api/acceso" \
+            dotnet publish src/Comicteca.Web/Comicteca.Web.csproj -c Release --no-restore \
+              -o "$RUNNER_TEMP/publicada-con"
+          for esperado in "login.example.test" "00000000-0000-0000-0000-000000000000" "api://comicteca-api/acceso"; do
+            grep -q "$esperado" "$CON" \
+              || { echo "No llegó al archivo publicado: $esperado" >&2; exit 1; }
+            gzip -dc "$CON.gz" | grep -q "$esperado" \
+              || { echo "No llegó a la variante comprimida: $esperado" >&2; exit 1; }
+          done
+
+          # Falta un valor: el publish tiene que detenerse, y por ese motivo.
+          if Autenticacion__Authority="https://login.example.test/v2.0" \
+             dotnet publish src/Comicteca.Web/Comicteca.Web.csproj -c Release --no-restore \
+               -o "$RUNNER_TEMP/publicada-falta" >"$RUNNER_TEMP/falta.log" 2>&1; then
+            echo "El publish debía detenerse sin ClientId ni ApiScope" >&2
+            exit 1
+          fi
+          grep -q "Falta Autenticacion__ClientId" "$RUNNER_TEMP/falta.log" \
+            || { echo "El publish falló, pero no por el valor que falta" >&2; cat "$RUNNER_TEMP/falta.log"; exit 1; }
+
+          # Un despliegue no se publica sin valores: tiene que fallar también sin
+          # ninguno, no solo con uno a medias.
+          if dotnet publish src/Comicteca.Web/Comicteca.Web.csproj -c Release --no-restore \
+               -p:ExigirSesion=true -o "$RUNNER_TEMP/publicada-exigida" >"$RUNNER_TEMP/exigida.log" 2>&1; then
+            echo "ExigirSesion=true debía detener un publish sin valores" >&2
+            exit 1
+          fi
+          grep -q "ExigirSesion=true y no hay valores de sesión" "$RUNNER_TEMP/exigida.log" \
+            || { echo "El publish exigido falló, pero no por la ausencia de valores" >&2; cat "$RUNNER_TEMP/exigida.log"; exit 1; }
+
   links:
     name: Enlaces de la documentación
     runs-on: ubuntu-latest
