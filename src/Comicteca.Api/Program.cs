@@ -4,6 +4,7 @@ using Comicteca.Infrastructure;
 using Comicteca.Infrastructure.SqlServer;
 using LL.Hosting;
 using LL.Security;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
@@ -76,80 +77,70 @@ app.MapApiHealthChecks().DisableRateLimiting().AllowAnonymous();
 app.MapGet("/api/series", async (ISerieReader lector, CancellationToken cancellationToken) =>
     Results.Ok(await lector.ListarAsync(cancellationToken)));
 
-app.MapPost("/api/series", async (PeticionSerie peticion, ISerieWriter escritor, CancellationToken cancellationToken) =>
+app.MapPost("/api/series", async Task<Results<Created<RespuestaCreada>, Conflict<RespuestaConflicto>>> (
+    PeticionSerie peticion,
+    ISerieWriter escritor,
+    CancellationToken cancellationToken) =>
 {
-    try
+    var id = await escritor.CrearSerieAsync(
+        peticion.Titulo ?? string.Empty,
+        peticion.Editorial ?? string.Empty,
+        cancellationToken);
+
+    if (id is null)
     {
-        var id = await escritor.CrearSerieAsync(
-            peticion.Titulo ?? string.Empty,
-            peticion.Editorial ?? string.Empty,
-            cancellationToken);
-
-        if (id is null)
-        {
-            return Results.Conflict(new { mensaje = "Ya existe una serie con ese título y editorial." });
-        }
-
-        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
+        return TypedResults.Conflict(new RespuestaConflicto("Ya existe una serie con ese título y editorial."));
     }
-    catch (ArgumentException excepcion)
-    {
-        return ProblemaDeValidacion(excepcion);
-    }
-});
 
-app.MapDelete("/api/series/{id:guid}", async (Guid id, ISerieWriter escritor, CancellationToken cancellationToken) =>
+    // No hay lectura por identificador, así que un Location apuntaría a un 404.
+    return TypedResults.Created((string?)null, new RespuestaCreada(id.Value));
+})
+.AddEndpointFilter<ValidacionDeArgumentos>()
+.ProducesValidationProblem();
+
+app.MapDelete("/api/series/{id:guid}", async Task<Results<NoContent, NotFound>> (
+    Guid id,
+    ISerieWriter escritor,
+    CancellationToken cancellationToken) =>
 {
     if (!await escritor.BorrarSerieAsync(id, cancellationToken))
     {
-        return Results.NotFound();
+        return TypedResults.NotFound();
     }
 
-    return Results.NoContent();
+    return TypedResults.NoContent();
 });
 
-app.MapPost("/api/series/{id:guid}/tomos", async (Guid id, PeticionTomo peticion, ISerieWriter escritor, CancellationToken cancellationToken) =>
+app.MapPost("/api/series/{id:guid}/tomos", async Task<Results<Created<RespuestaCreada>, NotFound>> (
+    Guid id,
+    PeticionTomo peticion,
+    ISerieWriter escritor,
+    CancellationToken cancellationToken) =>
 {
-    try
+    var tomoId = await escritor.AgregarTomoAsync(id, peticion.Numero, peticion.Edicion, cancellationToken);
+    if (tomoId is null)
     {
-        var tomoId = await escritor.AgregarTomoAsync(id, peticion.Numero, peticion.Edicion, cancellationToken);
-        if (tomoId is null)
-        {
-            return Results.NotFound();
-        }
-
-        return Results.Json(new { id = tomoId }, statusCode: StatusCodes.Status201Created);
+        return TypedResults.NotFound();
     }
-    catch (ArgumentException excepcion)
-    {
-        return ProblemaDeValidacion(excepcion);
-    }
-});
 
-app.MapDelete("/api/series/{id:guid}/tomos/{tomoId:guid}", async (Guid id, Guid tomoId, ISerieWriter escritor, CancellationToken cancellationToken) =>
+    return TypedResults.Created((string?)null, new RespuestaCreada(tomoId.Value));
+})
+.AddEndpointFilter<ValidacionDeArgumentos>()
+.ProducesValidationProblem();
+
+app.MapDelete("/api/series/{id:guid}/tomos/{tomoId:guid}", async Task<Results<NoContent, NotFound>> (
+    Guid id,
+    Guid tomoId,
+    ISerieWriter escritor,
+    CancellationToken cancellationToken) =>
 {
     if (!await escritor.BorrarTomoAsync(id, tomoId, cancellationToken))
     {
-        return Results.NotFound();
+        return TypedResults.NotFound();
     }
 
-    return Results.NoContent();
+    return TypedResults.NoContent();
 });
-
-static IResult ProblemaDeValidacion(ArgumentException excepcion)
-{
-    var mensaje = excepcion.Message;
-    var corte = mensaje.LastIndexOf(" (", StringComparison.Ordinal);
-    if (corte > 0)
-    {
-        mensaje = mensaje[..corte];
-    }
-
-    return Results.ValidationProblem(new Dictionary<string, string[]>
-    {
-        [excepcion.ParamName ?? "datos"] = [mensaje]
-    });
-}
 
 using (var ambito = app.Services.CreateScope())
 {
