@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Escribe el appsettings de sesión que la web del contenedor monta en solo
+# lectura. WebAssembly no lee variables de entorno y la imagen se construye sin
+# valores (ADR 0007), así que el archivo vive fuera del repositorio y se pasa
+# por el entorno del host.
+#
+# Los tres valores son públicos —viajan en la URL de cualquier inicio de sesión—
+# pero identifican el tenant, así que no se versionan. El archivo queda en
+# .sesion/, que Git ignora.
+set -euo pipefail
+
+repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+destino="${SESION_WEB_ARCHIVO:-$repo/.sesion/appsettings.Production.json}"
+
+falta() {
+    echo "Falta $1: sin los tres valores la web del contenedor no arranca (ADR 0007)." >&2
+    exit 1
+}
+
+[ -n "${AUTENTICACION_AUTHORITY:-}" ] || falta AUTENTICACION_AUTHORITY
+[ -n "${AUTENTICACION_CLIENT_ID:-}" ] || falta AUTENTICACION_CLIENT_ID
+[ -n "${AUTENTICACION_API_SCOPE:-}" ] || falta AUTENTICACION_API_SCOPE
+
+mkdir -p "$(dirname "$destino")"
+printf '{ "Autenticacion": { "Authority": "%s", "ClientId": "%s", "ApiScope": "%s" } }\n' \
+    "$AUTENTICACION_AUTHORITY" "$AUTENTICACION_CLIENT_ID" "$AUTENTICACION_API_SCOPE" >"$destino"
+# Lectura para el usuario de nginx dentro del contenedor: no son secretos.
+chmod 644 "$destino"
+
+echo "Escrito $destino"

@@ -67,13 +67,16 @@ Lo que cuesta, dicho entero: el valor queda en los artefactos de la compilación
 No es un secreto, pero conviene saberlo antes de publicar el artefacto de una
 versión.
 
-## Qué no resuelve
+## El camino del contenedor
 
-La imagen de la web se construye sin los valores, así que la pila en contenedores
-sigue sirviendo la web sin sesión. Para el ensayo con el navegador hace falta
-decidir si se le pasa un archivo montado en solo lectura —la opción 3, solo para
-contenedores— o si la prueba se hace contra Static Web Apps. Está sin hacer y
-anotado en el backlog.
+La imagen no lleva valores, así que la pila de `compose` los recibe montados en
+solo lectura: `scripts/comicteca-sesion` escribe `.sesion/appsettings.Production.json`
+—ignorado por Git— y Compose lo monta en `/usr/share/nginx/html/appsettings.Production.json`.
+Es la opción 3 aplicada solo a los contenedores, donde sí existe el montaje, y
+mantiene la garantía que importa: el registro no guarda valores.
+
+Si el archivo falta, `docker compose up` se detiene nombrando la ruta; no crea un
+directorio vacío ni arranca una web sin sesión.
 
 Tampoco decide `ApiBaseUrl`: en el despliegue la web tiene que apuntar a la API y
 hoy el valor versionado es `http://localhost:5094`. Eso es `config-despliegue`.
@@ -86,8 +89,9 @@ hoy el valor versionado es `http://localhost:5094`. Eso es `config-despliegue`.
 2. **Decidir si la colección real viaja a Azure SQL.** Está en `AGENTS.md` como
    decisión del propietario porque cambia las reglas de privacidad. `https-prod`
    se puede preparar sin ella, pero la validación de la fase 2 no.
-3. **Elegir el camino del contenedor** si el ensayo se hace con la pila de
-   `compose` y no contra Static Web Apps.
+
+El camino del contenedor quedó decidido el 15 de noviembre de 2026: montaje en
+solo lectura, con la imagen limpia.
 
 ## Qué no cambia
 

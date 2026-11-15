@@ -35,6 +35,8 @@ appsettings.Local.json
 src/Comicteca.Web/wwwroot/appsettings.Development.json
 # Valores de sesión de la imagen de la web: solo en local
 src/Comicteca.Web/wwwroot/appsettings.Production.json
+# El que monta la pila de contenedores: lo escribe scripts/comicteca-sesion
+.sesion/
 
 # Herramientas locales de OpenCode: no se versionan
 .opencode/
