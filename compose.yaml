@@ -35,6 +35,13 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    # La imagen no lleva valores de sesión y WebAssembly no lee el entorno: el
+    # archivo entra montado en solo lectura desde fuera (ADR 0007). Lo escribe
+    # scripts/comicteca-sesion. Sin él, Compose se detiene nombrando el archivo.
+    configs:
+      - source: sesion_web
+        target: /usr/share/nginx/html/appsettings.Production.json
+        mode: 0444
     ports:
       - "127.0.0.1:5077:8080"
     restart: unless-stopped
@@ -47,6 +54,10 @@ services:
 
 volumes:
   datos:
+
+configs:
+  sesion_web:
+    file: ${SESION_WEB_ARCHIVO:-./.sesion/appsettings.Production.json}
 
 secrets:
   github_token:
