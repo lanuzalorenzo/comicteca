@@ -102,7 +102,7 @@ curl http://localhost:5094/health
 cd tests/e2e && npm run test:cabeceras
 ```
 
-Compose no arranca sin esas tres variables: las declara con `${...:?}` para que se detenga con el nombre de la que falta, en vez de levantar una API abierta. La imagen de la web no lleva valores de sesión en el repositorio: para usar la web del contenedor en el navegador hay que dejar `src/Comicteca.Web/wwwroot/appsettings.Production.json` —ignorado por Git— antes de construirla o no pintará nada. `prueba-cabeceras.js` no lo necesita: sirve su propia configuración interceptada. La pila de compose es para el ensayo, no para la prueba de interfaz: esta última usa el emisor de prueba de la sección 3.
+Compose no arranca sin esas tres variables: las declara con `${...:?}` para que se detenga con el nombre de la que falta, en vez de levantar una API abierta. La imagen de la web se construye sin valores de sesión: se escriben al publicar con `Autenticacion__Authority`, `Autenticacion__ClientId` y `Autenticacion__ApiScope` en el entorno ([ADR 0007](adr/0007-valores-de-sesion-en-el-despliegue.md)), y para la web del contenedor en el navegador todavía hace falta decidir cómo llegan, porque la imagen no los lleva. `prueba-cabeceras.js` no lo necesita: sirve su propia configuración interceptada. La pila de compose es para el ensayo, no para la prueba de interfaz: esta última usa el emisor de prueba de la sección 3.
 
 `prueba-cabeceras.js` recorre la web, un recurso de `/_framework/` y la API,
 comprueba `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`,
@@ -155,7 +155,26 @@ docker compose down -v            # esto sí borra la base y el volumen
 
 La API del contenedor solo escucha en tu máquina y exige token igual que fuera de él: sin las tres variables no arranca. No la publiques fuera de loopback.
 
-## 5. Checklist manual
+## 5. Publicar la web
+
+La web publicada no lleva valores de sesión en el repositorio. Se generan al publicar, con el mismo nombre de variable que usa la API ([ADR 0007](adr/0007-valores-de-sesion-en-el-despliegue.md)):
+
+```bash
+Autenticacion__Authority="https://login.microsoftonline.com/<tenant>/v2.0" \
+Autenticacion__ClientId="<client id de Comicteca Web>" \
+Autenticacion__ApiScope="api://comicteca-api/acceso" \
+  dotnet publish src/Comicteca.Web -c Release -o /tmp/comicteca-publicada
+```
+
+Un despliegue añade `-p:ExigirSesion=true` para que la falta de valores detenga la publicación. Publica fuera del repositorio: el archivo lleva los valores del tenant.
+
+- Si falta uno de los tres, el publish se detiene y nombra el que falta.
+- Sin ninguno se publica con `{ }`: el archivo existe y el runtime lo pide, pero la web falla al arrancar y nombra la configuración que falta. Es lo que permite que la prueba de interfaz intercepte el archivo.
+- `appsettings.Development.json` no se publica nunca: lleva los valores del tenant que solo sirven en local.
+
+El CI comprueba cuatro casos en «Compilación y pruebas»: sin valores exige el archivo vacío, con valores de prueba exige que lleguen al archivo y a su variante comprimida, con uno solo exige que el publish se detenga nombrando el que falta, y con `ExigirSesion=true` exige que se detenga sin ninguno.
+
+## 6. Checklist manual
 
 La prueba automática usa Chromium. Antes de cerrar un cambio de interfaz, repásalo también a mano con las herramientas del navegador en 375 × 812:
 
@@ -176,7 +195,7 @@ En escritorio, a 1440 × 900:
 12. El formulario de alta cabe en una fila, con los campos a la izquierda y el botón a la derecha, y el buscador ocupa el ancho de la columna.
 13. Al estrechar, la rejilla pasa a dos columnas y luego a una, sin desbordamiento en ningún paso.
 
-## 6. Límites
+## 7. Límites
 
 - No hay umbral de cobertura: hay 58 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.

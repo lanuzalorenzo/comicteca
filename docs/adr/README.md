@@ -10,5 +10,5 @@ Aquí guardo las decisiones que van a durar: qué elegí, qué otras opciones te
 | [Consumir los controles compartidos, no extraer paquetes](0004-controles-compartidos.md) | Aceptada (implementada; CI verde y Compose validado en local) |
 | [Compilación y paquetes centralizados](0005-compilacion-y-paquetes-centralizados.md) | Aceptada |
 | [La autenticación no se apaga nunca](0006-autenticacion-siempre.md) | Aceptada (implementada; CI en verde el 14 de noviembre de 2026) |
-| [De dónde salen los valores de sesión en el despliegue](0007-valores-de-sesion-en-el-despliegue.md) | Propuesta |
+| [De dónde salen los valores de sesión en el despliegue](0007-valores-de-sesion-en-el-despliegue.md) | Aceptada (implementada en el publish; sin desplegar) |
 | [Política de versiones de la plataforma](0008-politica-de-versiones.md) | Aceptada (SDK fijado en `global.json`; sin migración ejecutada) |
