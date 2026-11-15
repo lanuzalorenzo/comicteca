@@ -42,6 +42,7 @@ El orden de adopción fue: CORS y cabeceras, límite por IP, ProblemDetails y sa
 - **Asumo** que el endpoint `/health` cambia de cuerpo: antes devolvía `{ "estado": "ok" }` y el paquete publica el estado agregado, por defecto el texto `Healthy`. Las pruebas y el healthcheck solo miran el código de respuesta, pero es un cambio de contrato.
 - **Asumo** que el límite por IP necesita una decisión detrás de un proxy: sin cabeceras reenviadas, la IP que ve la API es la del proxy. Se configura antes de desplegar, no después.
 - **Dejo pendiente** la redirección a HTTPS y HSTS. Hoy no se llama a la extensión, así que no afecta a Compose ni a la prueba de interfaz. Para adoptarla, el paquete tendría que permitir desactivar la redirección o reconocer un proxy con terminación TLS. Es una mejora de `shared-dotnet`, no un cambio de Comicteca.
+- **Enmendado el 15 de noviembre de 2026:** el hueco de transporte lo cubre el borde. `compose.prod.yaml` termina TLS en nginx, redirige el 5080 (el puerto HTTP del host) al 5443 y emite `Strict-Transport-Security`; la API, detrás del proxy, no redirige. La extensión de `LL.Hosting` sigue sin adoptarse y, si se adopta, tendrá que reconocer ese proxy: no es una decisión pendiente para cerrar el transporte.
 
 ## Cómo se comprueba
 
@@ -60,7 +61,7 @@ El estado es **Validado en local y CI** para los puntos 1 a 6 y 8; Compose queda
 
 ## Enmienda del 9 de noviembre de 2026
 
-**CSP y `Permissions-Policy` no salen del paquete.** `LL.Security` pone `nosniff`, `DENY` y `no-referrer`, pero no una CSP: depende de la aplicación (Blazor, MSAL y el origen de su API), así que no es un control genérico. La API añade `Content-Security-Policy` y `Permissions-Policy` en `CabecerasDeRespuesta.cs` y la web pone las suyas en `docker/cabeceras.conf`, con `frame-ancestors 'self'` y `X-Frame-Options: SAMEORIGIN` porque MSAL renueva el token en un iframe que vuelve a la propia página. Esto no contradice la adopción de `LL.Security`: el paquete sigue cubriendo CORS, cabeceras comunes y límite; lo específico de la aplicación se queda en la aplicación.
+**CSP y `Permissions-Policy` no salen del paquete.** `LL.Security` pone `nosniff`, `DENY` y `no-referrer`, pero no una CSP: depende de la aplicación (Blazor, MSAL y el origen de su API), así que no es un control genérico. La API añade `Content-Security-Policy` y `Permissions-Policy` en `CabecerasDeRespuesta.cs` y la web pone las suyas en `docker/cabeceras.conf` (ensayo) y `docker/cabeceras.prod.conf` (perfil HTTPS), con `frame-ancestors 'self'` y `X-Frame-Options: SAMEORIGIN` porque MSAL renueva el token en un iframe que vuelve a la propia página. Esto no contradice la adopción de `LL.Security`: el paquete sigue cubriendo CORS, cabeceras comunes y límite; lo específico de la aplicación se queda en la aplicación.
 
 B.1 introduce autenticación, así que la razón por la que este ADR descartaba la validación JWT deja de valer. Comicteca adopta `AddHardenedJwtBearer` de `LL.Security`: firma, emisor, audiencia y vigencia, más una política por defecto de una sola cuenta (`oid`). Montar el JWT en casa habría repetido lo que el paquete ya prueba. No cambia el resto del ADR: siguen fuera `UseApiTransportSecurity` (B.2) y la autorización por objeto, porque hay una sola cuenta.
 
@@ -68,7 +69,7 @@ B.1 introduce autenticación, así que la razón por la que este ADR descartaba 
 
 **La CSP de la API sale del paquete.** `LL.Security` 0.2.0 añade `ContentSecurityPolicy`: compone la política por directivas, valida el nombre y los valores y escribe la cabecera en la misma pasada que el resto. La política sigue siendo de la aplicación —una API JSON y una web no admiten la misma—, pero la composición y su prueba viven una vez.
 
-La API adopta `ContentSecurityPolicy.DenyAll()` y mantiene su `Permissions-Policy` en las opciones del paquete; `CabecerasDeRespuesta.cs` desaparece. La web conserva la suya en `docker/cabeceras.conf`: no la sirve una aplicación .NET y su política es distinta (`frame-ancestors 'self'`, MSAL y el origen de la API).
+La API adopta `ContentSecurityPolicy.DenyAll()` y mantiene su `Permissions-Policy` en las opciones del paquete; `CabecerasDeRespuesta.cs` desaparece. La web conserva la suya en `docker/cabeceras.conf` y `docker/cabeceras.prod.conf`: no la sirve una aplicación .NET y su política es distinta (`frame-ancestors 'self'`, MSAL y el origen de la API).
 
 Con esto, la enmienda anterior queda matizada: el paquete no impone una CSP, pero sí la construye y la prueba. Lo específico de cada aplicación se queda en su política, no en un middleware propio.
 

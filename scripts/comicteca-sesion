@@ -22,8 +22,17 @@ falta() {
 [ -n "${AUTENTICACION_API_SCOPE:-}" ] || falta AUTENTICACION_API_SCOPE
 
 mkdir -p "$(dirname "$destino")"
-printf '{ "Autenticacion": { "Authority": "%s", "ClientId": "%s", "ApiScope": "%s" } }\n' \
-    "$AUTENTICACION_AUTHORITY" "$AUTENTICACION_CLIENT_ID" "$AUTENTICACION_API_SCOPE" >"$destino"
+# ApiBaseUrl es opcional: en el ensayo local la web llama a `http://localhost:5094`
+# y le vale el appsettings versionado. En el perfil de producción todo pasa por
+# el mismo origen HTTPS, así que la base es la dirección de la web; sin esta
+# clave el navegador seguiría llamando al puerto 5094, que allí no existe.
+if [ -n "${API_BASE_URL:-}" ]; then
+    printf '{ "ApiBaseUrl": "%s", "Autenticacion": { "Authority": "%s", "ClientId": "%s", "ApiScope": "%s" } }\n' \
+        "$API_BASE_URL" "$AUTENTICACION_AUTHORITY" "$AUTENTICACION_CLIENT_ID" "$AUTENTICACION_API_SCOPE" >"$destino"
+else
+    printf '{ "Autenticacion": { "Authority": "%s", "ClientId": "%s", "ApiScope": "%s" } }\n' \
+        "$AUTENTICACION_AUTHORITY" "$AUTENTICACION_CLIENT_ID" "$AUTENTICACION_API_SCOPE" >"$destino"
+fi
 # Lectura para el usuario de nginx dentro del contenedor: no son secretos.
 chmod 644 "$destino"
 

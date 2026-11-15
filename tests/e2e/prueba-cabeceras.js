@@ -1,7 +1,12 @@
 const { chromium } = require('playwright');
 
 const WEB = process.env.COMICTECA_WEB ?? 'http://localhost:5077';
-const API = process.env.COMICTECA_API ?? 'http://localhost:5094';
+// El perfil de producción escucha HTTPS y deja el HTTP solo como redirección.
+const TLS = WEB.startsWith('https://');
+const WEB_HTTP = process.env.COMICTECA_WEB_HTTP ?? (TLS ? 'http://comicteca.localhost:5080' : '');
+// En local la API es otro puerto; en el perfil de producción nginx la proxea y
+// comparte origen con la web.
+const API = TLS ? WEB : (process.env.COMICTECA_API ?? 'http://localhost:5094');
 
 // Esta prueba mira cabeceras y CSP, no datos: no inicia sesión. La web no
 // arranca sin valores de sesión y Git no los lleva, así que se sirven
@@ -47,6 +52,15 @@ function comprobarCabecerasComunes(respuesta, donde, marcoEsperado = 'DENY') {
     `${donde}: Permissions-Policy limita cámara y geolocalización`);
 }
 
+// HSTS solo se exige en el perfil HTTPS: en local el ensayo se sirve por HTTP y
+// anunciarlo dejaría el navegador sin ese host para el resto de servicios.
+function comprobarHsts(respuesta, donde) {
+  const hsts = cabecera(respuesta, 'strict-transport-security');
+  check(hsts.includes('max-age=63072000'), `${donde}: HSTS con max-age de dos años`);
+  // No se promete a los subdominios lo que no se ha probado.
+  check(!/includeSubDomains/i.test(hsts), `${donde}: HSTS sin includeSubDomains`);
+}
+
 function comprobarCsp(deLaWeb, respuesta) {
   const csp = cabecera(respuesta, 'content-security-policy');
   check(csp.includes("frame-ancestors 'self'"),
@@ -56,7 +70,15 @@ function comprobarCsp(deLaWeb, respuesta) {
   check(csp.includes("'wasm-unsafe-eval'"), `${deLaWeb}: CSP permite WebAssembly`);
   check(csp.includes('https://login.microsoftonline.com'),
     `${deLaWeb}: CSP admite MSAL`);
-  check(csp.includes(API), `${deLaWeb}: CSP admite el origen de la API`);
+  // Con proxy la API es el mismo origen y basta `'self'`; sin él hay que
+  // nombrarla, porque es otro puerto. En el perfil de producción, además, el
+  // 5094 del ensayo no debe aparecer: no existe ahí.
+  if (TLS) {
+    check(csp.includes("connect-src 'self'"), `${deLaWeb}: CSP admite el mismo origen`);
+    check(!csp.includes('localhost:5094'), `${deLaWeb}: la CSP no nombra el puerto del ensayo`);
+  } else {
+    check(csp.includes(API), `${deLaWeb}: CSP admite el origen de la API`);
+  }
 }
 
 async function esperarServidor(url, intentos = 60) {
@@ -69,7 +91,10 @@ async function esperarServidor(url, intentos = 60) {
     }
     await new Promise((resolver) => setTimeout(resolver, 1000));
   }
-  throw new Error(`No responde ${url}`);
+  const pista = TLS
+    ? ' Con HTTPS, Node necesita confiar en la CA: NODE_EXTRA_CA_CERTS="$(mkcert -CAROOT)/rootCA.pem".'
+    : '';
+  throw new Error(`No responde ${url}.${pista}`);
 }
 
 (async () => {
@@ -79,9 +104,19 @@ async function esperarServidor(url, intentos = 60) {
     await esperarServidor(`${API}/health`);
     await esperarServidor(WEB);
 
+    // Con proxy, /health también pasa por nginx: si responde, el camino
+    // navegador → nginx → API está abierto.
+    if (TLS) {
+      const enClaro = await fetch(WEB_HTTP, { redirect: 'manual' });
+      check(enClaro.status === 301, `HTTP responde ${enClaro.status}, no sirve contenido`);
+      check((enClaro.headers.get('location') ?? '').startsWith('https://'),
+        'HTTP redirige a HTTPS');
+    }
+
     const html = await fetch(WEB);
     check(html.ok, `la web responde ${html.status}`);
     comprobarCabecerasComunes(html, 'web (HTML)', 'SAMEORIGIN');
+    if (TLS) comprobarHsts(html, 'web (HTML)');
     comprobarCsp('web (HTML)', html);
 
     // nginx sustituye el nonce del importmap por petición: se compara el del
@@ -98,11 +133,13 @@ async function esperarServidor(url, intentos = 60) {
     const framework = await fetch(`${WEB}/${recurso}`);
     check(framework.ok, `la web sirve ${recurso}`);
     comprobarCabecerasComunes(framework, 'web (/_framework/)', 'SAMEORIGIN');
+    if (TLS) comprobarHsts(framework, 'web (/_framework/)');
     comprobarCsp('web (/_framework/)', framework);
 
     const api = await fetch(`${API}/api/series`);
     check(api.status === 401, `la API responde ${api.status} sin sesión`);
     comprobarCabecerasComunes(api, 'API');
+    if (TLS) comprobarHsts(api, 'API');
     const cspApi = cabecera(api, 'content-security-policy');
     check(cspApi.includes("default-src 'none'"), 'API: CSP default-src none');
     check(cspApi.includes("frame-ancestors 'none'"), "API: CSP frame-ancestors 'none'");
@@ -110,7 +147,13 @@ async function esperarServidor(url, intentos = 60) {
     // El navegador solo responde a una pregunta que el fetch no puede: si
     // Blazor carga y ejecuta bajo esa CSP sin violaciones.
     navegador = await chromium.launch();
-    const pagina = await navegador.newPage({ viewport: { width: 375, height: 812 } });
+    // El certificado lo firma la CA del host, que Chromium no conoce por sí
+    // solo; Chromium además ignora HSTS en *.localhost. La prueba valida
+    // cabeceras y redirección, no la cadena de confianza del navegador.
+    const pagina = await navegador.newPage({
+      viewport: { width: 375, height: 812 },
+      ignoreHTTPSErrors: TLS
+    });
     const servirConfiguracion = (respuesta) => respuesta.fulfill({
       contentType: 'application/json',
       body: JSON.stringify(CONFIGURACION)

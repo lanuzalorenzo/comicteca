@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Emite el certificado TLS del perfil de producción con mkcert y lo deja en
+# .tls/, que Git ignora. El compose de producción lo monta en solo lectura.
+#
+# El perfil sirve https://comicteca.localhost:5443 y no `localhost` a propósito:
+# HSTS se aplica por host, no por puerto, así que declararlo sobre `localhost`
+# dejaría ese navegador sin HTTP para cualquier otro servicio local.
+#
+# mkcert crea su CA en su propio almacén. Sin `mkcert -install` el navegador no
+# la confía; la prueba de cabeceras sí puede usarla con NODE_EXTRA_CA_CERTS.
+set -euo pipefail
+
+repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+# El nombre está fijado y no se toma del entorno: `docker/site.prod.conf` lo
+# escribe en `server_name` y en las dos rutas del certificado. Una variable
+# aquí emitiría un certificado que nginx no encuentra.
+host="comicteca.localhost"
+dir="${TLS_DIR:-$repo/.tls}"
+
+if ! command -v mkcert >/dev/null 2>&1; then
+    echo "Falta mkcert: instálalo (https://github.com/FiloSottile/mkcert) y repite." >&2
+    exit 1
+fi
+
+mkdir -p "$dir"
+
+mkcert \
+    -cert-file "$dir/$host.pem" \
+    -key-file "$dir/$host-key.pem" \
+    "$host" "*.localhost" localhost 127.0.0.1 ::1
+
+# nginx del contenedor corre como el usuario `nginx`, no como el del host: leer
+# la clave exige permiso para otros. Es un certificado de desarrollo, vive fuera
+# de Git y no se usa en ningún despliegue.
+chmod 644 "$dir/$host.pem" "$dir/$host-key.pem"
+
+ca="$(mkcert -CAROOT)/rootCA.pem"
+# Copia de la CA junto al certificado: la prueba de cabeceras y curl la usan
+# con NODE_EXTRA_CA_CERTS y --cacert sin buscar en el almacén de mkcert.
+cp "$ca" "$dir/ca.pem"
+
+if ! openssl verify -CAfile /etc/ssl/certs/ca-certificates.crt "$ca" >/dev/null 2>&1; then
+    echo "Aviso: la CA de mkcert no está confiada en el sistema. Ejecuta 'mkcert -install'." >&2
+fi
+
+echo "Certificado en $dir/$host.pem (CA en $dir/ca.pem)"

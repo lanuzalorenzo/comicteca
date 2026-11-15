@@ -56,7 +56,8 @@ if (app.Environment.IsDevelopment())
 // antes que el tope de cuerpo para que un cuerpo grande también cuente en la
 // cuota; CORS, antes que ambos, para que el 413 y el 429 lleguen al navegador.
 // La CSP del servicio es restrictiva: sus respuestas son JSON y no deben cargar
-// nada. La web tiene la suya, más amplia, en `docker/cabeceras.conf`.
+// nada. La web tiene la suya, más amplia, en `docker/cabeceras.conf` y, con
+// TLS delante, en `docker/cabeceras.prod.conf`.
 var cabeceras = new SecurityHeadersOptions
 {
     Csp = ContentSecurityPolicy.DenyAll(),
