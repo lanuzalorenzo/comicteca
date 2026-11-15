@@ -5,10 +5,94 @@
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
   </PropertyGroup>
 
+  <!--
+    Los valores de sesión se piden por entorno, con el mismo nombre que usa la
+    API, y se escriben al publicar (ADR 0007). WebAssembly no lee variables de
+    entorno, así que sin archivo la web publicada no arranca. Se publica con:
+
+      Autenticacion__Authority=… Autenticacion__ClientId=… Autenticacion__ApiScope=… \
+        dotnet publish src/Comicteca.Web -c Release
+
+    Sin ese entorno se publica un archivo vacío: el runtime lo pide igual, la
+    prueba de interfaz lo intercepta y la imagen se construye sin valores. Un
+    despliegue añade `-p:ExigirSesion=true` para que el archivo vacío sea un
+    error en vez de una web que falla en el navegador.
+  -->
+  <PropertyGroup>
+    <_SesionPedida>$(Autenticacion__Authority)|$(Autenticacion__ClientId)|$(Autenticacion__ApiScope)</_SesionPedida>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.Authentication.WebAssembly.Msal" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Los valores reales del tenant que se usan en local llegan por un archivo
+      que Git ignora. Publicarlo los metería en el artefacto y, con una imagen
+      construida en local, en una capa del registro: un artefacto publicado no
+      lleva valores de desarrollo.
+    -->
+    <Content Update="wwwroot/appsettings.Development.json"
+             CopyToPublishDirectory="Never"
+             ExcludeFromSingleFile="true" />
+
+    <!--
+      El archivo de sesión siempre existe y siempre se publica, para que el
+      manifiesto del runtime lo pida: la prueba de interfaz lo intercepta cuando
+      no hay valores. Lo que cambia es el contenido, y lo escribe el target de
+      abajo, así que un archivo sobrante de una publicación anterior nunca entra
+      en el artefacto.
+    -->
+    <Content Remove="wwwroot/appsettings.Production.json" />
+    <Content Include="wwwroot/appsettings.Production.json"
+             CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    La web publicada necesita Authority, ClientId y ApiScope. Se escriben al
+    compilar desde el entorno, con el mismo nombre que usa la API; el archivo
+    está en .gitignore. Sin valores se deja vacío a propósito: la web arranca y
+    falla con el motivo, en vez de quedarse en blanco con un 404.
+  -->
+  <Target Name="GenerarAppsettingsDeSesion" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(ExigirSesion)' == 'true' and '$(_SesionPedida)' == '||'"
+           Text="ExigirSesion=true y no hay valores de sesión. Pasa Autenticacion__Authority, Autenticacion__ClientId y Autenticacion__ApiScope: un despliegue no se publica sin sesión (ADR 0007)." />
+    <Error Condition="'$(_SesionPedida)' != '||' and '$(Autenticacion__Authority)' == ''"
+           Text="Falta Autenticacion__Authority. La web publicada no arranca sin los tres valores de sesión (ADR 0007)." />
+    <Error Condition="'$(_SesionPedida)' != '||' and '$(Autenticacion__ClientId)' == ''"
+           Text="Falta Autenticacion__ClientId. La web publicada no arranca sin los tres valores de sesión (ADR 0007)." />
+    <Error Condition="'$(_SesionPedida)' != '||' and '$(Autenticacion__ApiScope)' == ''"
+           Text="Falta Autenticacion__ApiScope. La web publicada no arranca sin los tres valores de sesión (ADR 0007)." />
+
+    <!-- Los valores se interpolan en un JSON y en un elemento de MSBuild: una
+         comilla, una barra o un punto y coma producen un archivo inválido o
+         partido. Ninguno de los tres aparece en un emisor, un GUID ni un ámbito
+         bien escritos, así que se rechazan en vez de escaparlos. -->
+    <PropertyGroup Condition="'$(_SesionPedida)' != '||'">
+      <_SesionConcatenada>$(Autenticacion__Authority)$(Autenticacion__ClientId)$(Autenticacion__ApiScope)</_SesionConcatenada>
+    </PropertyGroup>
+    <Error Condition="'$(_SesionConcatenada)' != '' and ($(_SesionConcatenada.Contains('&quot;')) or $(_SesionConcatenada.Contains('\')) or $(_SesionConcatenada.Contains(';')))"
+           Text="Un valor de sesión lleva una comilla, una barra o un punto y coma. Revisa Autenticacion__Authority, __ClientId y __ApiScope: no son valores válidos (ADR 0007)." />
+
+    <ItemGroup>
+      <_LineaDeSesion Remove="@(_LineaDeSesion)" />
+      <_LineaDeSesion Condition="'$(_SesionPedida)' != '||'"
+                      Include="{ &quot;Autenticacion&quot;: { &quot;Authority&quot;: &quot;$(Autenticacion__Authority)&quot;, &quot;ClientId&quot;: &quot;$(Autenticacion__ClientId)&quot;, &quot;ApiScope&quot;: &quot;$(Autenticacion__ApiScope)&quot; } }" />
+      <_LineaDeSesion Condition="'$(_SesionPedida)' == '||'" Include="{ }" />
+    </ItemGroup>
+    <WriteLinesToFile File="$(MSBuildProjectDirectory)/wwwroot/appsettings.Production.json"
+                      Lines="@(_LineaDeSesion)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <Message Condition="'$(_SesionPedida)' != '||'"
+             Importance="high"
+             Text="appsettings.Production.json generado con los valores de sesión." />
+    <Message Condition="'$(_SesionPedida)' == '||'"
+             Importance="normal"
+             Text="appsettings.Production.json vacío: no se han pedido valores de sesión." />
+  </Target>
 
 </Project>

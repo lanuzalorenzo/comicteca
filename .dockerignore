@@ -12,6 +12,9 @@
 # no se carga: la imagen corre en Production y sus valores llegan por variables de
 # entorno, o el arranque falla.
 src/Comicteca.Web/wwwroot/appsettings.Development.json
+# El de sesión lo escribe la compilación: si se publicó antes en local, lleva los
+# valores del tenant y no debe entrar en el contexto ni en la caché de BuildKit.
+src/Comicteca.Web/wwwroot/appsettings.Production.json
 .env
 tests
 docs
