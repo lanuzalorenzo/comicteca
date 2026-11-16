@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Compilar, verificar el formato y probar
-        uses: lanuzalorenzo/core/actions/dotnet@v1.4
+        uses: lanuzalorenzo/core/actions/dotnet@v1.6
         with:
           solution: Comicteca.slnx
 
@@ -85,7 +85,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Comprobar enlaces y anclas
-        uses: lanuzalorenzo/core/actions/check-links@v1.4
+        uses: lanuzalorenzo/core/actions/check-links@v1.6
         with:
           root: .
           skip: src/Comicteca.Web/wwwroot,src/Comicteca.Web/obj
@@ -100,7 +100,7 @@ jobs:
           fetch-depth: 0
 
       - name: Escanear secretos con Gitleaks
-        uses: lanuzalorenzo/core/actions/gitleaks@v1.4
+        uses: lanuzalorenzo/core/actions/gitleaks@v1.6
 
   sca:
     name: Dependencias vulnerables (NuGet)
@@ -223,7 +223,7 @@ jobs:
         working-directory: tests/e2e
 
       - name: Arrancar los servicios y probar la interfaz
-        uses: lanuzalorenzo/core/actions/browser-e2e@v1.5
+        uses: lanuzalorenzo/core/actions/browser-e2e@v1.6
         with:
           working-directory: tests/e2e
           start-script: tests/e2e/start.sh
