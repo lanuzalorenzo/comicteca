@@ -43,6 +43,28 @@ public sealed class ProveedorTests
     public void Sqlite_sin_cadena_usa_el_archivo_local() =>
         Assert.Equal("Data Source=comicteca.db", ConfiguracionDatos.Cadena(cadena: null, usarSqlServer: false));
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AzureSql_sin_cadena_de_migraciones_no_arranca(string? cadenaMigraciones)
+    {
+        var error = Assert.Throws<InvalidOperationException>(
+            () => ConfiguracionDatos.CadenaMigraciones(cadenaMigraciones, usarSqlServer: true));
+
+        Assert.Contains("ComictecaMigraciones", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AzureSql_usa_la_cadena_de_migraciones_tal_cual() =>
+        Assert.Equal(
+            "Server=localhost;Database=comicteca",
+            ConfiguracionDatos.CadenaMigraciones("Server=localhost;Database=comicteca", usarSqlServer: true));
+
+    [Fact]
+    public void Sqlite_no_tiene_cadena_de_migraciones_propia() =>
+        Assert.Null(ConfiguracionDatos.CadenaMigraciones("Server=localhost;Database=comicteca", usarSqlServer: false));
+
     [Fact]
     public void AzureSql_usa_sus_migraciones_y_desactiva_la_agrupacion()
     {
