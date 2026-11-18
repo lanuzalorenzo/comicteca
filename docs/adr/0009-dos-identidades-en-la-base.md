@@ -36,7 +36,7 @@ Pierdo dos cosas, y las dejo escritas:
 
 ## Cómo se comprueba
 
-`scripts/comicteca-bd` (documentado en [`pruebas.md`](../pruebas.md)) levanta SQL Server 2022 en un contenedor desechable, crea `comicteca_migra` con `db_owner` y `comicteca_app` con `db_datareader` y `db_datawriter`, y arranca la API con el emisor OIDC de prueba. Comprueba cinco cosas: sin `ComictecaMigraciones` la API no arranca, el esquema lo aplica el migrador y deja historial, el sembrado del CSV y el alta y la baja funcionan con el usuario limitado, `CREATE TABLE` con ese usuario falla por permisos, y tampoco puede escribir en `__EFMigrationsHistory`. El migrador sí puede, así que la denegación es del usuario y no de la instancia.
+`scripts/comicteca-bd` (documentado en [`pruebas.md`](../pruebas.md)) levanta SQL Server 2022 en un contenedor desechable, crea `comicteca_migra` con `db_owner` y `comicteca_app` con `db_datareader` y `db_datawriter`, y arranca la API con el emisor OIDC de prueba. Comprueba siete cosas: sin `ComictecaMigraciones` la API no arranca, el esquema lo aplica el migrador y deja historial, el sembrado del CSV y el alta y la baja funcionan con el usuario limitado, `CREATE TABLE` con ese usuario falla por permisos, tampoco puede escribir en `__EFMigrationsHistory`, el alta y la baja dejan su rastro en `Auditoria` y no puede borrarlo ni reescribirlo. El migrador sí puede, así que la denegación es del usuario y no de la instancia.
 
 ## Qué no cambia
 

@@ -46,7 +46,12 @@ public sealed class EfSerieWriter(ComictecaDbContext db) : ISerieWriter
 
     public async Task<bool> BorrarSerieAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var serie = await db.Series.FindAsync([id], cancellationToken);
+        // Los tomos se cargan para contarlos en la auditoría: la cascada la ejecuta la base
+        // y no pasa por el ChangeTracker, así que sin esta carga el rastro diría cero.
+        var serie = await db.Series
+            .Include(otra => otra.Tomos)
+            .SingleOrDefaultAsync(otra => otra.Id == id, cancellationToken);
+
         if (serie is null)
         {
             return false;

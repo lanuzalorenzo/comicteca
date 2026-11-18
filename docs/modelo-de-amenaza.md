@@ -2,12 +2,12 @@
 
 Una casa no se protege cambiando la cerradura: se protege sabiendo por dónde se entra. Esta página hace eso con la API: recorre cada puerta, dice qué podría pasar por ella y qué control la cierra. No es un inventario de herramientas, sino la lista de lo que hoy frena un ataque, lo que solo está diseñado y lo que sigue abierto.
 
-**Última revisión:** 15 de noviembre de 2026.
-**Alcance:** la API (`/health` y `/api/series`), la web que la consume y la base de datos local y de Azure SQL. Quedan fuera la cuenta de Azure, la suscripción y el pipeline de despliegue: no se protegen desde el código.
+**Última revisión:** 18 de noviembre de 2026.
+**Alcance:** la API (`/health`, `/api/series` y `/api/auditoria`), la web que la consume y la base de datos local y de Azure SQL. Quedan fuera la cuenta de Azure, la suscripción y el pipeline de despliegue: no se protegen desde el código.
 
 ## 1. Puertas de entrada
 
-La API tiene seis rutas. Todas exigen un token de Entra ID de la cuenta permitida salvo `/health`, que es anónimo y no devuelve datos. La API no arranca sin emisor, audiencia y cuenta en ningún entorno: no hay interruptor que la deje abierta (ADR 0006), y `compose` se niega a arrancar sin esos valores. La barrera es la autenticación; el loopback solo acota el ensayo local.
+La API tiene siete rutas. Todas exigen un token de Entra ID de la cuenta permitida salvo `/health`, que es anónimo y no devuelve datos. La API no arranca sin emisor, audiencia y cuenta en ningún entorno: no hay interruptor que la deje abierta (ADR 0006), y `compose` se niega a arrancar sin esos valores. La barrera es la autenticación; el loopback solo acota el ensayo local.
 
 | Método | Ruta | Qué hace | Datos que toca |
 |---|---|---|---|
@@ -17,6 +17,7 @@ La API tiene seis rutas. Todas exigen un token de Entra ID de la cuenta permitid
 | `DELETE` | `/api/series/{id}` | Da de baja una serie | Escritura |
 | `POST` | `/api/series/{id}/tomos` | Añade un tomo | Escritura |
 | `DELETE` | `/api/series/{id}/tomos/{tomoId}` | Quita un tomo | Escritura |
+| `GET` | `/api/auditoria` | Devuelve las últimas escrituras con su fecha y su cuenta | Lectura del rastro |
 
 La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma peticiones; pide el token a Entra ID y lo pone en la cabecera. El 12 de noviembre de 2026 se probó contra el tenant real: la web lista con la cuenta permitida y la API rechaza sin token y con una cuenta no permitida. Faltan el alta y la baja desde la interfaz y un cierre de sesión que vuelva al inicio.
 
@@ -26,7 +27,7 @@ La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma petic
 |---|---|---|---|
 | Suplantación | Alguien se hace pasar por el propietario y llama a la API | Inicio de sesión con Entra ID y validación de firma, emisor, audiencia y vigencia | Parcial: validado con emisor de prueba y contra el tenant real el 12 de noviembre de 2026; falta el alta y la baja desde la interfaz |
 | Manipulación | Añadir o borrar series y tomos sin permiso | La misma autenticación y una sola cuenta permitida; consultas parametrizadas por EF Core | Validado en local la primera; Parcial la segunda |
-| Repudio | Borrar una serie y no poder decir quién ni cuándo | Registro de altas y bajas con fecha y origen | Diseño |
+| Repudio | Borrar una serie y no poder decir quién ni cuándo | Registro de altas y bajas con fecha y origen | Validado en local el 18 de noviembre de 2026: cada escritura deja una fila con la fecha, la operación y el `oid` del token, en la misma transacción ([ADR 0011](adr/0011-auditoria-y-respaldo.md)); en Azure SQL, pendiente |
 | Divulgación | Leer la colección desde cualquier cliente que tenga la dirección | Autenticación y HTTPS en el despliegue | Parcial: autenticación probada contra el tenant real el 12 de noviembre de 2026; HTTPS validado en el perfil de producción el 15 de noviembre de 2026 (B.2) |
 | Denegación | Ráfagas de peticiones o cuerpos enormes | Límite por IP y tamaño máximo de cuerpo | Validado en local el 9 de noviembre de 2026: 429 y 413; en el perfil con proxy el cubo del límite es compartido |
 | Elevación | El usuario de la aplicación puede crear tablas en la base | Usuario sin DDL; las migraciones con otro usuario | Validado en el ensayo con SQL Server en contenedor (16 de noviembre de 2026); en Azure SQL, pendiente |
@@ -71,7 +72,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 | Cabeceras, CSP, HTTPS y HSTS | Divulgación, configuración insegura | Cabeceras en respuesta normal y en error, con prueba automática en los contenedores; CSP de la web con Blazor cargando y el nonce comprobado; con TLS, HSTS en las tres respuestas y el HTTP redirigido | Validado en local, también sobre el perfil HTTPS el 15 de noviembre de 2026 (46 comprobaciones); la renovación de MSAL pendiente (B.2b) |
 | Límite por IP y tamaño de cuerpo | Denegación, flujos sensibles | Ráfaga que recibe 429, 413 por cuerpo mayor de 16 KB y `X-Forwarded-For` que no abre cuota, con prueba automática y en el contenedor | Validado en local y contenedor |
 | Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Validado en el ensayo local con SQL Server 2022 en contenedor el 16 de noviembre de 2026 (`scripts/comicteca-bd`): sin `ConnectionStrings:ComictecaMigraciones` la API no arranca. Queda que la API lee la cadena del migrador mientras migra al arrancar ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)) y el ensayo en Azure SQL |
-| Registro de escrituras y copia restaurable | Repudio | Cada alta y baja deja rastro con fecha y origen; una copia se restaura | Diseño |
+| Registro de escrituras y copia restaurable | Repudio | Cada alta y baja deja rastro con fecha y origen; una copia se restaura | Validado en local el 18 de noviembre de 2026: tabla `Auditoria` escrita por un interceptor en la misma transacción, cuenta tomada de la claim `oid`, `GET /api/auditoria`, una copia de SQLite restaurada en una prueba y el `DENY` de la tabla comprobado en el ensayo con SQL Server ([ADR 0011](adr/0011-auditoria-y-respaldo.md)). Quedan la copia programada y la copia automática de Azure SQL |
 | Identidad gestionada y Key Vault | Divulgación, elevación | La configuración de despliegue no contiene contraseñas | Parcial: sin contraseña, la API exige al arrancar `Authentication=Active Directory Default` o `Active Directory Managed Identity`, y una prueba de la suite vigila los `compose`, los `.env` y los `appsettings` versionados ([ADR 0010](adr/0010-quien-llama-y-con-que.md)). La identidad gestionada se valida en el ensayo con Azure SQL sobre cómputo con identidad |
 | SAST y escaneo de imagen | Configuración insegura, cadena de suministro | CodeQL y Trivy en verde en el CI | Validado: run 43246451547 en verde (12 de noviembre de 2026), con los dos SARIF publicados |
 
@@ -84,7 +85,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 - **La auditoría será un registro de aplicación**, no una prueba inmutable ni firmada.
 - **SQLite en local no tiene copia automática.** En Azure la copia la pone la plataforma y hay que comprobarla, no darla por hecha.
 - **El umbral del límite no está calibrado** y no hay pruebas de carga.
-- **La cobertura no se mide:** hay 81 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
+- **La cobertura no se mide:** hay 97 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
 - **El CORS solo limita navegadores.** No autentica ni protege de otros clientes.
 
 ## 7. Cómo se mantiene

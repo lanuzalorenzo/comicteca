@@ -1,7 +1,7 @@
 # 0011 — Rastro de cada escritura y copia que se puede restaurar
 
 **Fecha:** 18 de noviembre de 2026
-**Estado:** Propuesta (diseño escrito; sin código, sin migración y sin ensayo)
+**Estado:** Aceptada (implementada y probada en local y en el ensayo con SQL Server el 18 de noviembre de 2026; la copia programada y la parte de Azure SQL, pendientes)
 
 ## De qué iba
 
@@ -45,14 +45,14 @@ Pierdo, y lo dejo escrito:
 - **El rastro vive en la misma base que el dato.** Una copia lleva los dos y una base perdida se lleva los dos. No es un registro externo.
 - **No es inmutable.** `DENY DELETE, UPDATE` protege del uso normal, no de un administrador con la credencial de la base. Un `db_owner` puede reescribir la tabla.
 - **No se auditan los intentos fallidos.** Un 409 por serie repetida, un 404 o un 401 no dejan fila: esto es rastro de datos, no registro de seguridad. Si hace falta, es otro registro y otro sitio.
-- **El rastro crece con la colección y no se purga.** Hoy son 65 filas de siembra y unas pocas por sesión; no hay retención ni compresión, y no la habrá hasta que moleste.
+- **El rastro crece con la colección y no se purga.** Hoy son 85 filas de siembra —20 altas de serie y 65 de tomo— y unas pocas por sesión; no hay retención ni compresión, y no la habrá hasta que moleste.
 - **La foto de `Detalle` es la que había.** Si una serie se borra y se vuelve a crear con el mismo título, son dos identificadores y dos filas: el rastro no une historias, cuenta hechos.
 - **La prueba de restauración prueba el viaje del archivo,** no que la copia se tomara en el momento oportuno ni que el script se ejecute cada día. La copia programada sigue sin existir.
 - **El `DENY` vive en el script del ensayo, no en el paso que migra.** El ADR 0009 decía lo contrario y se corrige con este lote: `Migraciones.cs` solo aplica el esquema; el permiso lo deja `scripts/comicteca-bd`. En Azure SQL hay que repetirlo sobre el usuario de la identidad gestionada y comprobarlo en el ensayo.
 
 ## Cómo se comprueba
 
-Todo esto es lo que hay que ejecutar cuando el diseño pase a código; hoy no está hecho y por eso el estado del trabajo es **Diseño**, no Validado ni Parcial.
+Ejecutado en local el 18 de noviembre de 2026 con 97 pruebas en la suite, y el `DENY` sobre la tabla en el ensayo con SQL Server. La parte de Azure SQL sigue **Pendiente**.
 
 - **Pruebas de la suite:** un alta deja una fila con `Operacion`, `FechaUtc` y la cuenta de la sesión de prueba; una baja deja la suya; el borrado de una serie con tomos guarda el recuento; la siembra del CSV deja filas con `Origen = sistema` y sin cuenta; y una escritura que falla no deja fila.
 - **Prueba de la copia:** sobre una base temporal, sembrar, copiar con la API de respaldo, restaurar en un archivo nuevo, abrir con el `DbContext` y comprobar que están las mismas series y tomos y que `integrity_check` da `ok`.

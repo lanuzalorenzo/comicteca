@@ -14,4 +14,4 @@ Aquí guardo las decisiones que van a durar: qué elegí, qué otras opciones te
 | [Política de versiones de la plataforma](0008-politica-de-versiones.md) | Aceptada (SDK fijado en `global.json`; sin migración ejecutada) |
 | [La base con dos identidades](0009-dos-identidades-en-la-base.md) | Aceptada (validada con SQL Server en contenedor; en Azure SQL, pendiente) |
 | [Quién llama y con qué: la identidad del servicio y la del usuario](0010-quien-llama-y-con-que.md) | Aceptada (implementada en local; identidad gestionada pendiente del ensayo en Azure SQL) |
-| [Rastro de cada escritura y copia que se puede restaurar](0011-auditoria-y-respaldo.md) | Propuesta (diseño escrito; sin código, sin migración y sin ensayo) |
+| [Rastro de cada escritura y copia que se puede restaurar](0011-auditoria-y-respaldo.md) | Aceptada (implementada y probada en local; en Azure SQL, pendiente) |
