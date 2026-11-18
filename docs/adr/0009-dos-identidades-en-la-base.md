@@ -15,7 +15,7 @@ Dos identidades, y la API no cae en la cómoda:
 
 - **`ConnectionStrings:ComictecaMigraciones`**, obligatoria cuando `Datos:Proveedor` es `SqlServer`. La usa solo el paso de migraciones, en su propio `DbContext` (`Api/Migraciones.cs`), que se construye y se destruye dentro de ese paso. El contexto del servicio —el que atiende las peticiones— nunca la ve.
 - **`ConnectionStrings:Comicteca`**, la del servicio: `db_datareader` y `db_datawriter` en el ensayo. Lee y escribe, no cambia el esquema.
-- **El historial de migraciones es del migrador.** `db_datawriter` alcanzaría `__EFMigrationsHistory`, y con eso la aplicación podría marcar como aplicada una migración que no lo está o borrar una fila y dejar la API sin arrancar en el siguiente reinicio. El paso que migra deja el `DENY INSERT, UPDATE, DELETE` sobre esa tabla.
+- **El historial de migraciones es del migrador.** `db_datawriter` alcanzaría `__EFMigrationsHistory`, y con eso la aplicación podría marcar como aplicada una migración que no lo está o borrar una fila y dejar la API sin arrancar en el siguiente reinicio. En el ensayo, `scripts/comicteca-bd` deja el `DENY INSERT, UPDATE, DELETE` sobre esa tabla después de migrar; `Migraciones.cs` solo aplica el esquema. En Azure SQL el permiso entra con el despliegue y se comprueba en el ensayo (corregido el 18 de noviembre de 2026 con el [ADR 0011](0011-auditoria-y-respaldo.md), que necesitaba el mismo `DENY` para la auditoría).
 - **Sin cadena de migraciones y con SQL Server, el arranque falla** nombrando el valor que falta. Es la misma regla que el resto de la configuración obligatoria ([ADR 0006](0006-autenticacion-siempre.md)): un valor de seguridad que falta se nota al arrancar, no el día que alguien la necesita.
 - En SQLite la clave se ignora: no hay usuarios y las dos cadenas son la misma.
 
@@ -41,5 +41,5 @@ Pierdo dos cosas, y las dejo escritas:
 ## Qué no cambia
 
 - El proveedor por defecto sigue siendo SQLite y la base local no cambia.
-- Los permisos se siguen aplicando con migraciones de EF Core; no se edita la base a mano.
+- Los permisos de las identidades se aplican con `docker/mssql/preparar.sql` y con el ensayo de `scripts/comicteca-bd`; el esquema, con migraciones de EF Core. No se edita la base a mano.
 - El modelo, los endpoints y la web no cambian.
