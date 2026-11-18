@@ -29,7 +29,7 @@ La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma petic
 | Repudio | Borrar una serie y no poder decir quién ni cuándo | Registro de altas y bajas con fecha y origen | Diseño |
 | Divulgación | Leer la colección desde cualquier cliente que tenga la dirección | Autenticación y HTTPS en el despliegue | Parcial: autenticación probada contra el tenant real el 12 de noviembre de 2026; HTTPS validado en el perfil de producción el 15 de noviembre de 2026 (B.2) |
 | Denegación | Ráfagas de peticiones o cuerpos enormes | Límite por IP y tamaño máximo de cuerpo | Validado en local el 9 de noviembre de 2026: 429 y 413; en el perfil con proxy el cubo del límite es compartido |
-| Elevación | El usuario de la aplicación puede crear tablas en la base | Usuario sin DDL; las migraciones con otro usuario | Diseño |
+| Elevación | El usuario de la aplicación puede crear tablas en la base | Usuario sin DDL; las migraciones con otro usuario | Validado en el ensayo con SQL Server en contenedor (16 de noviembre de 2026); en Azure SQL, pendiente |
 
 ## 3. OWASP API Security Top 10 (2023)
 
@@ -70,9 +70,9 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 | Inicio de sesión con Entra ID, una sola cuenta | Suplantación, manipulación, divulgación | Sin token, 401; con token de otra cuenta, 403; la suite de contrato sigue en verde | Parcial: validado con emisor de prueba y probado contra el tenant real el 12 de noviembre de 2026 —401 sin token, 403 con otra cuenta, 200 con la permitida—; falta el alta y la baja desde la interfaz |
 | Cabeceras, CSP, HTTPS y HSTS | Divulgación, configuración insegura | Cabeceras en respuesta normal y en error, con prueba automática en los contenedores; CSP de la web con Blazor cargando y el nonce comprobado; con TLS, HSTS en las tres respuestas y el HTTP redirigido | Validado en local, también sobre el perfil HTTPS el 15 de noviembre de 2026 (46 comprobaciones); la renovación de MSAL pendiente (B.2b) |
 | Límite por IP y tamaño de cuerpo | Denegación, flujos sensibles | Ráfaga que recibe 429, 413 por cuerpo mayor de 16 KB y `X-Forwarded-For` que no abre cuota, con prueba automática y en el contenedor | Validado en local y contenedor |
-| Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Diseño |
+| Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Validado en el ensayo local con SQL Server 2022 en contenedor el 16 de noviembre de 2026 (`scripts/comicteca-bd`): sin `ConnectionStrings:ComictecaMigraciones` la API no arranca. Queda que la API lee la cadena del migrador mientras migra al arrancar ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)) y el ensayo en Azure SQL |
 | Registro de escrituras y copia restaurable | Repudio | Cada alta y baja deja rastro con fecha y origen; una copia se restaura | Diseño |
-| Identidad gestionada y Key Vault | Divulgación, elevación | La configuración de despliegue no contiene contraseñas | Diseño |
+| Identidad gestionada y Key Vault | Divulgación, elevación | La configuración de despliegue no contiene contraseñas | Parcial: sin contraseña, la API exige al arrancar `Authentication=Active Directory Default` o `Active Directory Managed Identity`, y una prueba de la suite vigila los `compose`, los `.env` y los `appsettings` versionados ([ADR 0010](adr/0010-quien-llama-y-con-que.md)). La identidad gestionada se valida en el ensayo con Azure SQL sobre cómputo con identidad |
 | SAST y escaneo de imagen | Configuración insegura, cadena de suministro | CodeQL y Trivy en verde en el CI | Validado: run 43246451547 en verde (12 de noviembre de 2026), con los dos SARIF publicados |
 
 ## 6. Riesgos residuales
@@ -80,10 +80,11 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 - **Un token robado da acceso total.** La cuenta es una; el segundo factor y el acceso condicional viven en Entra ID, no en esta API.
 - **El límite por IP es local.** Un ataque distribuido lo esquiva; no hay WAF ni puerta gestionada delante. En el perfil de producción, además, la API está detrás de nginx y no confía en `X-Forwarded-For`: el cubo de 120 peticiones por minuto es compartido por todo el navegador, no por origen. Declarar el proxy es lo que el ADR 0004 deja abierto antes de desplegar.
 - **El contenedor de la web ya no corre como root.** Sirve archivos estáticos como `nginx` en el puerto 8080; queda comprobarlo en el despliegue, no solo en local.
+- **El proceso que migra conoce la credencial con DDL.** La separación de identidades protege del uso, no de la lectura: mientras las migraciones se apliquen al arrancar, las dos cadenas viven en la configuración de la API. Se cierra cuando el esquema lo aplique un paso aparte, con su propia credencial ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)).
 - **La auditoría será un registro de aplicación**, no una prueba inmutable ni firmada.
 - **SQLite en local no tiene copia automática.** En Azure la copia la pone la plataforma y hay que comprobarla, no darla por hecha.
 - **El umbral del límite no está calibrado** y no hay pruebas de carga.
-- **La cobertura no se mide:** hay 58 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
+- **La cobertura no se mide:** hay 81 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
 - **El CORS solo limita navegadores.** No autentica ni protege de otros clientes.
 
 ## 7. Cómo se mantiene

@@ -2,12 +2,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using Comicteca.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
@@ -33,6 +31,10 @@ public class ApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Autenticacion:Authority", Authority);
         builder.UseSetting("Autenticacion:Audience", Audience);
         builder.UseSetting("Autenticacion:CuentaPermitida", CuentaPermitida);
+        // Las migraciones ya no pasan por el contexto del servicio: van por su
+        // propia cadena, así que el arnés fija la cadena y no sustituye el
+        // registro de EF. Así el camino de las pruebas es el de producción.
+        builder.UseSetting("ConnectionStrings:Comicteca", $"Data Source={_baseDatos}");
 
         File.WriteAllText(
             _csv,
@@ -48,18 +50,6 @@ public class ApiFactory : WebApplicationFactory<Program>
                 ["Datos:RutaCsv"] = _csv,
                 ["Cors:AllowedOrigins:0"] = "http://permitido.test"
             });
-        });
-
-        builder.ConfigureServices(servicios =>
-        {
-            var descriptor = servicios.SingleOrDefault(
-                servicio => servicio.ServiceType == typeof(DbContextOptions<ComictecaDbContext>));
-            if (descriptor is not null)
-            {
-                servicios.Remove(descriptor);
-            }
-
-            servicios.AddDbContext<ComictecaDbContext>(opciones => opciones.UseSqlite($"Data Source={_baseDatos}"));
         });
 
         builder.ConfigureTestServices(servicios =>

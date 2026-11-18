@@ -16,6 +16,9 @@ builder.WebHost.ConfigureKestrel(opciones => opciones.Limits.MaxRequestBodySize 
 
 var usarSqlServer = ConfiguracionDatos.UsaSqlServer(builder.Configuration["Datos:Proveedor"]);
 var cadena = ConfiguracionDatos.Cadena(builder.Configuration.GetConnectionString("Comicteca"), usarSqlServer);
+var cadenaMigraciones = ConfiguracionDatos.CadenaMigraciones(
+    builder.Configuration.GetConnectionString("ComictecaMigraciones"),
+    usarSqlServer) ?? cadena;
 
 builder.Services.AddDbContext<ComictecaDbContext>(opciones =>
 {
@@ -143,10 +146,13 @@ app.MapDelete("/api/series/{id:guid}/tomos/{tomoId:guid}", async Task<Results<No
     return TypedResults.NoContent();
 });
 
+// El esquema se aplica con la cadena de las migraciones, fuera del contexto del
+// servicio: en SQL Server ese usuario tiene DDL y el de la aplicación no.
+await Migraciones.AplicarAsync(cadenaMigraciones, usarSqlServer);
+
 using (var ambito = app.Services.CreateScope())
 {
     var db = ambito.ServiceProvider.GetRequiredService<ComictecaDbContext>();
-    await db.Database.MigrateAsync();
 
     var rutaCsv = builder.Configuration["Datos:RutaCsv"]
         ?? Path.Combine(AppContext.BaseDirectory, "data", "coleccion.csv");

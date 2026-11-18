@@ -8,7 +8,8 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 |---|---|---|---|
 | Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
 | API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 28 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras, 413, 429, `X-Forwarded-For` sin cuota nueva y excepción no controlada con ProblemDetails | `dotnet test` |
-| Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 10 pruebas: proveedor, cadena y opciones de Azure SQL | `dotnet test` |
+| Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 24 pruebas: proveedor, cadenas de servicio y de migraciones, credencial de servicio sin contraseña, cadena ilegible y opciones de Azure SQL | `dotnet test` |
+| Configuración de despliegue | `tests/Comicteca.Tests/ConfiguracionDespliegueTests.cs` | 9 pruebas: reconoce los `compose`, `.env` y `appsettings` que se vigilan, no confunde otros nombres, y recorre los archivos versionados fallando si una cadena lleva contraseña | `dotnet test` |
 | Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque, que falla si falta `Authority`, `Audience`, `CuentaPermitida` o los tres. No hay interruptor que la desactive | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 18 comprobaciones en Chromium a 375 px con sesión: la API rechaza la lectura sin token, sin sesión la web no llama a la API, la entrada por el emisor de prueba, alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, el cierre de sesión que vuelve al inicio, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con el emisor y la pila arrancados con `start.sh` |
 | Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | 36 comprobaciones en el ensayo local y 46 sobre HTTPS —las mismas más HSTS en tres respuestas, el 301 del HTTP y dos de `connect-src` que el perfil local no necesita—: cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, el nonce del importmap contra el de la cabecera, el 401 de la API sin token y Blazor arrancando a 375 px sin violaciones de CSP | `npm run test:cabeceras` con la pila en contenedores |
@@ -38,7 +39,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **58 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **81 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
@@ -188,6 +189,22 @@ docker compose down -v            # esto sí borra la base y el volumen
 
 La API del contenedor solo escucha en tu máquina y exige token igual que fuera de él: sin las tres variables no arranca. No la publiques fuera de loopback.
 
+### Base con mínimo privilegio
+
+El usuario del servicio no ve el esquema: las migraciones van por su propia cadena y el servicio escribe con un usuario sin DDL ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)). El ensayo levanta un SQL Server desechable; no toca Azure ni la base local.
+
+```bash
+dotnet build Comicteca.slnx -c Release
+scripts/comicteca-bd                    # contenedor desechable; borra base y claves al terminar
+MANTENER=1 scripts/comicteca-bd         # igual, pero conserva los registros de la ejecución
+```
+
+- **Qué monta.** Un contenedor `comicteca-sql-ensayo` con `mcr.microsoft.com/mssql/server:2022-latest` en el puerto 14333 (unos 2,2 GB de imagen), la base `ComictecaEnsayo` y dos identidades: `comicteca_migra` con `db_owner` y `comicteca_app` con `db_datareader` y `db_datawriter`. Las claves se generan por ejecución con `openssl` y no se escriben en el repositorio.
+- **Qué arranca.** El emisor OIDC de prueba de `tests/e2e` y la API en Production con `Datos:Proveedor=SqlServer`, `ConnectionStrings:Comicteca` (usuario limitado) y `ConnectionStrings:ComictecaMigraciones` (migrador). El token sale del mismo flujo `authorization_code` con PKCE, pedido con `curl`. Si el 5094 está ocupado, el script se detiene antes de arrancar: un «401» de otro proceso no puede pasar por resultado del ensayo.
+- **Qué comprueba.** Cinco cosas, y falla si alguna no se cumple: sin `ComictecaMigraciones` la API no arranca; el esquema lo aplica el migrador y deja historial; el sembrado del CSV y el alta y la baja de una serie y un tomo funcionan con el usuario limitado (201, 201, 204); `CREATE TABLE` con `comicteca_app` se rechaza por permisos; y tampoco puede escribir en `__EFMigrationsHistory`. `comicteca_migra` sí puede, así que la denegación es del usuario.
+- **Qué no prueba.** Nada de Azure SQL: los permisos de la oferta gratuita, el auto-pausado y la agrupación desactivada siguen sin ensayo; llegan con el despliegue. Tampoco prueba la rotación de claves ni que la API no pueda leer la cadena del migrador, que la lee mientras migra al arrancar.
+
+
 ## 5. Publicar la web
 
 La web publicada no lleva valores de sesión en el repositorio. Se generan al publicar, con el mismo nombre de variable que usa la API ([ADR 0007](adr/0007-valores-de-sesion-en-el-despliegue.md)):
@@ -230,7 +247,7 @@ En escritorio, a 1440 × 900:
 
 ## 7. Límites
 
-- No hay umbral de cobertura: hay 58 pruebas, no una métrica.
+- No hay umbral de cobertura: hay 81 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
 - La API y la web exigen token en todos los entornos: en Development ya no se apaga y no hay forma de arrancarlas sin los valores del registro. La sesión del navegador se probó contra el tenant real el 12 de noviembre de 2026 y, desde el 13, la prueba de interfaz entra con el emisor de prueba y da de alta y de baja con sesión; el despliegue sigue esperando al cierre de sesión limpio.

@@ -1,0 +1,266 @@
+#!/usr/bin/env bash
+# Ensayo de la base con mínimo privilegio.
+#
+# Levanta SQL Server en un contenedor desechable, crea dos identidades —una con
+# DDL que solo aplica migraciones y otra sin DDL que es la de la API—, arranca la
+# API contra ellas con el emisor OIDC de prueba y comprueba lo que el ítem exige:
+# la API escribe con el usuario limitado y el intento de `CREATE` falla.
+#
+# No toca Azure ni el entorno del propietario: el contenedor, la base y las
+# claves se crean y se destruyen en cada ejecución.
+#
+# Requiere Docker y una compilación previa:
+#   dotnet build Comicteca.slnx -c Release
+#
+# Uso: scripts/comicteca-bd
+set -euo pipefail
+
+repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+e2e="$repo/tests/e2e"
+trabajo="$(mktemp -d "${TMPDIR:-/tmp}/comicteca-bd.XXXXXX")"
+log="$trabajo/logs"
+
+contenedor="comicteca-sql-ensayo"
+puerto_sql="${PUERTO_SQL:-14333}"
+puerto_api="${PUERTO_API:-5094}"
+base="ComictecaEnsayo"
+usuario_app="comicteca_app"
+usuario_migra="comicteca_migra"
+
+# Claves de un solo uso: se generan aquí, viven en la memoria del script y no se
+# escriben en ningún archivo del repositorio.
+clave_sa="C$(openssl rand -hex 16)!aA9"
+clave_app="A$(openssl rand -hex 16)!aB9"
+clave_migra="M$(openssl rand -hex 16)!aC9"
+
+limpiar() {
+    docker rm -f "$contenedor" >/dev/null 2>&1 || true
+    [ -n "${idp_pid:-}" ] && kill "$idp_pid" >/dev/null 2>&1 || true
+    [ -n "${api_pid:-}" ] && kill "$api_pid" >/dev/null 2>&1 || true
+    if [ -n "${MANTENER:-}" ]; then
+        echo "Registros en $log"
+    else
+        rm -rf "$trabajo"
+    fi
+}
+trap limpiar EXIT
+
+mkdir -p "$log"
+
+if [ ! -f "$repo/src/Comicteca.Api/bin/Release/net10.0/Comicteca.Api.dll" ]; then
+    echo "Falta la compilación: dotnet build Comicteca.slnx -c Release" >&2
+    exit 1
+fi
+
+# Un proceso ajeno en el puerto daría un «401» engañoso y la conclusión del
+# ensayo sería de otra API: se comprueba antes de arrancar nada.
+if (exec 3<>"/dev/tcp/127.0.0.1/$puerto_api") 2>/dev/null; then
+    exec 3>&- 2>/dev/null || true
+    echo "El puerto $puerto_api está ocupado: para la API local o usa PUERTO_API=<otro>." >&2
+    exit 1
+fi
+
+valor() {
+    node -p "require('$e2e/emisor.json').$1"
+}
+
+autoridad="$(valor authority)"
+audiencia="$(valor audience)"
+cuenta="$(valor cuenta)"
+alcance="$(valor scope)"
+cliente="$(valor clientId)"
+puerto_idp="$(valor puerto)"
+
+echo "== SQL Server en contenedor ($contenedor, puerto $puerto_sql)"
+docker rm -f "$contenedor" >/dev/null 2>&1 || true
+docker run -d --name "$contenedor" \
+    -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD="$clave_sa" \
+    -p "127.0.0.1:$puerto_sql:1433" \
+    mcr.microsoft.com/mssql/server:2022-latest >/dev/null
+
+as_sa() {
+    docker exec "$contenedor" /opt/mssql-tools18/bin/sqlcmd \
+        -C -S localhost -U sa -P "$clave_sa" "$@"
+}
+
+echo "== Esperando a que la instancia acepte conexiones"
+listo=""
+for _ in $(seq 1 60); do
+    if as_sa -l 2 -Q "SELECT 1" >/dev/null 2>&1; then
+        listo=1
+        break
+    fi
+    sleep 2
+done
+[ -n "$listo" ] || { echo "La instancia no respondió" >&2; docker logs "$contenedor" >&2; exit 1; }
+
+echo "== Dos identidades: $usuario_migra con DDL y $usuario_app sin DDL"
+docker cp "$repo/docker/mssql/preparar.sql" "$contenedor:/tmp/preparar.sql" >/dev/null
+as_sa -v Base="$base" \
+    -v UsuarioApp="$usuario_app" -v ClaveApp="$clave_app" \
+    -v UsuarioMigra="$usuario_migra" -v ClaveMigra="$clave_migra" \
+    -i /tmp/preparar.sql >"$log/preparar.log" 2>&1
+
+# Credenciales de la API: el nombre de usuario va en la cadena; la clave nunca
+# se imprime.
+cadena() {
+    echo "Server=127.0.0.1,$puerto_sql;Database=$base;User Id=$1;Password=$2;Encrypt=True;TrustServerCertificate=True"
+}
+cadena_app="$(cadena "$usuario_app" "$clave_app")"
+cadena_migra="$(cadena "$usuario_migra" "$clave_migra")"
+
+# Certificado del emisor OIDC de prueba, el mismo camino que el e2e del CI: la
+# autenticación no se apaga para el ensayo.
+certificado="$trabajo/emisor.pem"
+clave_emisor="$trabajo/emisor.key"
+openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 2 \
+    -keyout "$clave_emisor" -out "$certificado" -subj "/CN=127.0.0.1" \
+    -addext "subjectAltName=IP:127.0.0.1" >/dev/null 2>&1
+sistema=/etc/ssl/certs/ca-certificates.crt
+[ -f "$sistema" ] || sistema=/etc/pki/tls/certs/ca-bundle.crt
+[ -f "$sistema" ] || sistema=/etc/ssl/cert.pem
+bundle="$trabajo/ca.pem"
+cat "$sistema" "$certificado" >"$bundle"
+
+comun=(
+    env
+    "ASPNETCORE_ENVIRONMENT=Production"
+    "ASPNETCORE_URLS=http://localhost:$puerto_api"
+    "Datos__Proveedor=SqlServer"
+    "Datos__RutaCsv=$repo/data/coleccion.csv"
+    "Autenticacion__Authority=$autoridad"
+    "Autenticacion__Audience=$audiencia"
+    "Autenticacion__CuentaPermitida=$cuenta"
+    "SSL_CERT_FILE=$bundle"
+)
+
+echo "== Sin cadena de migraciones la API no arranca (no cae al usuario de la aplicación)"
+if "${comun[@]}" "ConnectionStrings__Comicteca=$cadena_app" \
+        dotnet run --project "$repo/src/Comicteca.Api" -c Release --no-build \
+        --no-launch-profile >"$log/sin-migraciones.log" 2>&1; then
+    echo "La API arrancó sin cadena de migraciones" >&2
+    exit 1
+fi
+grep -q "ComictecaMigraciones" "$log/sin-migraciones.log" || {
+    echo "Falló por otro motivo:" >&2
+    cat "$log/sin-migraciones.log" >&2
+    exit 1
+}
+
+echo "== Emisor OIDC de prueba en el puerto $puerto_idp"
+IDP_CERT="$certificado" IDP_CLAVE="$clave_emisor" \
+    node "$e2e/idp-prueba.js" >"$log/idp.log" 2>&1 &
+idp_pid=$!
+
+echo "== La API contra la base, migraciones con el migrador y servicio con el usuario limitado"
+"${comun[@]}" \
+    "ConnectionStrings__Comicteca=$cadena_app" \
+    "ConnectionStrings__ComictecaMigraciones=$cadena_migra" \
+    dotnet run --project "$repo/src/Comicteca.Api" -c Release --no-build \
+    --no-launch-profile >"$log/api.log" 2>&1 &
+api_pid=$!
+
+for _ in $(seq 1 60); do
+    curl -sf -o /dev/null "http://localhost:$puerto_api/health" && break
+    sleep 1
+done
+if ! curl -sf -o /dev/null "http://localhost:$puerto_api/health"; then
+    echo "La API no respondió:" >&2
+    cat "$log/api.log" >&2
+    exit 1
+fi
+
+# El historial de migraciones es del migrador. Sin este DENY, `db_datawriter`
+# deja a la aplicación marcar como aplicada una migración que no lo está.
+as_sa -d "$base" -b -Q "DENY INSERT, UPDATE, DELETE ON dbo.__EFMigrationsHistory TO [$usuario_app]" >/dev/null
+
+echo "== Token del emisor de prueba (authorization_code con PKCE)"
+verificador="$(openssl rand -base64 48 | tr -d '=\n' | tr '+/' '-_')"
+reto="$(printf '%s' "$verificador" | openssl dgst -binary -sha256 | openssl base64 | tr -d '=\n' | tr '+/' '-_')"
+devolver="http://localhost:9/callback"
+destino="$(curl -sk -o /dev/null -w '%{redirect_url}' --get \
+    "$autoridad/oauth2/v2.0/authorize" \
+    --data-urlencode "client_id=$cliente" \
+    --data-urlencode "response_type=code" \
+    --data-urlencode "redirect_uri=$devolver" \
+    --data-urlencode "scope=openid profile email $alcance" \
+    --data-urlencode "code_challenge=$reto" \
+    --data-urlencode "code_challenge_method=S256" \
+    --data-urlencode "nonce=ensayo" \
+    --data-urlencode "state=ensayo")"
+codigo="$(printf '%s' "$destino" | sed -n 's/.*[?&]code=\([^&]*\).*/\1/p')"
+[ -n "$codigo" ] || { echo "El emisor no devolvió código: $destino" >&2; exit 1; }
+token="$(curl -sk -X POST "$autoridad/oauth2/v2.0/token" \
+    --data-urlencode "grant_type=authorization_code" \
+    --data-urlencode "code=$codigo" \
+    --data-urlencode "redirect_uri=$devolver" \
+    --data-urlencode "code_verifier=$verificador" \
+    | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).access_token")"
+[ -n "$token" ] && [ "$token" != "undefined" ] || { echo "Sin token de acceso" >&2; exit 1; }
+
+echo "== La API escribe con el usuario limitado: alta y baja"
+alta="$(curl -s -o "$trabajo/alta.json" -w '%{http_code}' \
+    -X POST "http://localhost:$puerto_api/api/series" \
+    -H "Authorization: Bearer $token" \
+    -H "Content-Type: application/json" \
+    --data '{"titulo":"Ensayo de minimo privilegio","editorial":"Ensayo"}')"
+[ "$alta" = "201" ] || { echo "El alta devolvió $alta" >&2; exit 1; }
+id="$(node -p "require('$trabajo/alta.json').id")"
+
+tomo="$(curl -s -o /dev/null -w '%{http_code}' \
+    -X POST "http://localhost:$puerto_api/api/series/$id/tomos" \
+    -H "Authorization: Bearer $token" \
+    -H "Content-Type: application/json" \
+    --data '{"numero":1,"edicion":"Ensayo"}')"
+[ "$tomo" = "201" ] || { echo "El alta del tomo devolvió $tomo" >&2; exit 1; }
+
+baja="$(curl -s -o /dev/null -w '%{http_code}' \
+    -X DELETE "http://localhost:$puerto_api/api/series/$id" \
+    -H "Authorization: Bearer $token")"
+[ "$baja" = "204" ] || { echo "La baja devolvió $baja" >&2; exit 1; }
+
+como_app() {
+    docker exec "$contenedor" /opt/mssql-tools18/bin/sqlcmd \
+        -C -S localhost -U "$usuario_app" -P "$clave_app" -d "$base" "$@"
+}
+
+como_migra() {
+    docker exec "$contenedor" /opt/mssql-tools18/bin/sqlcmd \
+        -C -S localhost -U "$usuario_migra" -P "$clave_migra" -d "$base" "$@"
+}
+
+filas="$(como_app -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.Series" | tr -d '[:space:]')"
+esperadas="$(awk -F, 'NR > 1 { print $1 "," $2 }' "$repo/data/coleccion.csv" | sort -u | wc -l)"
+[ "$filas" = "$esperadas" ] || {
+    echo "El sembrado dejó $filas series y el CSV tiene $esperadas" >&2
+    exit 1
+}
+resto="$(como_app -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.Series WHERE Titulo = 'Ensayo de minimo privilegio'" | tr -d '[:space:]')"
+[ "$resto" = "0" ] || { echo "La baja no borró la serie" >&2; exit 1; }
+
+migraciones="$(como_migra -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.__EFMigrationsHistory" | tr -d '[:space:]')"
+[ "${migraciones:-0}" -ge 1 ] || { echo "El esquema no dejó historial de migraciones" >&2; exit 1; }
+
+echo "== El usuario limitado no puede crear tablas"
+if ddl="$(como_app -b -Q "CREATE TABLE dbo.Prueba (id int)" 2>&1)"; then
+    echo "El usuario de la aplicación pudo crear una tabla" >&2
+    exit 1
+fi
+grep -qi "permission" <<<"$ddl" || { echo "El CREATE falló, pero no por permisos: $ddl" >&2; exit 1; }
+
+echo "== El usuario limitado tampoco escribe en el historial de migraciones"
+if historial="$(como_app -b -Q "INSERT INTO dbo.__EFMigrationsHistory (MigrationId, ProductVersion) VALUES ('falsa', 'falsa')" 2>&1)"; then
+    echo "El usuario de la aplicación pudo marcar una migración" >&2
+    exit 1
+fi
+grep -qi "permission" <<<"$historial" || { echo "El INSERT falló, pero no por permisos: $historial" >&2; exit 1; }
+
+echo "== El migrador sí puede: la denegación es del usuario, no de la instancia"
+como_migra -b -Q "CREATE TABLE dbo.Prueba (id int); DROP TABLE dbo.Prueba" >/dev/null
+
+echo
+echo "Ensayo cerrado:"
+echo "  - la API arrancó y escribió con $usuario_app (alta 201, tomo 201, baja 204);"
+echo "  - el esquema lo aplicó $usuario_migra, con su propia cadena y su propio historial;"
+echo "  - sin 'ComictecaMigraciones' la API se niega a arrancar;"
+echo "  - CREATE TABLE e INSERT en el historial con $usuario_app fueron rechazados por permisos."

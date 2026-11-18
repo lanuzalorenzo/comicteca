@@ -40,8 +40,94 @@ public sealed class ProveedorTests
     }
 
     [Fact]
+    public void AzureSql_sin_contrasena_ni_autenticacion_no_arranca()
+    {
+        var error = Assert.Throws<InvalidOperationException>(
+            () => ConfiguracionDatos.Cadena("Server=localhost;Database=comicteca", usarSqlServer: true));
+
+        Assert.Contains("Authentication=Active Directory Default", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Una_cadena_ilegible_falla_nombrando_la_variable()
+    {
+        var error = Assert.Throws<InvalidOperationException>(
+            () => ConfiguracionDatos.Cadena("esto no es una cadena", usarSqlServer: true));
+
+        Assert.Contains("Comicteca", error.Message, StringComparison.Ordinal);
+    }
+
+    // Solo las credenciales de servicio: las que piden a alguien delante de la pantalla no
+    // sirven para arrancar y las que llevan secreto lo esconderían en la cadena.
+    [Theory]
+    [InlineData("Active Directory Password")]
+    [InlineData("Active Directory Interactive")]
+    [InlineData("Active Directory Integrated")]
+    [InlineData("Active Directory Service Principal")]
+    public void AzureSql_sin_contrasena_solo_admite_credenciales_de_servicio(string metodo)
+    {
+        var error = Assert.Throws<InvalidOperationException>(
+            () => ConfiguracionDatos.Cadena(
+                $"Server=localhost;Database=comicteca;Authentication={metodo}",
+                usarSqlServer: true));
+
+        Assert.Contains("Authentication=Active Directory Default", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AzureSql_sin_contrasena_usa_la_identidad_de_entra() =>
+        Assert.Equal(
+            "Server=localhost;Database=comicteca;Authentication=Active Directory Default",
+            ConfiguracionDatos.Cadena(
+                "Server=localhost;Database=comicteca;Authentication=Active Directory Default",
+                usarSqlServer: true));
+
+    [Fact]
+    public void AzureSql_de_migraciones_sin_contrasena_ni_autenticacion_no_arranca()
+    {
+        var error = Assert.Throws<InvalidOperationException>(
+            () => ConfiguracionDatos.CadenaMigraciones("Server=localhost;Database=comicteca", usarSqlServer: true));
+
+        Assert.Contains("Authentication=Active Directory Default", error.Message, StringComparison.Ordinal);
+    }
+
+    // El ensayo en contenedor crea una clave por ejecución para probar el mínimo privilegio;
+    // rechazarla aquí rompería la única validación que existe de la base.
+    [Fact]
+    public void El_ensayo_en_contenedor_sigue_arrancando_con_sql_auth() =>
+        Assert.Equal(
+            "Server=localhost;User ID=comicteca_app;Password=de-ensayo",
+            ConfiguracionDatos.Cadena(
+                "Server=localhost;User ID=comicteca_app;Password=de-ensayo",
+                usarSqlServer: true));
+
+    [Fact]
     public void Sqlite_sin_cadena_usa_el_archivo_local() =>
         Assert.Equal("Data Source=comicteca.db", ConfiguracionDatos.Cadena(cadena: null, usarSqlServer: false));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AzureSql_sin_cadena_de_migraciones_no_arranca(string? cadenaMigraciones)
+    {
+        var error = Assert.Throws<InvalidOperationException>(
+            () => ConfiguracionDatos.CadenaMigraciones(cadenaMigraciones, usarSqlServer: true));
+
+        Assert.Contains("ComictecaMigraciones", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AzureSql_usa_la_cadena_de_migraciones_tal_cual() =>
+        Assert.Equal(
+            "Server=localhost;Database=comicteca;Authentication=Active Directory Default",
+            ConfiguracionDatos.CadenaMigraciones(
+                "Server=localhost;Database=comicteca;Authentication=Active Directory Default",
+                usarSqlServer: true));
+
+    [Fact]
+    public void Sqlite_no_tiene_cadena_de_migraciones_propia() =>
+        Assert.Null(ConfiguracionDatos.CadenaMigraciones("Server=localhost;Database=comicteca", usarSqlServer: false));
 
     [Fact]
     public void AzureSql_usa_sus_migraciones_y_desactiva_la_agrupacion()
@@ -53,6 +139,7 @@ public sealed class ProveedorTests
         var extension = Assert.Single(opciones.Extensions.OfType<RelationalOptionsExtension>());
 
         Assert.Contains("Pooling=False", extension.ConnectionString!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Encrypt=True", extension.ConnectionString!, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(typeof(SqlServerComicteca).Assembly.GetName().Name, extension.MigrationsAssembly);
     }
 }
