@@ -72,7 +72,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 | Límite por IP y tamaño de cuerpo | Denegación, flujos sensibles | Ráfaga que recibe 429, 413 por cuerpo mayor de 16 KB y `X-Forwarded-For` que no abre cuota, con prueba automática y en el contenedor | Validado en local y contenedor |
 | Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Validado en el ensayo local con SQL Server 2022 en contenedor el 16 de noviembre de 2026 (`scripts/comicteca-bd`): sin `ConnectionStrings:ComictecaMigraciones` la API no arranca. Queda que la API lee la cadena del migrador mientras migra al arrancar ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)) y el ensayo en Azure SQL |
 | Registro de escrituras y copia restaurable | Repudio | Cada alta y baja deja rastro con fecha y origen; una copia se restaura | Diseño |
-| Identidad gestionada y Key Vault | Divulgación, elevación | La configuración de despliegue no contiene contraseñas | Diseño |
+| Identidad gestionada y Key Vault | Divulgación, elevación | La configuración de despliegue no contiene contraseñas | Parcial: sin contraseña, la API exige al arrancar `Authentication=Active Directory Default` o `Active Directory Managed Identity`, y una prueba de la suite vigila los `compose`, los `.env` y los `appsettings` versionados ([ADR 0010](adr/0010-quien-llama-y-con-que.md)). La identidad gestionada se valida en el ensayo con Azure SQL sobre cómputo con identidad |
 | SAST y escaneo de imagen | Configuración insegura, cadena de suministro | CodeQL y Trivy en verde en el CI | Validado: run 43246451547 en verde (12 de noviembre de 2026), con los dos SARIF publicados |
 
 ## 6. Riesgos residuales
@@ -84,7 +84,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 - **La auditoría será un registro de aplicación**, no una prueba inmutable ni firmada.
 - **SQLite en local no tiene copia automática.** En Azure la copia la pone la plataforma y hay que comprobarla, no darla por hecha.
 - **El umbral del límite no está calibrado** y no hay pruebas de carga.
-- **La cobertura no se mide:** hay 63 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
+- **La cobertura no se mide:** hay 81 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
 - **El CORS solo limita navegadores.** No autentica ni protege de otros clientes.
 
 ## 7. Cómo se mantiene

@@ -1,3 +1,5 @@
+using Comicteca.Infrastructure.SqlServer;
+
 namespace Comicteca.Api;
 
 /// <summary>
@@ -19,7 +21,7 @@ public static class ConfiguracionDatos
     {
         if (!string.IsNullOrWhiteSpace(cadena))
         {
-            return cadena;
+            return usarSqlServer ? SqlServerComicteca.ValidarCadena(cadena, "Comicteca") : cadena;
         }
 
         return usarSqlServer
@@ -42,6 +44,6 @@ public static class ConfiguracionDatos
         return string.IsNullOrWhiteSpace(cadenaMigraciones)
             ? throw new InvalidOperationException(
                 "Falta la cadena de conexión 'ComictecaMigraciones' para Azure SQL: las migraciones no se aplican con el usuario de la aplicación.")
-            : cadenaMigraciones;
+            : SqlServerComicteca.ValidarCadena(cadenaMigraciones, "ComictecaMigraciones");
     }
 }

@@ -8,7 +8,8 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 |---|---|---|---|
 | Dominio | `tests/Comicteca.Tests/TomoTests.cs` | 6 pruebas: título obligatorio, longitudes máximas, número positivo y tomo único | `dotnet test` |
 | API | `tests/Comicteca.Tests/EscrituraApiTests.cs`, `SeriesApiTests.cs` y `ControlesCompartidosTests.cs` | 28 pruebas de contrato con base SQLite temporal: lectura agrupada, 201, 204, 400, 404, 409, `/health`, CORS, cabeceras, 413, 429, `X-Forwarded-For` sin cuota nueva y excepción no controlada con ProblemDetails | `dotnet test` |
-| Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 15 pruebas: proveedor, cadenas de servicio y de migraciones y opciones de Azure SQL | `dotnet test` |
+| Proveedor | `tests/Comicteca.Tests/ProveedorTests.cs` | 24 pruebas: proveedor, cadenas de servicio y de migraciones, credencial de servicio sin contraseña, cadena ilegible y opciones de Azure SQL | `dotnet test` |
+| Configuración de despliegue | `tests/Comicteca.Tests/ConfiguracionDespliegueTests.cs` | 9 pruebas: reconoce los `compose`, `.env` y `appsettings` que se vigilan, no confunde otros nombres, y recorre los archivos versionados fallando si una cadena lleva contraseña | `dotnet test` |
 | Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque, que falla si falta `Authority`, `Audience`, `CuentaPermitida` o los tres. No hay interruptor que la desactive | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 18 comprobaciones en Chromium a 375 px con sesión: la API rechaza la lectura sin token, sin sesión la web no llama a la API, la entrada por el emisor de prueba, alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, el cierre de sesión que vuelve al inicio, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con el emisor y la pila arrancados con `start.sh` |
 | Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | 36 comprobaciones en el ensayo local y 46 sobre HTTPS —las mismas más HSTS en tres respuestas, el 301 del HTTP y dos de `connect-src` que el perfil local no necesita—: cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, el nonce del importmap contra el de la cabecera, el 401 de la API sin token y Blazor arrancando a 375 px sin violaciones de CSP | `npm run test:cabeceras` con la pila en contenedores |
@@ -38,7 +39,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **63 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **81 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
@@ -246,7 +247,7 @@ En escritorio, a 1440 × 900:
 
 ## 7. Límites
 
-- No hay umbral de cobertura: hay 63 pruebas, no una métrica.
+- No hay umbral de cobertura: hay 81 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
 - La API y la web exigen token en todos los entornos: en Development ya no se apaga y no hay forma de arrancarlas sin los valores del registro. La sesión del navegador se probó contra el tenant real el 12 de noviembre de 2026 y, desde el 13, la prueba de interfaz entra con el emisor de prueba y da de alta y de baja con sesión; el despliegue sigue esperando al cierre de sesión limpio.
