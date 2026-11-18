@@ -139,6 +139,7 @@ public sealed class ProveedorTests
         var extension = Assert.Single(opciones.Extensions.OfType<RelationalOptionsExtension>());
 
         Assert.Contains("Pooling=False", extension.ConnectionString!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Encrypt=True", extension.ConnectionString!, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(typeof(SqlServerComicteca).Assembly.GetName().Name, extension.MigrationsAssembly);
     }
 }

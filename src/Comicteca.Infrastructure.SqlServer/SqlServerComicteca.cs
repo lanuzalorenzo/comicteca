@@ -22,9 +22,16 @@ public static class SqlServerComicteca
         where TContext : DbContext =>
         opciones.UseSqlServer(SinAgrupacion(cadena), Configurar);
 
-    /// <summary>Una conexión agrupada mantiene la base despierta y consume la cuota gratuita.</summary>
+    /// <summary>
+    /// Una conexión agrupada mantiene la base despierta y consume la cuota gratuita. El cifrado
+    /// se fija explícito: Azure SQL lo exige y así no depende del valor por defecto del proveedor.
+    /// </summary>
     public static string SinAgrupacion(string cadena) =>
-        new SqlConnectionStringBuilder(cadena) { Pooling = false }.ConnectionString;
+        new SqlConnectionStringBuilder(cadena)
+        {
+            Pooling = false,
+            Encrypt = SqlConnectionEncryptOption.Mandatory
+        }.ConnectionString;
 
     /// <summary>
     /// En Azure la identidad es la credencial: una cadena sin contraseña no basta, hay que decirle
