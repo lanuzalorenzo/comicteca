@@ -39,7 +39,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **81 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **97 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 
@@ -201,9 +201,22 @@ MANTENER=1 scripts/comicteca-bd         # igual, pero conserva los registros de 
 
 - **Qué monta.** Un contenedor `comicteca-sql-ensayo` con `mcr.microsoft.com/mssql/server:2022-latest` en el puerto 14333 (unos 2,2 GB de imagen), la base `ComictecaEnsayo` y dos identidades: `comicteca_migra` con `db_owner` y `comicteca_app` con `db_datareader` y `db_datawriter`. Las claves se generan por ejecución con `openssl` y no se escriben en el repositorio.
 - **Qué arranca.** El emisor OIDC de prueba de `tests/e2e` y la API en Production con `Datos:Proveedor=SqlServer`, `ConnectionStrings:Comicteca` (usuario limitado) y `ConnectionStrings:ComictecaMigraciones` (migrador). El token sale del mismo flujo `authorization_code` con PKCE, pedido con `curl`. Si el 5094 está ocupado, el script se detiene antes de arrancar: un «401» de otro proceso no puede pasar por resultado del ensayo.
-- **Qué comprueba.** Cinco cosas, y falla si alguna no se cumple: sin `ComictecaMigraciones` la API no arranca; el esquema lo aplica el migrador y deja historial; el sembrado del CSV y el alta y la baja de una serie y un tomo funcionan con el usuario limitado (201, 201, 204); `CREATE TABLE` con `comicteca_app` se rechaza por permisos; y tampoco puede escribir en `__EFMigrationsHistory`. `comicteca_migra` sí puede, así que la denegación es del usuario.
+- **Qué comprueba.** Siete cosas, y falla si alguna no se cumple: sin `ComictecaMigraciones` la API no arranca; el esquema lo aplica el migrador y deja historial; el sembrado del CSV y el alta y la baja de una serie y un tomo funcionan con el usuario limitado (201, 201, 204); `CREATE TABLE` con `comicteca_app` se rechaza por permisos; tampoco puede escribir en `__EFMigrationsHistory`; el alta y la baja dejaron su fila en `Auditoria` con los tomos que se llevó la baja; y no puede borrarla ni reescribirla. `comicteca_migra` sí puede, así que la denegación es del usuario.
 - **Qué no prueba.** Nada de Azure SQL: los permisos de la oferta gratuita, el auto-pausado y la agrupación desactivada siguen sin ensayo; llegan con el despliegue. Tampoco prueba la rotación de claves ni que la API no pueda leer la cadena del migrador, que la lee mientras migra al arrancar.
 
+
+### Restaurar una copia
+
+`scripts/comicteca-copia` deja un `.db` consolidado fuera del repositorio y `scripts/comicteca-restaura` lo devuelve al volumen. La copia se comprueba antes de pisar la base y el archivo restaurado conserva el dueño que tenía, para que la API siga escribiendo con su usuario.
+
+```bash
+scripts/comicteca-copia                                          # deja ~/copias/comicteca/comicteca-AAAA-MM-DD.db
+scripts/comicteca-restaura ~/copias/comicteca/comicteca-2026-11-18.db
+```
+
+- **Qué comprueba.** `PRAGMA integrity_check` en `ok` y el recuento de series y tomos de la copia antes de restaurar; después, la pila vuelve a arrancar. Sin terminal hace falta `--si`, y el script se niega si el volumen no tiene ya una base que reemplazar.
+- **Qué no prueba.** Que la copia se haya tomado hoy ni que exista una copia programada: se lanza a mano y para la pila. La copia automática de Azure SQL llega con el despliegue.
+- La prueba automática del viaje completo, sin Docker, es `CopiaSqliteTests`: copia una base temporal con la API de respaldo de SQLite, la restaura en un archivo nuevo y la lee con el mismo `DbContext`.
 
 ## 5. Publicar la web
 
@@ -247,7 +260,7 @@ En escritorio, a 1440 × 900:
 
 ## 7. Límites
 
-- No hay umbral de cobertura: hay 81 pruebas, no una métrica.
+- No hay umbral de cobertura: hay 97 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
 - La API y la web exigen token en todos los entornos: en Development ya no se apaga y no hay forma de arrancarlas sin los valores del registro. La sesión del navegador se probó contra el tenant real el 12 de noviembre de 2026 y, desde el 13, la prueba de interfaz entra con el emisor de prueba y da de alta y de baja con sesión; el despliegue sigue esperando al cierre de sesión limpio.

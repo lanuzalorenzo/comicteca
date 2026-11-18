@@ -20,7 +20,7 @@ var cadenaMigraciones = ConfiguracionDatos.CadenaMigraciones(
     builder.Configuration.GetConnectionString("ComictecaMigraciones"),
     usarSqlServer) ?? cadena;
 
-builder.Services.AddDbContext<ComictecaDbContext>(opciones =>
+builder.Services.AddDbContext<ComictecaDbContext>((proveedor, opciones) =>
 {
     if (usarSqlServer)
     {
@@ -30,9 +30,17 @@ builder.Services.AddDbContext<ComictecaDbContext>(opciones =>
     {
         opciones.UseSqlite(cadena);
     }
+
+    // El interceptor necesita la sesión de la petición, así que se resuelve por ámbito y no
+    // con una instancia fija: la cuenta cambia con cada escritura.
+    opciones.AddInterceptors(proveedor.GetRequiredService<AuditoriaInterceptor>());
 });
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IIdentidadDeLaEscritura, IdentidadDeLaPeticion>();
+builder.Services.AddScoped<AuditoriaInterceptor>();
 builder.Services.AddScoped<ISerieReader, EfSerieReader>();
 builder.Services.AddScoped<ISerieWriter, EfSerieWriter>();
+builder.Services.AddScoped<IAuditoriaReader, EfAuditoriaReader>();
 
 builder.Services.AddOpenApi();
 builder.Services.AddApiProblemDetails();
@@ -145,6 +153,11 @@ app.MapDelete("/api/series/{id:guid}/tomos/{tomoId:guid}", async Task<Results<No
 
     return TypedResults.NoContent();
 });
+
+// El rastro que escribe el interceptor: de la más reciente a la más antigua, con tope. Pedir de
+// más no es un error; se recorta.
+app.MapGet("/api/auditoria", async (int? limite, IAuditoriaReader lector, CancellationToken cancellationToken) =>
+    Results.Ok(await lector.ListarAsync(ConsultaDeAuditoria.Recortar(limite), cancellationToken)));
 
 // El esquema se aplica con la cadena de las migraciones, fuera del contexto del
 // servicio: en SQL Server ese usuario tiene DDL y el de la aplicación no.

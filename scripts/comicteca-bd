@@ -174,6 +174,10 @@ fi
 # deja a la aplicación marcar como aplicada una migración que no lo está.
 as_sa -d "$base" -b -Q "DENY INSERT, UPDATE, DELETE ON dbo.__EFMigrationsHistory TO [$usuario_app]" >/dev/null
 
+# El rastro se escribe y se lee, no se reescribe: sin este DENY, la aplicación
+# podría borrar su propia auditoría y el repudio dejaría de tener prueba.
+as_sa -d "$base" -b -Q "DENY DELETE, UPDATE ON dbo.Auditoria TO [$usuario_app]" >/dev/null
+
 echo "== Token del emisor de prueba (authorization_code con PKCE)"
 verificador="$(openssl rand -base64 48 | tr -d '=\n' | tr '+/' '-_')"
 reto="$(printf '%s' "$verificador" | openssl dgst -binary -sha256 | openssl base64 | tr -d '=\n' | tr '+/' '-_')"
@@ -238,6 +242,14 @@ esperadas="$(awk -F, 'NR > 1 { print $1 "," $2 }' "$repo/data/coleccion.csv" | s
 resto="$(como_app -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.Series WHERE Titulo = 'Ensayo de minimo privilegio'" | tr -d '[:space:]')"
 [ "$resto" = "0" ] || { echo "La baja no borró la serie" >&2; exit 1; }
 
+rastro="$(como_app -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.Auditoria WHERE EntidadId = '$id'" | tr -d '[:space:]')"
+[ "$rastro" = "2" ] || {
+    echo "La auditoría dejó $rastro filas para la serie de ensayo y esperaba dos (alta y baja)" >&2
+    exit 1
+}
+tomos_rastro="$(como_app -h -1 -W -Q "SET NOCOUNT ON; SELECT TomosAfectados FROM dbo.Auditoria WHERE EntidadId = '$id' AND Operacion = 'baja-serie'" | tr -d '[:space:]')"
+[ "$tomos_rastro" = "1" ] || { echo "La baja anotó $tomos_rastro tomos y esperaba uno" >&2; exit 1; }
+
 migraciones="$(como_migra -h -1 -W -Q "SET NOCOUNT ON; SELECT COUNT(*) FROM dbo.__EFMigrationsHistory" | tr -d '[:space:]')"
 [ "${migraciones:-0}" -ge 1 ] || { echo "El esquema no dejó historial de migraciones" >&2; exit 1; }
 
@@ -255,6 +267,19 @@ if historial="$(como_app -b -Q "INSERT INTO dbo.__EFMigrationsHistory (Migration
 fi
 grep -qi "permission" <<<"$historial" || { echo "El INSERT falló, pero no por permisos: $historial" >&2; exit 1; }
 
+echo "== El usuario limitado no reescribe la auditoría"
+if borrado="$(como_app -b -Q "DELETE FROM dbo.Auditoria" 2>&1)"; then
+    echo "El borrado de la auditoría no falló" >&2
+    exit 1
+fi
+grep -qi "permission" <<<"$borrado" || { echo "El DELETE de la auditoría falló, pero no por permisos: $borrado" >&2; exit 1; }
+
+if actualizado="$(como_app -b -Q "UPDATE dbo.Auditoria SET Detalle = 'reescrito'" 2>&1)"; then
+    echo "La actualización de la auditoría no falló" >&2
+    exit 1
+fi
+grep -qi "permission" <<<"$actualizado" || { echo "El UPDATE de la auditoría falló, pero no por permisos: $actualizado" >&2; exit 1; }
+
 echo "== El migrador sí puede: la denegación es del usuario, no de la instancia"
 como_migra -b -Q "CREATE TABLE dbo.Prueba (id int); DROP TABLE dbo.Prueba" >/dev/null
 
@@ -263,4 +288,5 @@ echo "Ensayo cerrado:"
 echo "  - la API arrancó y escribió con $usuario_app (alta 201, tomo 201, baja 204);"
 echo "  - el esquema lo aplicó $usuario_migra, con su propia cadena y su propio historial;"
 echo "  - sin 'ComictecaMigraciones' la API se niega a arrancar;"
-echo "  - CREATE TABLE e INSERT en el historial con $usuario_app fueron rechazados por permisos."
+echo "  - CREATE TABLE e INSERT en el historial con $usuario_app fueron rechazados por permisos;"
+echo "  - el alta y la baja dejaron su rastro en la auditoría y $usuario_app no pudo borrarlo ni reescribirlo."
