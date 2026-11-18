@@ -10,6 +10,14 @@ Herramienta personal para llevar la colección de cómics y, más adelante, avis
 
 Cada paso se cierra antes de abrir el siguiente. Un diseño sin ejecutar no es una validación.
 
+## Papel en el conjunto
+
+Es la aplicación principal del portfolio. El banco de pruebas es [`lab-api-local-azure`](https://github.com/lanuzalorenzo/lab-api-local-azure), donde se estrenan los paquetes `LL.*`, los patrones de infraestructura y el diseño asíncrono.
+
+- Nada entra aquí en beta ni sin pasar antes por el CI del banco de pruebas.
+- Se presenta como aplicación de uso propio con disciplina de producción, nunca como producto ni como catálogo.
+- La infraestructura de esta aplicación, la red y el asíncrono siguen **Pendiente**: no están desplegados ni verificados aquí.
+
 ## Arquitectura
 
 - `src/Comicteca.Domain`: entidades e invariantes. Sin dependencias.
@@ -165,7 +173,7 @@ La protección de `main` es la misma regla que en el resto de repositorios públ
 
 Las acciones de `lanuzalorenzo/core` y los paquetes `LL.*` de `shared-dotnet` se consumen por versión publicada y fijada; no se copia su código.
 
-Un control que falte se resuelve en la plataforma, no aquí: si es general y ya está validado en esta aplicación, sube al paquete o a la acción con su prueba, en genérico y sin datos ni referencias a este repositorio. Si depende de la aplicación, se queda, y el motivo va en el commit; el ADR es para una decisión estructural. Una versión nueva se adopta en su propio cambio, con el CI en verde; no se usan rangos flotantes. El cuándo, la lista de sitios que se tocan y la evidencia que cierra el cambio están en el [ADR 0008](docs/adr/0008-politica-de-versiones.md).
+Un control que falte se resuelve en la plataforma, no aquí: si es general y ya está validado en esta aplicación, sube al paquete o a la acción con su prueba, en genérico y sin datos ni referencias a este repositorio. Si depende de la aplicación, se queda, y el motivo va en el commit; el ADR es para una decisión estructural. Una versión nueva se adopta en su propio cambio, con el CI en verde y después de estar en verde en el banco de pruebas; no se usan rangos flotantes. El cuándo, la lista de sitios que se tocan y la evidencia que cierra el cambio están en el [ADR 0008](docs/adr/0008-politica-de-versiones.md).
 
 ## Decisiones abiertas
 

@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -25,13 +26,16 @@ public static class SqlServerComicteca
     /// <summary>
     /// Una conexión agrupada mantiene la base despierta y consume la cuota gratuita. El cifrado
     /// se fija explícito: Azure SQL lo exige y así no depende del valor por defecto del proveedor.
+    /// Se compone con el constructor genérico porque aquí solo se ajustan claves; el texto lo
+    /// valida SqlClient al conectar.
     /// </summary>
-    public static string SinAgrupacion(string cadena) =>
-        new SqlConnectionStringBuilder(cadena)
-        {
-            Pooling = false,
-            Encrypt = SqlConnectionEncryptOption.Mandatory
-        }.ConnectionString;
+    public static string SinAgrupacion(string cadena)
+    {
+        var constructor = new DbConnectionStringBuilder { ConnectionString = cadena };
+        constructor["Pooling"] = false;
+        constructor["Encrypt"] = true;
+        return constructor.ConnectionString;
+    }
 
     /// <summary>
     /// En Azure la identidad es la credencial: una cadena sin contraseña no basta, hay que decirle
@@ -41,10 +45,10 @@ public static class SqlServerComicteca
     /// </summary>
     public static string ValidarCadena(string cadena, string nombre)
     {
-        SqlConnectionStringBuilder constructor;
+        DbConnectionStringBuilder constructor;
         try
         {
-            constructor = new SqlConnectionStringBuilder(cadena);
+            constructor = new DbConnectionStringBuilder { ConnectionString = cadena };
         }
         catch (ArgumentException)
         {
@@ -53,17 +57,16 @@ public static class SqlServerComicteca
                 $"La cadena de conexión '{nombre}' no se puede leer: revisa su sintaxis.");
         }
 
-        // 'ContainsKey' no sirve aquí: el constructor tiene un juego de claves fijo y responde
-        // 'true' para cualquier clave válida. 'ShouldSerialize' dice si se asignó de verdad.
-        if (constructor.ShouldSerialize("Password"))
+        // El constructor genérico es un diccionario de claves: aquí solo se leen, no se conecta.
+        if (constructor.ContainsKey("Password"))
         {
             return cadena;
         }
 
         // Solo las credenciales no interactivas y sin secreto: las demás piden un usuario delante
         // o llevan contraseña, y ninguna de las dos cosas cabe en un servicio.
-        if (constructor.Authentication is not (SqlAuthenticationMethod.ActiveDirectoryDefault
-            or SqlAuthenticationMethod.ActiveDirectoryManagedIdentity))
+        var metodo = constructor.TryGetValue("Authentication", out var valor) ? valor as string : null;
+        if (metodo is not ("Active Directory Default" or "Active Directory Managed Identity"))
         {
             throw new InvalidOperationException(
                 $"La cadena de conexión '{nombre}' de Azure SQL no lleva contraseña ni 'Authentication=Active Directory Default' o 'Active Directory Managed Identity': la configuración de despliegue no guarda credenciales y el proveedor necesita saber con qué firmar.");
