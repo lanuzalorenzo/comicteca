@@ -136,6 +136,8 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 `Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); CORS, cabeceras, límite y salud desde los paquetes compartidos **Validado** en local y CI (run 42237288900, 6 de noviembre de 2026); CSP en la API y en la web **Validado** en local con la pila en contenedores (9 de noviembre de 2026); la CSP de la API pasa a `LL.Security` 0.2.0, con sus pruebas en local; límite de 120 peticiones por minuto y cuerpo máximo de 16 KB **Validado** en local y contenedor (9 de noviembre de 2026); ProblemDetails ante una excepción **Validado** en local y CI (run 42248091775, 6 de noviembre de 2026); base con mínimo privilegio **Validado** en el ensayo con SQL Server en contenedor (16 de noviembre de 2026, ADR 0009), pendiente en Azure SQL; ensayo en Docker **Parcial**: el 6 de noviembre de 2026 arrancó con el token de `gh` y `read:packages` —API sana, web 200 y 20 series— y el 14 volvió a arrancar con la autenticación obligatoria y valores de prueba —API `healthy`, web 200, 401 sin token y 36 comprobaciones de cabeceras—; el 15 arrancó el perfil de producción de `compose.prod.yaml` con HTTPS y HSTS, 46 comprobaciones de cabeceras sobre TLS y el HTTP redirigido; falta con los valores del tenant y el login del navegador; despliegue **Pendiente**; novedades **Diseño**.
 
+Los ADR de `docs/adr/` usan `**Estado:** Aceptada` como estado de la decisión, no como uno de los cinco estados del artefacto; no llevan fecha en la cabecera.
+
 ## Despliegue
 
 No se despliega nada en Azure sin autorización explícita. La infraestructura prevista —Static Web Apps para la pantalla, Container Apps para la API, Functions para el aviso diario y Azure SQL en su oferta gratuita— solo existe como diseño: la decisión está en el [ADR 0003](docs/adr/0003-hospedaje-de-la-api.md) y el despliegue sigue **Pendiente**, sin presentarse como hecho.
@@ -151,7 +153,7 @@ Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `da
 - Los cambios entran por rama y pull request: `main` no admite push directo.
 - Un cambio de más de un archivo, o que toque reglas, CI, seguridad o publicación, pasa por el revisor antes de commitear.
 - Si un cambio contradice un ADR o una cifra de `capacidades.md`, se actualizan en el mismo lote. No se deja la documentación mintiendo.
-- No se reescribe el historial: si aparece un dato sensible, se rota, se sanea el estado actual y se documenta la exposición. La reescritura del 3 de noviembre ya ocurrió y queda explicada en §Público y privado.
+- No se reescribe el historial para ocultar errores: si aparece un dato sensible, se rota, se sanea el estado actual y se documenta la exposición. La reescritura del 3 de noviembre ya ocurrió y queda explicada en §Público y privado; no se repite sin el mismo procedimiento.
 
 ## Integración continua
 
