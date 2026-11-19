@@ -1,6 +1,6 @@
 # Qué puedo demostrar y qué no
 
-Esta página es la diferencia entre tener el carné de conducir y haber conducido. Todo lo que digo de la Comicteca está aquí con la prueba que lo sostiene, y lo que no he probado aparece como pendiente. La última comprobación es del 13 de noviembre de 2026, en local.
+Esta página es la diferencia entre tener el carné de conducir y haber conducido. Todo lo que digo de la Comicteca está aquí con la prueba que lo sostiene, y lo que no he probado aparece como pendiente. La última comprobación es del 18 de noviembre de 2026, en local.
 
 ## Cómo lo compruebo
 
@@ -22,7 +22,9 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | Carga el CSV de demostración | `CsvSeeder` | Arranque real: 20 series y 65 filas | Validado en local |
 | El esquema se versiona con migraciones | `Infrastructure/Migrations` | `dotnet ef database update`; historial en `__EFMigrationsHistory` | Validado |
 | El esquema de Azure SQL sale del mismo modelo | `Infrastructure.SqlServer/Migrations` | `dotnet ef migrations script` produce `uniqueidentifier` y `nvarchar` | Parcial: generado, sin aplicar |
-| Elige proveedor y apaga la agrupación | `ConfiguracionDatos`, `SqlServerComicteca` | 10 pruebas: proveedor, cadena, `Pooling=False` y ensamblado de migraciones | Parcial: sin probar contra Azure SQL real |
+| Elige proveedor y apaga la agrupación | `ConfiguracionDatos`, `SqlServerComicteca` | 24 pruebas: proveedor, cadenas de servicio y de migraciones, credencial de servicio sin contraseña, cadena ilegible, `Pooling=False` y ensamblado de migraciones | Parcial: sin probar contra Azure SQL real |
+| La configuración de despliegue no lleva contraseñas | `SqlServerComicteca`, `ConfiguracionDespliegueTests` | 1 prueba que recorre `compose*.yaml`, `.env*` y los `appsettings` versionados y falla si alguna línea declara una contraseña, con los tres archivos obligatorios exigidos | Parcial: la suite falla si vuelve una contraseña; la identidad gestionada se valida en el ensayo con Azure SQL ([ADR 0010](adr/0010-quien-llama-y-con-que.md)) |
+| Escribe con un usuario sin DDL | `ConfiguracionDatos`, `Api/Migraciones.cs`, `docker/mssql/preparar.sql`, `scripts/comicteca-bd` | Ensayo del 16 de noviembre de 2026 con SQL Server 2022 en contenedor: el esquema lo aplica `comicteca_migra` y deja historial, la API siembra el CSV y da de alta y de baja con `comicteca_app` (alta 201, tomo 201, baja 204), `CREATE TABLE` y el `INSERT` en `__EFMigrationsHistory` se rechazan con ese usuario, y sin `ComictecaMigraciones` la API no arranca | Validado en el ensayo local ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)); en Azure SQL, Pendiente |
 | Agrupa por serie y editorial | `EfSerieReader` | Prueba con dos series y un tomo único | Validado |
 | Alta y baja de series y tomos por API | `ISerieWriter`, `EfSerieWriter` | 17 pruebas de contrato: 201, 204, 400, 404 y 409 | Validado |
 | Alta y baja de series y tomos desde la web | `Home.razor` | Prueba de interfaz en Chromium a 375 px (`tests/e2e`): alta, duplicado, número inválido, baja de tomo y de serie, sin recargar | Validado: local y CI (run 42016523241) |
@@ -40,6 +42,8 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 | La API no arranca sin autenticación | `Autenticacion.cs` | 4 pruebas de arranque: falla si falta `Authority`, `Audience`, `CuentaPermitida` o los tres a la vez. Ya no existe interruptor que la apague en ningún entorno | Validado en local |
 | Emisor OIDC de prueba en el e2e | `tests/e2e/idp-prueba.js`, `emisor.json` | HTTPS con certificado efímero, descubrimiento, JWKS, autorización con PKCE, canje de código y cierre de sesión; la API confía en su certificado solo dentro de la prueba y la web solo lo acepta como conocido si es una dirección local | Validado en local el 13 de noviembre de 2026 con la prueba de interfaz en verde |
 | ProblemDetails ante una excepción | `Program.cs`, `LL.Hosting` | 1 prueba provoca una excepción no controlada y comprueba el 500 con `application/problem+json` | Validado en local y CI (run 42248091775) |
+| Rastro de cada escritura | `Domain/Auditoria.cs`, `Infrastructure/AuditoriaInterceptor.cs`, `Api/ConsultaDeAuditoria.cs`, `Api/Program.cs` | 15 pruebas de contrato y de unidad: 401 sin token; la siembra deja `Origen = sistema` y sin cuenta; el alta y la baja dejan la cuenta del token; la baja de una serie con dos tomos anota `TomosAfectados = 2` sin duplicar los tomos; un guardado que falla no deja fila ni la deja en el contexto; un 409 no deja fila; y el tope se recorta a 1–200 en los seis casos del guion | Validado en local el 18 de noviembre de 2026 (97 pruebas). El `DENY` sobre la tabla se comprobó en el ensayo con SQL Server el mismo día; la consulta en Azure SQL, pendiente |
+| Copia de SQLite restaurable | `scripts/comicteca-copia`, `scripts/comicteca-restaura`, `CopiaSqliteTests` | Copiar con la API de respaldo de SQLite, restaurar en un archivo nuevo, `PRAGMA integrity_check` en `ok` y las mismas series y tomos | Validado en local el 18 de noviembre de 2026; la copia programada y la automática de Azure SQL, pendientes |
 | No hay secretos en el código | `.gitleaks.toml` | `gitleaks detect` | Validado: sin hallazgos |
 | CI: compilación con analizadores y pruebas | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `dotnet` de `lanuzalorenzo/core` | Validado: run 42697799507 en verde (9 de noviembre de 2026, con v1.4), con `packages: read` y los paquetes `LL.*` |
 | CI: enlaces de la documentación | `.github/workflows/ci.yml` | Ejecución en GitHub Actions con la acción `check-links` de `lanuzalorenzo/core` | Validado: run 42697799507 en verde (9 de noviembre de 2026, con v1.4) |
@@ -57,7 +61,7 @@ gitleaks detect --source . --redact --verbose --exit-code 2
 ## Lo que no puedo decir
 
 - «Validado» quiere decir que lo he ejecutado y he visto el resultado en mi máquina, no que esté desplegado ni que lo haya usado otra persona.
-- No he medido la cobertura: hay 58 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
+- No he medido la cobertura: hay 97 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
 - La interfaz no la he probado con lector de pantalla ni en Safari.
 - El CORS no protege la API de otros clientes: solo limita a los navegadores.
 - La API y la web exigían sesión en Production y podían arrancar sin ella en Development; desde el 13 de noviembre de 2026 la exigen en todos los entornos y no hay interruptor que la apague (ADR 0006). Sin `Autenticacion__Authority`, `Autenticacion__Audience` y `Autenticacion__CuentaPermitida` la API no arranca, y `compose` se detiene si faltan. La validación se ha probado con un emisor de prueba y, el 12 de noviembre de 2026, con un token real del tenant.

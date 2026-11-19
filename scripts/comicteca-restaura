@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Restaura una copia de Comicteca en el volumen del contenedor.
+# Uso: scripts/comicteca-restaura <copia.db> [--si]
+#
+# La copia se comprueba antes de tocar nada y la base se reemplaza entera: los
+# cambios posteriores a la copia se pierden, que es lo que se pide al restaurar.
+# Sin terminal, hace falta `--si`: la operación no se confirma sola.
+set -euo pipefail
+
+origen="${1:-}"
+if [[ -z "$origen" || ! -f "$origen" ]]; then
+    echo "Uso: $(basename "$0") <copia.db> [--si]" >&2
+    exit 2
+fi
+
+archivo="$(basename "$(readlink -f "$origen")")"
+carpeta="$(dirname "$(readlink -f "$origen")")"
+repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+
+if [[ "${2:-}" != "--si" ]]; then
+    if [[ -t 0 ]]; then
+        read -r -p "Se va a reemplazar la base del volumen comicteca_datos con $archivo. ¿Seguir? [s/N] " respuesta
+        [[ "$respuesta" =~ ^[sS]$ ]] || { echo "Cancelado." >&2; exit 1; }
+    else
+        echo "Sin terminal: repite con --si para confirmar la restauración." >&2
+        exit 1
+    fi
+fi
+
+# Sin base previa no hay dueño que conservar y la API se quedaría sin permiso
+# de escritura: la restauración es para recuperar, no para estrenar.
+if ! docker run --rm -v comicteca_datos:/data mcr.microsoft.com/dotnet/aspnet:10.0 \
+    sh -c '[ -f /data/comicteca.db ]'; then
+    echo "No hay base en el volumen comicteca_datos: no hay nada que reemplazar." >&2
+    exit 1
+fi
+
+# Una restauración con un archivo roto es peor que no restaurar.
+python3 - "$carpeta/$archivo" <<'PY'
+import sqlite3, sys
+with sqlite3.connect(f'file:{sys.argv[1]}?mode=ro', uri=True) as db:
+    estado = db.execute('PRAGMA integrity_check').fetchone()[0]
+    series = db.execute('SELECT COUNT(*) FROM Series').fetchone()[0]
+    tomos = db.execute('SELECT COUNT(*) FROM Tomos').fetchone()[0]
+print(f'{sys.argv[1]}: integridad={estado}, series={series}, tomos={tomos}')
+if estado != 'ok':
+    raise SystemExit(1)
+PY
+
+docker compose -f "$repo/compose.yaml" stop >/dev/null
+arrancar() {
+    docker compose -f "$repo/compose.yaml" start >/dev/null
+}
+trap arrancar EXIT
+
+# Se copia como root y se devuelve el dueño que ya tenía la base, para que la
+# API siga escribiendo con su propio usuario.
+docker run --rm -e ARCHIVO="$archivo" -v comicteca_datos:/data -v "$carpeta":/copia:ro \
+    mcr.microsoft.com/dotnet/aspnet:10.0 \
+    sh -c 'duenno="$(stat -c %u:%g /data/comicteca.db 2>/dev/null || stat -c %u:%g /data)"; \
+           cp "/copia/$ARCHIVO" /data/comicteca.db && \
+           rm -f /data/comicteca.db-wal /data/comicteca.db-shm && \
+           chown "$duenno" /data/comicteca.db'
+
+echo "Restaurada $archivo en el volumen comicteca_datos"
