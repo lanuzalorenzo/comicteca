@@ -7,7 +7,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 **Se cierra cuando** la colección se carga desde el CSV y puedo buscar en el móvil.
 
 - El conjunto de demostración cargado desde el CSV, en local.
-- 5 pruebas en verde en el cierre y compilación sin avisos; hoy son 58 pruebas .NET y 18 comprobaciones de interfaz.
+- 5 pruebas en verde en el cierre y compilación sin avisos; hoy son 97 pruebas .NET y 18 comprobaciones de interfaz.
 - Sin desplegar y sin que los datos salgan de este repositorio.
 
 ## Fase 2 — Tener una dirección propia (Diseño; despliegue Pendiente)
@@ -47,7 +47,7 @@ La decisión y sus números están en el [ADR 0003](adr/0003-hospedaje-de-la-api
 |---|---|
 | Cambiar de motor obliga a migraciones nuevas | Las genero por proveedor y las pruebo antes de desplegar |
 | La lectura de novedades se rompe cuando una editorial cambia su web | Empiezo por dos fuentes y aviso del fallo en vez de callarlo |
-| Dos proyectos a medias | Esto no toca la carga principal del portfolio; avanzo en sesiones cortas |
+| Dos proyectos a medias | El banco de pruebas y esta aplicación son papeles distintos: avanzo en sesiones cortas y no mezclo experimentos |
 | Una factura inesperada en Azure | Auto-pausado, aviso de presupuesto y un grupo de recursos que se borra entero |
 | La base no se auto-pausa y agota la cuota | Agrupación de conexiones desactivada y aviso al 10 % de los vCore-s |
 | Los registros o el registro de imágenes generan factura | Alerta de presupuesto, retención corta y un registro que se pueda cambiar sin tocar la aplicación |

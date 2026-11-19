@@ -10,6 +10,14 @@ Herramienta personal para llevar la colección de cómics y, más adelante, avis
 
 Cada paso se cierra antes de abrir el siguiente. Un diseño sin ejecutar no es una validación.
 
+## Papel en el conjunto
+
+Es la aplicación principal del portfolio. El banco de pruebas es [`lab-api-local-azure`](https://github.com/lanuzalorenzo/lab-api-local-azure), donde se estrenan los paquetes `LL.*`, los patrones de infraestructura y el diseño asíncrono.
+
+- Nada entra aquí en beta ni sin pasar antes por el CI del banco de pruebas.
+- Se presenta como aplicación de uso propio con disciplina de producción, nunca como producto ni como catálogo.
+- La infraestructura de esta aplicación, la red y el asíncrono siguen **Pendiente**: no están desplegados ni verificados aquí.
+
 ## Arquitectura
 
 - `src/Comicteca.Domain`: entidades e invariantes. Sin dependencias.
@@ -126,7 +134,9 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 ## Estados
 
-`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); CORS, cabeceras, límite y salud desde los paquetes compartidos **Validado** en local y CI (run 42237288900, 6 de noviembre de 2026); CSP en la API y en la web **Validado** en local con la pila en contenedores (9 de noviembre de 2026); la CSP de la API pasa a `LL.Security` 0.2.0, con sus pruebas en local; límite de 120 peticiones por minuto y cuerpo máximo de 16 KB **Validado** en local y contenedor (9 de noviembre de 2026); ProblemDetails ante una excepción **Validado** en local y CI (run 42248091775, 6 de noviembre de 2026); ensayo en Docker **Parcial**: el 6 de noviembre de 2026 arrancó con el token de `gh` y `read:packages` —API sana, web 200 y 20 series— y el 14 volvió a arrancar con la autenticación obligatoria y valores de prueba —API `healthy`, web 200, 401 sin token y 36 comprobaciones de cabeceras—; el 15 arrancó el perfil de producción de `compose.prod.yaml` con HTTPS y HSTS, 46 comprobaciones de cabeceras sobre TLS y el HTTP redirigido; falta con los valores del tenant y el login del navegador; despliegue **Pendiente**; novedades **Diseño**.
+`Validado · Parcial · Runbook preparado · Diseño · Pendiente`. Hoy: lectura, listado y escritura desde la web y por API **Validado** en local con el conjunto de demostración (20 series, 65 filas, 4 de noviembre de 2026); CORS, cabeceras, límite y salud desde los paquetes compartidos **Validado** en local y CI (run 42237288900, 6 de noviembre de 2026); CSP en la API y en la web **Validado** en local con la pila en contenedores (9 de noviembre de 2026); la CSP de la API pasa a `LL.Security` 0.2.0, con sus pruebas en local; límite de 120 peticiones por minuto y cuerpo máximo de 16 KB **Validado** en local y contenedor (9 de noviembre de 2026); ProblemDetails ante una excepción **Validado** en local y CI (run 42248091775, 6 de noviembre de 2026); base con mínimo privilegio **Validado** en el ensayo con SQL Server en contenedor (16 de noviembre de 2026, ADR 0009), pendiente en Azure SQL; ensayo en Docker **Parcial**: el 6 de noviembre de 2026 arrancó con el token de `gh` y `read:packages` —API sana, web 200 y 20 series— y el 14 volvió a arrancar con la autenticación obligatoria y valores de prueba —API `healthy`, web 200, 401 sin token y 36 comprobaciones de cabeceras—; el 15 arrancó el perfil de producción de `compose.prod.yaml` con HTTPS y HSTS, 46 comprobaciones de cabeceras sobre TLS y el HTTP redirigido; falta con los valores del tenant y el login del navegador; despliegue **Pendiente**; novedades **Diseño**.
+
+Los ADR de `docs/adr/` usan `**Estado:** Aceptada` como estado de la decisión, no como uno de los cinco estados del artefacto; no llevan fecha en la cabecera.
 
 ## Despliegue
 
@@ -143,7 +153,7 @@ Formato: `type(scope): imperative summary in English`. Scopes: `api`, `web`, `da
 - Los cambios entran por rama y pull request: `main` no admite push directo.
 - Un cambio de más de un archivo, o que toque reglas, CI, seguridad o publicación, pasa por el revisor antes de commitear.
 - Si un cambio contradice un ADR o una cifra de `capacidades.md`, se actualizan en el mismo lote. No se deja la documentación mintiendo.
-- No se reescribe el historial: si aparece un dato sensible, se rota, se sanea el estado actual y se documenta la exposición. La reescritura del 3 de noviembre ya ocurrió y queda explicada en §Público y privado.
+- No se reescribe el historial para ocultar errores: si aparece un dato sensible, se rota, se sanea el estado actual y se documenta la exposición. La reescritura del 3 de noviembre ya ocurrió y queda explicada en §Público y privado; no se repite sin el mismo procedimiento.
 
 ## Integración continua
 
@@ -165,7 +175,7 @@ La protección de `main` es la misma regla que en el resto de repositorios públ
 
 Las acciones de `lanuzalorenzo/core` y los paquetes `LL.*` de `shared-dotnet` se consumen por versión publicada y fijada; no se copia su código.
 
-Un control que falte se resuelve en la plataforma, no aquí: si es general y ya está validado en esta aplicación, sube al paquete o a la acción con su prueba, en genérico y sin datos ni referencias a este repositorio. Si depende de la aplicación, se queda, y el motivo va en el commit; el ADR es para una decisión estructural. Una versión nueva se adopta en su propio cambio, con el CI en verde; no se usan rangos flotantes. El cuándo, la lista de sitios que se tocan y la evidencia que cierra el cambio están en el [ADR 0008](docs/adr/0008-politica-de-versiones.md).
+Un control que falte se resuelve en la plataforma, no aquí: si es general y ya está validado en esta aplicación, sube al paquete o a la acción con su prueba, en genérico y sin datos ni referencias a este repositorio. Si depende de la aplicación, se queda, y el motivo va en el commit; el ADR es para una decisión estructural. Una versión nueva se adopta en su propio cambio, con el CI en verde y después de estar en verde en el banco de pruebas; no se usan rangos flotantes. El cuándo, la lista de sitios que se tocan y la evidencia que cierra el cambio están en el [ADR 0008](docs/adr/0008-politica-de-versiones.md).
 
 ## Decisiones abiertas
 

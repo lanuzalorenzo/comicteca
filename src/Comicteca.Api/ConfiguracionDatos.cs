@@ -1,3 +1,5 @@
+using Comicteca.Infrastructure.SqlServer;
+
 namespace Comicteca.Api;
 
 /// <summary>
@@ -19,11 +21,29 @@ public static class ConfiguracionDatos
     {
         if (!string.IsNullOrWhiteSpace(cadena))
         {
-            return cadena;
+            return usarSqlServer ? SqlServerComicteca.ValidarCadena(cadena, "Comicteca") : cadena;
         }
 
         return usarSqlServer
             ? throw new InvalidOperationException("Falta la cadena de conexión 'Comicteca' para Azure SQL.")
             : "Data Source=comicteca.db";
+    }
+
+    /// <summary>
+    /// El esquema no lo cambia el usuario de la aplicación. En SQL Server la cadena de las
+    /// migraciones es obligatoria: sin ella, el arranque falla en vez de caer en la del
+    /// servicio y darle permiso de DDL sin que nadie lo note. SQLite no tiene usuarios.
+    /// </summary>
+    public static string? CadenaMigraciones(string? cadenaMigraciones, bool usarSqlServer)
+    {
+        if (!usarSqlServer)
+        {
+            return null;
+        }
+
+        return string.IsNullOrWhiteSpace(cadenaMigraciones)
+            ? throw new InvalidOperationException(
+                "Falta la cadena de conexión 'ComictecaMigraciones' para Azure SQL: las migraciones no se aplican con el usuario de la aplicación.")
+            : SqlServerComicteca.ValidarCadena(cadenaMigraciones, "ComictecaMigraciones");
     }
 }
