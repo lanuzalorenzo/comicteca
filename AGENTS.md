@@ -173,7 +173,7 @@ La protección de `main` es la misma regla que en el resto de repositorios públ
 
 ## Plataforma compartida
 
-Las acciones de `lanuzalorenzo/core` y los paquetes `LL.*` de `shared-dotnet` se consumen por versión publicada y fijada; no se copia su código.
+Las acciones de `lanuzalorenzo/core` y los paquetes `LL.*` de `shared-dotnet` se consumen por versión publicada y fijada; no se copia su código. La versión de .NET, las actualizaciones mayores y las dependencias directas y transitivas siguen la [política de plataforma](https://github.com/lanuzalorenzo/core/blob/main/docs/versiones-y-dependencias.md): LTS, mayores de la familia bloqueados y pin de transitivas en el centro.
 
 Un control que falte se resuelve en la plataforma, no aquí: si es general y ya está validado en esta aplicación, sube al paquete o a la acción con su prueba, en genérico y sin datos ni referencias a este repositorio. Si depende de la aplicación, se queda, y el motivo va en el commit; el ADR es para una decisión estructural. Una versión nueva se adopta en su propio cambio, con el CI en verde y después de estar en verde en el banco de pruebas; no se usan rangos flotantes. El cuándo, la lista de sitios que se tocan y la evidencia que cierra el cambio están en el [ADR 0008](docs/adr/0008-politica-de-versiones.md).
 
