@@ -41,6 +41,73 @@ async function esperarServidor(url, intentos = 60) {
   throw new Error(`No responde ${url}`);
 }
 
+// Recorre lo que el navegador guarda y devuelve los JWT: MSAL guarda el token
+// en el almacenamiento local, y así la prueba lo ve sin depender del nombre de
+// la clave ni de la versión de la librería. Se exige que la carga se lea como
+// JSON y traiga `aud` y `exp`: una cadena con dos puntos no es un token.
+function cargaDelToken(token) {
+  try {
+    const carga = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const datos = JSON.parse(Buffer.from(carga, 'base64').toString('utf8'));
+    return datos && datos.aud && datos.exp ? datos : null;
+  } catch {
+    return null;
+  }
+}
+
+function esToken(token) {
+  return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)
+    && cargaDelToken(token) !== null;
+}
+
+function audienciaDelToken(token) {
+  return cargaDelToken(token)?.aud ?? null;
+}
+
+function tokensDelAlmacenamiento(almacenamiento) {
+  const tokens = new Set();
+  const visitar = (valor) => {
+    if (typeof valor === 'string') {
+      if (esToken(valor)) {
+        tokens.add(valor);
+      } else if (valor.trim().startsWith('{') || valor.trim().startsWith('[')) {
+        try {
+          visitar(JSON.parse(valor));
+        } catch {
+          // No es JSON: se ignora.
+        }
+      }
+    } else if (Array.isArray(valor)) {
+      valor.forEach(visitar);
+    } else if (valor && typeof valor === 'object') {
+      Object.values(valor).forEach(visitar);
+    }
+  };
+  visitar(almacenamiento);
+  return [...tokens];
+}
+
+async function leerAlmacenamiento(pagina) {
+  const almacenes = await pagina.evaluate(() => {
+    const volcar = (almacen) => {
+      const salida = {};
+      for (let i = 0; i < almacen.length; i++) {
+        const clave = almacen.key(i);
+        salida[clave] = almacen.getItem(clave);
+      }
+      return salida;
+    };
+    return { local: volcar(window.localStorage), sesion: volcar(window.sessionStorage) };
+  });
+  return {
+    local: tokensDelAlmacenamiento(almacenes.local),
+    sesion: tokensDelAlmacenamiento(almacenes.sesion)
+  };
+}
+
+// El almacenamiento guarda más de un token (identidad y acceso): la prueba
+// necesita el que la API acepta, y eso se lee en la audiencia.
+
 (async () => {
   let navegador;
   let pagina;
@@ -152,11 +219,48 @@ async function esperarServidor(url, intentos = 60) {
     check(await pagina.evaluate(() => window.__sinRecarga === true), 'ninguna acción recargó la página');
 
     // El cierre de sesión limpia y vuelve al inicio: sin sesión no queda
-    // llamada que rebote al emisor ni vista colgada.
+    // llamada que rebote al emisor ni vista colgada. Antes de pulsarlo se
+    // retiene lo que MSAL deja en el almacenamiento, para comprobar después
+    // qué queda y si eso sigue valiendo contra la API.
+    const almacenConSesion = await leerAlmacenamiento(pagina);
+    const tokenDeApi = [...almacenConSesion.local, ...almacenConSesion.sesion]
+      .find((token) => audienciaDelToken(token) === emisor.audience);
+    check(Boolean(tokenDeApi),
+      'con sesión MSAL deja el token de la API en el almacenamiento del navegador');
+    console.log(`observado - el token de la API vive en ${
+      almacenConSesion.local.includes(tokenDeApi) ? 'localStorage' : 'sessionStorage'}`);
+    const conToken = await fetch(`${API}/api/series`, {
+      headers: { Authorization: `Bearer ${tokenDeApi}` }
+    });
+    check(conToken.status === 200, 'el token guardado vale contra la API con la sesión abierta');
+
     await pagina.getByRole('button', { name: 'Cerrar sesión' }).click();
     await pagina.getByText('Inicia sesión para ver la colección.').waitFor({ timeout: 30000 });
     check(await pagina.locator('.ficha').count() === 0,
       'el cierre de sesión deja de mostrar la colección y no rebota');
+
+    const almacenSinSesion = await leerAlmacenamiento(pagina);
+    const tokensRestantes = [...almacenSinSesion.local, ...almacenSinSesion.sesion];
+    let algunoAceptado = false;
+    for (const token of tokensRestantes) {
+      const conResto = await fetch(`${API}/api/series`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (conResto.status === 200) algunoAceptado = true;
+    }
+    check(!algunoAceptado && tokensRestantes.length === 0,
+      'el cierre de sesión vacía el almacenamiento y nada de lo que queda obtiene un 200');
+    console.log(`observado - tras salir: ${almacenSinSesion.local.length} token(s) en localStorage y ${
+      almacenSinSesion.sesion.length} en sessionStorage`);
+
+    // La API valida el JWT, no la sesión: un token ya copiado sigue sirviendo
+    // hasta caducar. Se deja observado para la bitácora; no es un fallo del
+    // cierre de sesión, sino el riesgo residual que la fila del modelo admite.
+    const copiado = await fetch(`${API}/api/series`, {
+      headers: { Authorization: `Bearer ${tokenDeApi}` }
+    });
+    console.log(`observado - un token copiado antes del cierre responde ${copiado.status}: la API no lo revoca`);
+
     check(await pagina.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       'sigue sin desbordamiento horizontal a 375 px');
     check(erroresPagina.length === 0, 'sin errores de JavaScript en la página');
