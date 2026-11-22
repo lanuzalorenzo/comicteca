@@ -4,9 +4,9 @@ Entrada ligada al [modelo de amenaza](../docs/modelo-de-amenaza.md) §5 y a la t
 
 ## Resultado observado
 
-- **Con sesión, MSAL guarda el token de la API en el `sessionStorage` del navegador.** La prueba lo encuentra por su forma de JWT y por la audiencia de la API, no por el nombre de la clave, y ese token responde 200 contra `/api/series`. No hay cookie `HttpOnly` que lo oculte: la web manda el token en la cabecera.
+- **Con sesión, MSAL guarda el token de la API en el almacenamiento del navegador (en el run 45014875879, `sessionStorage`).** La prueba lo encuentra por su forma de JWT y por la audiencia de la API, no por el nombre de la clave, y ese token responde 200 contra `/api/series`. No hay cookie `HttpOnly` que lo oculte: la web manda el token en la cabecera.
 - **El cierre de sesión vacía la caché.** Tras pulsar «Cerrar sesión», la prueba cuenta 0 tokens en `localStorage` y 0 en `sessionStorage`; la web vuelve a pedir entrar y no llama a la API.
-- **Un token copiado antes del cierre sigue valiendo hasta caducar.** Después de salir, el token retenido responde 200: la API valida firma, emisor, audiencia y vigencia, no la sesión, y no hay revocación. Por eso la fila queda Validado para la caché y el XSS sigue fuera de lo probado.
+- **Un token copiado antes del cierre sigue valiendo hasta caducar.** El run 45014875879 lo deja observado, no como comprobación: después de salir, el token retenido responde 200 porque la API valida firma, emisor, audiencia y vigencia, no la sesión, y no hay revocación. Por eso la fila queda Validado para la caché y el XSS sigue fuera de lo probado.
 - **El primer patrón de la prueba marcó un falso positivo.** Tomaba la cadena de estado del emisor por un JWT. Se ajustó a exigir que la carga se lea como JSON y traiga `aud` y `exp`; entonces el residuo dejó de contar como token.
 
 ## Lo que se ejecutó

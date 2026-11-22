@@ -42,9 +42,9 @@ async function esperarServidor(url, intentos = 60) {
 }
 
 // Recorre lo que el navegador guarda y devuelve los JWT: MSAL guarda el token
-// en el almacenamiento local, y así la prueba lo ve sin depender del nombre de
-// la clave ni de la versión de la librería. Se exige que la carga se lea como
-// JSON y traiga `aud` y `exp`: una cadena con dos puntos no es un token.
+// en el almacenamiento del navegador, y así la prueba lo ve sin depender del
+// nombre de la clave ni de la versión de la librería. Se exige que la carga se
+// lea como JSON y traiga `aud` y `exp`: una cadena con dos puntos no es un token.
 function cargaDelToken(token) {
   try {
     const carga = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
