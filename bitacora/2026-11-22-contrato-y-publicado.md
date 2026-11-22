@@ -9,6 +9,7 @@ Entrada ligada al [modelo de amenaza](../docs/modelo-de-amenaza.md) (§3, §4 y 
 - **Lo publicado solo lleva el registro de sesión.** `scripts/comprobar-web-publicada.sh` pasó sobre las dos publicaciones de la web: con valores, 7 comprobaciones correctas y 0 fallos; vacía, 6 y 0. Los dos `appsettings` solo tienen claves del registro, no nombran credenciales, la publicación con valores lleva los tres con contenido, el archivo de desarrollo no está en el artefacto y `wwwroot` no trae llaves privadas por cabecera ni por extensión.
 - **La primera versión del script marcaba una llave que no existía.** Buscaba la cabecera con un patrón abierto y encontraba `AuthenticationService.js` de MSAL, que nombra el formato porque lo analiza. Se ajustó a las cabeceras literales; el falso positivo fue del script, no del artefacto.
 - **La comprobación detecta lo que dice detectar.** Sobre una copia sembrada a propósito —`ClientSecret` en el archivo de producción, el de desarrollo publicado y un archivo con una cabecera de llave— dio 4 fallos y salió con error.
+- **El paso nuevo corre en el CI.** El [run 45010499886](https://github.com/lanuzalorenzo/comicteca/actions/runs/45010499886) pasó los siete trabajos el mismo día; el paso «Comprobar que la web publicada solo lleva el registro público» quedó en verde dentro del trabajo de compilación.
 
 ## Lo que se ejecutó
 
@@ -20,7 +21,6 @@ Entrada ligada al [modelo de amenaza](../docs/modelo-de-amenaza.md) (§3, §4 y 
 
 ## Qué no he probado
 
-- **El paso nuevo del CI.** No ha corrido en GitHub Actions; el estado queda **Parcial** hasta el primer run en verde.
 - **La caché de MSAL.** No hay prueba de que el cierre de sesión la vacíe ni de que un XSS en la propia web no alcance el token; la fila del modelo de amenaza lo deja en **Parcial**, no en Validado.
 - **La ausencia de XSS.** La CSP limita qué scripts corren; no demuestra que no haya una inyección en el HTML.
 - **Los paquetes y archivos sueltos.** El script mira los dos `appsettings` y las llaves del artefacto; un secreto dentro del código de una librería o de un archivo servido con otro nombre no lo detecta.
