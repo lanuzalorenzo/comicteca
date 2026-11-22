@@ -2,7 +2,7 @@
 
 Una casa no se protege cambiando la cerradura: se protege sabiendo por dónde se entra. Esta página hace eso con la API: recorre cada puerta, dice qué podría pasar por ella y qué control la cierra. No es un inventario de herramientas, sino la lista de lo que hoy frena un ataque, lo que solo está diseñado y lo que sigue abierto.
 
-**Última revisión:** 18 de noviembre de 2026.
+**Última revisión:** 22 de noviembre de 2026.
 **Alcance:** la API (`/health`, `/api/series` y `/api/auditoria`), la web que la consume y la base de datos local y de Azure SQL. Quedan fuera la cuenta de Azure, la suscripción y el pipeline de despliegue: no se protegen desde el código.
 
 ## 1. Puertas de entrada
@@ -19,7 +19,7 @@ La API tiene siete rutas. Todas exigen un token de Entra ID de la cuenta permiti
 | `DELETE` | `/api/series/{id}/tomos/{tomoId}` | Quita un tomo | Escritura |
 | `GET` | `/api/auditoria` | Devuelve las últimas escrituras con su fecha y su cuenta | Lectura del rastro |
 
-La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma peticiones; pide el token a Entra ID y lo pone en la cabecera. El 12 de noviembre de 2026 se probó contra el tenant real: la web lista con la cuenta permitida y la API rechaza sin token y con una cuenta no permitida. Faltan el alta y la baja desde la interfaz y un cierre de sesión que vuelva al inicio.
+La web es un cliente Blazor WebAssembly: no guarda la contraseña y no firma peticiones; pide el token a Entra ID y lo pone en la cabecera. El 12 de noviembre de 2026 se probó contra el tenant real: la web lista con la cuenta permitida y la API rechaza sin token y con una cuenta no permitida. Faltan el alta y la baja desde la interfaz y un cierre de sesión que vuelva al inicio.
 
 ## 2. STRIDE
 
@@ -38,7 +38,7 @@ La web es un cliente Blazor WebAssembly: no guarda credenciales y no firma petic
 |---|---|---|
 | API1 BOLA | No aplica: una cuenta y una colección; no hay objetos de otros usuarios que alcanzar | Validado (excepción revisada) |
 | API2 Autenticación rota | Aplica: toda ruta salvo `/health` exige token y la cuenta permitida | Parcial: probado contra el tenant real el 12 de noviembre de 2026 —401 sin token, 403 con otra cuenta, 200 con la permitida—; falta el alta y la baja desde la interfaz |
-| API3 Autorización de propiedades | Los contratos de entrada solo declaran los campos que se aceptan; el identificador no se asigna desde el cuerpo | Parcial: sin prueba negativa |
+| API3 Autorización de propiedades | Los contratos de entrada solo declaran los campos que se aceptan; el identificador no se asigna desde el cuerpo | Validado en local el 22 de noviembre de 2026: dos pruebas negativas —alta de serie y de tomo con un `id` ajeno y campos fuera del contrato— confirman que el cuerpo solo aporta lo declarado y que el identificador lo genera el servidor |
 | API4 Consumo sin límite | Aplica: cuota de 120 peticiones por minuto y cuerpo máximo de 16 KB | Validado en local el 9 de noviembre de 2026; detrás del proxy el cubo es compartido |
 | API5 BFLA | No aplica: un solo rol, sin operaciones privilegiadas | Validado (excepción revisada) |
 | API6 Flujos sensibles | Altas masivas automatizadas contra la colección | Pendiente; lo cubre el límite |
@@ -61,8 +61,9 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 | Contenedores de la API y la web sin usuario privilegiado | `src/Comicteca.Api/Dockerfile`, `src/Comicteca.Web/Dockerfile` | Dos: la API con `APP_UID` y la web con `nginx` en el puerto 8080; el CI comprueba que la web no arranca con `id -u` 0 |
 | Puertos atados a loopback | `compose.yaml` | Solo en local; el despliegue cambia la barrera |
 | Sin secretos en el historial | `.gitleaks.toml`, CI | Cubre el historial alcanzable; no un clon ya hecho |
+| Sin secretos en lo que se sirve al navegador | `scripts/comprobar-web-publicada.sh`, CI | Los dos `appsettings` publicados solo llevan claves del registro y `wwwroot` no trae llaves por cabecera ni por extensión; no audita el contenido de las librerías de terceros ni un archivo suelto con otro nombre |
 | Dependencias auditadas | CI | NuGet y npm; no cubre la imagen |
-| Entrada acotada por contratos | `Api/Contratos.cs` | Acepta solo los campos previstos; sin prueba negativa |
+| Entrada acotada por contratos | `Api/Contratos.cs` | Prueba negativa en `EscrituraApiTests`: un `id` o un campo fuera del contrato se ignoran; serie y tomo se identifican por la ruta |
 
 ## 5. Controles previstos
 
@@ -70,6 +71,7 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 |---|---|---|---|
 | Inicio de sesión con Entra ID, una sola cuenta | Suplantación, manipulación, divulgación | Sin token, 401; con token de otra cuenta, 403; la suite de contrato sigue en verde | Parcial: validado con emisor de prueba y probado contra el tenant real el 12 de noviembre de 2026 —401 sin token, 403 con otra cuenta, 200 con la permitida—; falta el alta y la baja desde la interfaz |
 | Cabeceras, CSP, HTTPS y HSTS | Divulgación, configuración insegura | Cabeceras en respuesta normal y en error, con prueba automática en los contenedores; CSP de la web con Blazor cargando y el nonce comprobado; con TLS, HSTS en las tres respuestas y el HTTP redirigido | Validado en local, también sobre el perfil HTTPS el 15 de noviembre de 2026 (46 comprobaciones); la renovación de MSAL pendiente (B.2b) |
+| Token de sesión en el navegador | Robo de sesión: un XSS en la propia web lee el almacenamiento | Prueba de que el cierre de sesión vacía la caché de MSAL y de que la CSP sigue sin `unsafe-inline`; la renovación silenciosa (B.2b) | **Parcial**: MSAL guarda el token en el almacenamiento del navegador, así que no hay cookie `HttpOnly` que lo oculte; la CSP validada limita el XSS pero no demuestra que no exista, y el cierre de sesión que vacía la caché no está probado. La alternativa es un BFF con cookie y credencial propia, en [ADR 0010](adr/0010-quien-llama-y-con-que.md) y en el flujo PKCE del portfolio ([02-flujo-oauth2-pkce.md](https://github.com/lanuzalorenzo/portfolio-ciberseguridad-lorenzo/blob/main/01-seguridad-azure/docs/02-flujo-oauth2-pkce.md)) |
 | Límite por IP y tamaño de cuerpo | Denegación, flujos sensibles | Ráfaga que recibe 429, 413 por cuerpo mayor de 16 KB y `X-Forwarded-For` que no abre cuota, con prueba automática y en el contenedor | Validado en local y contenedor |
 | Usuario de base sin DDL | Elevación | La API escribe con el usuario limitado y el intento de `CREATE` falla | Validado en el ensayo local con SQL Server 2022 en contenedor el 16 de noviembre de 2026 (`scripts/comicteca-bd`): sin `ConnectionStrings:ComictecaMigraciones` la API no arranca. Queda que la API lee la cadena del migrador mientras migra al arrancar ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)) y el ensayo en Azure SQL |
 | Registro de escrituras y copia restaurable | Repudio | Cada alta y baja deja rastro con fecha y origen; una copia se restaura | Validado en local el 18 de noviembre de 2026: tabla `Auditoria` escrita por un interceptor en la misma transacción, cuenta tomada de la claim `oid`, `GET /api/auditoria`, una copia de SQLite restaurada en una prueba y el `DENY` de la tabla comprobado en el ensayo con SQL Server ([ADR 0011](adr/0011-auditoria-y-respaldo.md)). Quedan la copia programada y la copia automática de Azure SQL |
@@ -78,14 +80,14 @@ Los estados de estos controles, con su prueba, están en [capacidades.md](capaci
 
 ## 6. Riesgos residuales
 
-- **Un token robado da acceso total.** La cuenta es una; el segundo factor y el acceso condicional viven en Entra ID, no en esta API.
+- **Un token robado da acceso total, y no hace falta sacarlo de la máquina.** MSAL lo guarda en el almacenamiento del navegador, que cualquier XSS en la propia web puede leer; que la API valide firma, emisor, audiencia y vigencia no lo impide, solo acota hasta cuándo sirve. El segundo factor y el acceso condicional viven en Entra ID, no en esta API. Se cierra con un BFF o con una prueba de que la caché se vacía al salir.
 - **El límite por IP es local.** Un ataque distribuido lo esquiva; no hay WAF ni puerta gestionada delante. En el perfil de producción, además, la API está detrás de nginx y no confía en `X-Forwarded-For`: el cubo de 120 peticiones por minuto es compartido por todo el navegador, no por origen. Declarar el proxy es lo que el ADR 0004 deja abierto antes de desplegar.
 - **El contenedor de la web ya no corre como root.** Sirve archivos estáticos como `nginx` en el puerto 8080; queda comprobarlo en el despliegue, no solo en local.
 - **El proceso que migra conoce la credencial con DDL.** La separación de identidades protege del uso, no de la lectura: mientras las migraciones se apliquen al arrancar, las dos cadenas viven en la configuración de la API. Se cierra cuando el esquema lo aplique un paso aparte, con su propia credencial ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)).
 - **La auditoría será un registro de aplicación**, no una prueba inmutable ni firmada.
 - **SQLite en local no tiene copia automática.** En Azure la copia la pone la plataforma y hay que comprobarla, no darla por hecha.
 - **El umbral del límite no está calibrado** y no hay pruebas de carga.
-- **La cobertura no se mide:** hay 97 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
+- **La cobertura no se mide:** hay 99 pruebas .NET y 18 comprobaciones de interfaz, sin umbral.
 - **El CORS solo limita navegadores.** No autentica ni protege de otros clientes.
 
 ## 7. Cómo se mantiene

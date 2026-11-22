@@ -177,6 +177,63 @@ public sealed class EscrituraApiTests(ApiFactory factory) : IClassFixture<ApiFac
         Assert.Equal(HttpStatusCode.NotFound, respuesta.StatusCode);
     }
 
+    // Prueba negativa de API3: el cuerpo solo aporta los campos declarados en
+    // el contrato y el identificador lo genera el servidor, no el cliente.
+    [Fact]
+    public async Task Crear_serie_ignora_los_campos_fuera_del_contrato_y_el_id_del_cuerpo()
+    {
+        var cliente = factory.Cliente();
+        var idAjeno = Guid.NewGuid();
+        var titulo = "Serie Con Contrato Ajeno";
+
+        var respuesta = await cliente.PostAsJsonAsync(
+            "/api/series",
+            new
+            {
+                id = idAjeno,
+                titulo,
+                editorial = "Editorial Z",
+                propietario = "otra-cuenta",
+            });
+
+        Assert.Equal(HttpStatusCode.Created, respuesta.StatusCode);
+        var creada = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(idAjeno, creada.GetProperty("id").GetGuid());
+
+        var series = await cliente.GetFromJsonAsync<List<SerieDto>>("/api/series");
+        var serie = Assert.Single(series!, otra => otra.Titulo == titulo);
+        Assert.NotEqual(idAjeno, serie.Id);
+    }
+
+    [Fact]
+    public async Task Agregar_tomo_ignora_los_campos_fuera_del_contrato_y_el_id_del_cuerpo()
+    {
+        var cliente = factory.Cliente();
+        var id = await CrearAsync(cliente, "Serie Con Tomo Ajeno");
+        var idOtra = await CrearAsync(cliente, "Serie Que No Recibe El Tomo");
+        var idAjeno = Guid.NewGuid();
+
+        var respuesta = await cliente.PostAsJsonAsync(
+            $"/api/series/{id}/tomos",
+            new
+            {
+                id = idAjeno,
+                numero = 2,
+                edicion = "Rústica",
+                serieId = idOtra,
+            });
+
+        Assert.Equal(HttpStatusCode.Created, respuesta.StatusCode);
+        var creado = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.NotEqual(idAjeno, creado.GetProperty("id").GetGuid());
+
+        var series = await cliente.GetFromJsonAsync<List<SerieDto>>("/api/series");
+        var serie = Assert.Single(series!, otra => otra.Id == id);
+        Assert.Equal([2], serie.Numeros);
+        var otra = Assert.Single(series!, otra => otra.Id == idOtra);
+        Assert.Empty(otra.Numeros);
+    }
+
     private static async Task<Guid> CrearAsync(HttpClient cliente, string titulo)
     {
         var respuesta = await cliente.PostAsJsonAsync(
