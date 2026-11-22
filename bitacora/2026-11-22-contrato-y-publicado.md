@@ -21,6 +21,6 @@ Entrada ligada al [modelo de amenaza](../docs/modelo-de-amenaza.md) (§3, §4 y 
 
 ## Qué no he probado
 
-- **La caché de MSAL.** No hay prueba de que el cierre de sesión la vacíe ni de que un XSS en la propia web no alcance el token; la fila del modelo de amenaza lo deja en **Parcial**, no en Validado.
+- **La caché de MSAL.** No hay prueba de que el cierre de sesión la vacíe ni de que un XSS en la propia web no alcance el token; la fila del modelo de amenaza lo deja en **Parcial**, no en Validado. Se cerró el mismo día en [La caché de MSAL al cerrar sesión](2026-11-22-cache-msal.md): la caché pasa a Validado y el XSS sigue fuera de lo probado.
 - **La ausencia de XSS.** La CSP limita qué scripts corren; no demuestra que no haya una inyección en el HTML.
 - **Los paquetes y archivos sueltos.** El script mira los dos `appsettings` y las llaves del artefacto; un secreto dentro del código de una librería o de un archivo servido con otro nombre no lo detecta.
