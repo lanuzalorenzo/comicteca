@@ -11,11 +11,12 @@ RUN dotnet restore src/Comicteca.Web/Comicteca.Web.csproj
 COPY src/Comicteca.Web/ src/Comicteca.Web/
 RUN dotnet publish src/Comicteca.Web/Comicteca.Web.csproj -c Release -o /app/publish --no-restore
 
-FROM nginx:1.30-alpine AS final
+FROM nginx:1.30.7-alpine AS final
 
-# libxslt arrastra vulnerabilidades con corrección en el repositorio de Alpine;
-# se sube en la misma capa para que la imagen no salga con CVEs conocidos.
-RUN apk upgrade --no-cache libxslt
+# libxslt y libxml2 arrastran vulnerabilidades con corrección en el
+# repositorio de Alpine; se suben en la misma capa para que la imagen no salga
+# con los CVEs que ya tienen corrección publicada.
+RUN apk upgrade --no-cache libxslt libxml2
 
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY docker/cabeceras.conf /etc/nginx/snippets/cabeceras.conf

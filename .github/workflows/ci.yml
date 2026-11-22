@@ -183,6 +183,12 @@ jobs:
           echo "uid de la web: $uid"
           test "$uid" != "0"
 
+      # Trivy mira el sistema de archivos, no arranca nginx: un paquete subido
+      # en la misma capa podría romper el módulo que enlaza. Esta prueba carga
+      # la configuración con el usuario final de la imagen.
+      - name: Comprobar que la configuración de nginx sigue válida
+        run: docker run --rm comicteca-web:ci nginx -t
+
       - name: Escanear la imagen de la API
         uses: lanuzalorenzo/core/actions/scan@v1.6
         with:
