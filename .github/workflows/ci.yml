@@ -80,6 +80,13 @@ jobs:
           grep -q "ExigirSesion=true y no hay valores de sesión" "$RUNNER_TEMP/exigida.log" \
             || { echo "El publish exigido falló, pero no por la ausencia de valores" >&2; cat "$RUNNER_TEMP/exigida.log"; exit 1; }
 
+      # Todo lo que va en wwwroot lo lee el navegador. Gitleaks mira el
+      # historial del repositorio; esto mira el artefacto que se sirve.
+      - name: Comprobar que la web publicada solo lleva el registro público
+        run: |
+          ./scripts/comprobar-web-publicada.sh "$RUNNER_TEMP/publicada-con" --exigir-sesion
+          ./scripts/comprobar-web-publicada.sh "$RUNNER_TEMP/publicada-vacia"
+
   links:
     name: Enlaces de la documentación
     runs-on: ubuntu-latest
