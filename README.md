@@ -4,7 +4,7 @@
 
 Comicteca es mi lista de cómics. Funciona como el índice de una biblioteca: no guarda los tebeos, dice cuáles tengo, de qué editorial y en qué número. La empecé porque seguía las novedades en una web de pago y solo necesitaba una cosa de ella: saber cuándo sale el siguiente tomo de las series que leo.
 
-> **Estado:** Parcial (2026-11-18). La carga, el listado y la escritura desde la web y por API funcionan en local con el conjunto de demostración: 20 series y 65 filas. La sesión con Entra ID sigue parcial, el despliegue está pendiente y los avisos de novedades, en diseño.
+> **Estado:** Parcial (2026-11-22). La carga, el listado y la escritura desde la web y por API funcionan en local con el conjunto de demostración: 20 series y 65 filas. La sesión con Entra ID sigue parcial contra el tenant real —falta el alta con esa cuenta—, aunque el cierre de sesión ya vacía la caché de MSAL; el despliegue está pendiente y los avisos de novedades, en diseño.
 
 Es la aplicación principal del portfolio público: los paquetes compartidos `LL.*` llegan aquí después de estar en verde en el banco de pruebas, [`lab-api-local-azure`](https://github.com/lanuzalorenzo/lab-api-local-azure). Los controles propios, como la CSP y el perfil HTTPS, nacen aquí y suben a la plataforma cuando se generalizan.
 

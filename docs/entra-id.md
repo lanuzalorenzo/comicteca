@@ -5,8 +5,7 @@ guarda los valores del directorio: la API los lee de configuración y la web de
 un `appsettings` local que no se versiona. Este documento es el runbook para
 crear el registro y rellenarlos. Los pasos de portal se ejecutaron contra un tenant
 real el 12 de noviembre de 2026 y el resultado se comprobó con la CLI (apartado 9);
-la sesión de la web sigue **Parcial** hasta el alta y la baja desde la interfaz y un cierre de
-sesión que vuelva al inicio.
+la sesión de la web sigue **Parcial** hasta el alta con la cuenta real desde la interfaz; la baja y el cierre de sesión ya están cubiertos por el e2e con el emisor de prueba.
 
 ## 1. Qué hace falta
 
@@ -91,7 +90,7 @@ cómo—; no se pega en servicios de terceros.
    `appsettings.Development.json`. Sin ellos no arrancan.
 2. Sin sesión, la lista no debe cargar: la API responde 401.
 3. **Iniciar sesión**, entrar con la cuenta permitida y verificar que la lista
-   carga, que se da de alta una serie y se borra.
+   carga y que se da de alta una serie.
 4. Con otra cuenta: 403.
 5. `cd tests/e2e && bash start.sh` y `npm test`: la prueba levanta su propio
    emisor OIDC, entra por él y da de alta y de baja serie y tomo con sesión a
@@ -112,8 +111,8 @@ cómo—; no se pega en servicios de terceros.
    `Authorization`. Sin esa cabecera el navegador bloquea la escritura aunque
    el token sea válido.
 
-Sin el paso 3 no se puede decir que la sesión funciona: la fila de
-`docs/capacidades.md` sigue **Parcial** hasta entonces.
+El paso 3 es el que falta contra el tenant real: la fila de
+`docs/capacidades.md` sigue **Parcial** hasta el alta con esa cuenta.
 
 ## 6. Errores típicos
 
@@ -157,7 +156,7 @@ locales del propietario.
 | 3. Permiso concedido | Captura de *API permissions* con el consentimiento de administrador en verde | El cliente puede pedir el scope |
 | 4. Valores locales | Salida de `env` filtrada por `Autenticacion__` (los valores, no el token) y el `appsettings.Development.json` de la web | La configuración está fuera del repositorio |
 | 5. Sin sesión | `curl -i http://localhost:5094/api/series` → 401 | La API exige token |
-| 5. Con la cuenta permitida | Captura de la lista cargada, del alta de una serie desde la interfaz y del borrado | La sesión sirve para leer y escribir |
+| 5. Con la cuenta permitida | Captura de la lista cargada y del alta de una serie desde la interfaz | La sesión sirve para leer y escribir |
 | 5. Con otra cuenta | Captura del 403 | La lista de uno se aplica |
 | 5. Interfaz | `npm test` a 375 px en verde con el emisor de prueba y sesión | La interfaz sin token falla: la API devuelve 401 |
 | 5. Preflight | Salida del `curl -i -X OPTIONS` del apartado 5 | El navegador puede mandar `Authorization` |
@@ -165,8 +164,10 @@ locales del propietario.
 Con todo eso, y solo entonces, la sesión pasa a **Validado** y la entrada de
 bitácora cita las capturas. El 12 de noviembre de 2026 quedaron en verde el 401 sin
 token, el 403 con una cuenta no permitida, el preflight de CORS con `Authorization` y
-la lista con sesión. Faltan el alta y la baja desde el botón y un cierre de sesión que vuelva al
-inicio: por eso sigue **Parcial**.
+la lista con sesión. El alta y la baja desde el botón y el cierre de sesión que vuelve al
+inicio se validaron con el emisor de prueba el 14 y el 22 de noviembre de 2026; contra el
+tenant real queda repetir el alta con esa cuenta y guardar las capturas: por eso sigue
+**Parcial**.
 
 ## 9. Comprobar el registro sin el portal
 

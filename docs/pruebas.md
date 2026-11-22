@@ -265,7 +265,7 @@ En escritorio, a 1440 × 900:
 - No hay umbral de cobertura: hay 99 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
 - Docker no se ejecuta en el CI: el ensayo es local.
-- La API y la web exigen token en todos los entornos: en Development ya no se apaga y no hay forma de arrancarlas sin los valores del registro. La sesión del navegador se probó contra el tenant real el 12 de noviembre de 2026 y, desde el 13, la prueba de interfaz entra con el emisor de prueba y da de alta y de baja con sesión; el despliegue sigue esperando al cierre de sesión limpio.
+- La API y la web exigen token en todos los entornos: en Development ya no se apaga y no hay forma de arrancarlas sin los valores del registro. La sesión del navegador se probó contra el tenant real el 12 de noviembre de 2026 y, desde el 13, la prueba de interfaz entra con el emisor de prueba y da de alta y de baja con sesión; desde el 22 comprueba además que el cierre de sesión vacía el almacenamiento. El despliegue espera al alta con el tenant real.
 
 ## Problemas típicos
 
