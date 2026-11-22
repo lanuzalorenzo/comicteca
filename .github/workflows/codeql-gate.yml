@@ -1,0 +1,139 @@
+name: Puerta de CodeQL en main
+
+# El CI publica el SARIF de CodeQL, pero el gate del análisis solo actúa en el
+# pull request: una alerta que nace sobre `main` puede quedarse sin dueño (pasó
+# con la #71, abierta cinco días). Esta comprobación no sustituye al análisis:
+# lo vigila, abre un issue con lo que queda abierto y lo cierra cuando el
+# análisis de `main` vuelve a estar limpio.
+#
+# GitHub desactiva los flujos programados tras sesenta días sin actividad en el
+# repositorio; el disparador por `workflow_run` sigue cubriendo cada push a
+# `main` mientras tanto.
+
+on:
+  schedule:
+    - cron: '41 4 * * *'
+  workflow_run:
+    workflows: [ CI ]
+    types: [ completed ]
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  security-events: read
+
+concurrency:
+  group: codeql-gate-main
+  cancel-in-progress: true
+
+jobs:
+  alertas-main:
+    name: Alertas abiertas de code scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      REPO: ${{ github.repository }}
+      EVENTO: ${{ github.event_name }}
+      CABEZA: ${{ github.event.workflow_run.head_sha }}
+      TITULO: 'SAST: alertas abiertas en main'
+    steps:
+      - name: Consultar la API de code scanning
+        run: |
+          set -euo pipefail
+
+          # Un SARIF recién publicado tarda en convertirse en alertas. Si el
+          # disparador es el CI del push, se espera a que exista el análisis de
+          # ese mismo commit antes de contar. El cron y el disparo manual
+          # consultan lo que haya.
+          if [ "$EVENTO" = "workflow_run" ] && [ -n "${CABEZA:-}" ]; then
+            for intento in 1 2 3 4 5 6; do
+              analizado=$(gh api \
+                "repos/$REPO/code-scanning/analyses?ref=refs/heads/main&tool_name=CodeQL&per_page=1" \
+                --jq '.[0].commit_sha // empty')
+              echo "Intento $intento: último análisis de main en ${analizado:-ninguno}"
+              if [ "$analizado" = "$CABEZA" ]; then
+                break
+              fi
+              sleep 30
+            done
+            if [ "$analizado" != "$CABEZA" ]; then
+              echo "::warning::CodeQL no ha publicado el análisis de $CABEZA en tres minutos; se cuenta lo que haya en ese momento."
+            fi
+          fi
+
+          gh api --paginate -H "Accept: application/vnd.github+json" \
+            "repos/$REPO/code-scanning/alerts?state=open&ref=refs/heads/main&per_page=100" \
+            > alertas.json
+
+          total=$(jq -rs 'add // [] | length' alertas.json)
+          echo "Alertas abiertas en main: $total"
+          echo "$total" > total.txt
+
+          jq -rs '
+            def rango:
+              if . == "critical" then 0
+              elif . == "high" then 1
+              elif . == "error" then 1
+              elif . == "medium" then 2
+              elif . == "warning" then 2
+              elif . == "low" then 3
+              elif . == "note" then 4
+              else 9 end;
+
+            add // []
+            | sort_by(.rule | (.security_severity_level // .severity // "") | rango)
+            | map("| `\(.rule.id // "sin regla")` | \(.rule.security_severity_level // .rule.severity // "sin clasificar") | `\(.most_recent_instance.location.path // "sin ubicación"):\(.most_recent_instance.location.start_line // "—")` | \(.created_at[:10] // "—") |")
+            | join("\n")
+          ' alertas.json > filas.md
+
+      - name: Abrir o actualizar el issue
+        run: |
+          set -euo pipefail
+          total=$(cat total.txt)
+          if [ "$total" = "0" ]; then
+            echo "Sin alertas: no hay issue que abrir."
+            exit 0
+          fi
+          {
+            echo "La comprobación automática ha encontrado **$total** alerta(s) abierta(s)"
+            echo "de code scanning sobre \`refs/heads/main\`."
+            echo
+            echo "| Regla | Severidad | Sitio | Abierta |"
+            echo "|---|---|---|---|"
+            cat filas.md
+            echo
+            echo "El gate de CodeQL del CI solo mira el pull request, así que estas"
+            echo "alertas no rompen nada hasta que alguien mira el panel. Se corrigen"
+            echo "o se descartan con motivo en la pestaña de seguridad; este issue lo"
+            echo "cierra la propia comprobación cuando el análisis de \`main\` queda limpio."
+            echo
+            echo "Última comprobación: \`$(date -u +%Y-%m-%dT%H:%MZ)\` · run [\`$GITHUB_RUN_ID\`]($GITHUB_SERVER_URL/$REPO/actions/runs/$GITHUB_RUN_ID)."
+          } > cuerpo.md
+
+          numero=$(gh issue list --state open --limit 500 --json number,title \
+            | jq -r --arg t "$TITULO" 'map(select(.title == $t)) | first | .number // empty')
+
+          if [ -z "$numero" ]; then
+            gh issue create --title "$TITULO" --body-file cuerpo.md
+          else
+            gh issue edit "$numero" --body-file cuerpo.md
+          fi
+
+      - name: Cerrar el issue cuando ya no queda ninguna
+        run: |
+          set -euo pipefail
+          total=$(cat total.txt)
+          if [ "$total" != "0" ]; then
+            exit 0
+          fi
+
+          numero=$(gh issue list --state open --limit 500 --json number,title \
+            | jq -r --arg t "$TITULO" 'map(select(.title == $t)) | first | .number // empty')
+
+          if [ -n "$numero" ]; then
+            gh issue close "$numero" \
+              --comment "El análisis de \`main\` ya no tiene alertas abiertas."
+          fi
