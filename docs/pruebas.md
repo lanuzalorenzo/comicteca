@@ -15,6 +15,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | 36 comprobaciones en el ensayo local y 46 sobre HTTPS —las mismas más HSTS en tres respuestas, el 301 del HTTP y dos de `connect-src` que el perfil local no necesita—: cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, el nonce del importmap contra el de la cabecera, el 401 de la API sin token y Blazor arrancando a 375 px sin violaciones de CSP | `npm run test:cabeceras` con la pila en contenedores |
 | Contenedores | `compose.yaml`, `compose.prod.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base; el perfil de producción añade TLS, el proxy de la API y el 301 del HTTP | Manual, con Docker |
 | Análisis estático | `.github/workflows/ci.yml` | CodeQL con `security-extended` sobre C# y SARIF publicado | Trabajo «Análisis estático (CodeQL)» del CI |
+| Puerta de CodeQL | `.github/workflows/codeql-gate.yml` | Cada mañana y tras cada CI de `main` consulta las alertas abiertas de code scanning sobre `refs/heads/main`, abre o actualiza un issue con la tabla y lo cierra cuando vuelve a cero | Cron diario, disparo manual o el CI de `main` |
 | Imágenes | `.github/workflows/ci.yml`, `src/Comicteca.Api/Dockerfile`, `src/Comicteca.Web/Dockerfile` | Baseline de sshd sobre musl, Trivy sobre las dos imágenes con SARIF, y `id -u` distinto de 0 en la web | Trabajo «Imágenes de contenedor (Trivy)» del CI |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
 
