@@ -7,6 +7,6 @@
     "test:cabeceras": "node prueba-cabeceras.js"
   },
   "devDependencies": {
-    "playwright": "1.65.0"
+    "playwright": "1.65.1"
   }
 }
