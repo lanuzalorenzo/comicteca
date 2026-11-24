@@ -14,7 +14,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque, que falla si falta `Authority`, `Audience`, `CuentaPermitida` o los tres. No hay interruptor que la desactive | `dotnet test` |
 | Interfaz | `tests/e2e/prueba-web.js` | 27 comprobaciones en Chromium a 375 px con sesión: la API rechaza la lectura sin token, sin sesión la web no llama a la API, sin valores de sesión la pantalla nombra lo que falta, la entrada por el emisor de prueba, alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, el cierre de sesión que vuelve al inicio y vacía de tokens el almacenamiento, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con el emisor y la pila arrancados con `start.sh` |
 | Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | 36 comprobaciones en el ensayo local y 46 sobre HTTPS —las mismas más HSTS en tres respuestas, el 301 del HTTP y dos de `connect-src` que el perfil local no necesita—: cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, el nonce del importmap contra el de la cabecera, el 401 de la API sin token y Blazor arrancando a 375 px sin violaciones de CSP | `npm run test:cabeceras` con la pila en contenedores |
-| Contenedores | `compose.yaml`, `compose.prod.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base; el perfil de producción añade TLS, el proxy de la API y el 301 del HTTP | Manual, con Docker |
+| Contenedores | `compose.yaml`, `compose.prod.yaml`, `compose.imagen.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base; el perfil de producción añade TLS, el proxy de la API y el 301 del HTTP; el de la imagen arranca la publicada por digest, sin construir | Manual, con Docker |
 | Análisis estático | `.github/workflows/ci.yml` | CodeQL con `security-extended` sobre C# y SARIF publicado | Trabajo «Análisis estático (CodeQL)» del CI |
 | Infraestructura como código | `infra/main.bicep`, `infra/presupuesto.bicep`, `scripts/comprobar-nombres-iac.py` | `bicep build` sin avisos, nombres de recurso salidos de la función `nombre` —con autoprueba que rechaza un literal— y Trivy en modo `azure-arm` sobre el ARM compilado | El mismo trabajo de análisis estático del CI |
 | Puerta de CodeQL | `.github/workflows/codeql-gate.yml` | Cada mañana y tras cada CI de `main` consulta las alertas abiertas de code scanning sobre `refs/heads/main`, abre o actualiza un issue con la tabla y lo cierra cuando vuelve a cero | Cron diario, disparo manual o el CI de `main` |
@@ -192,6 +192,21 @@ docker compose down -v            # esto sí borra la base y el volumen
 
 La API del contenedor solo escucha en tu máquina y exige token igual que fuera de él: sin las tres variables no arranca. No la publiques fuera de loopback.
 
+### La imagen publicada, por digest
+
+`compose.imagen.yaml` no construye: arranca la API desde el digest publicado en GHCR. Sirve para probar el artefacto que se firmó, no una reconstrucción local.
+
+```bash
+export AUTENTICACION_AUTHORITY="https://login.microsoftonline.com/<tenant>/v2.0"
+export AUTENTICACION_AUDIENCE="api://comicteca-api"
+export AUTENTICACION_CUENTA_PERMITIDA="<object id de la cuenta>"
+COMICTECA_API_DIGEST="<digest completo del run>" docker compose -f compose.imagen.yaml up -d
+docker compose -f compose.imagen.yaml ps   # api en healthy
+curl http://localhost:5094/health
+```
+
+El digest lo imprime el run de `.github/workflows/container-publish.yml` en su resumen; también se pide al registro con `gh api`. Ya viene con el prefijo `sha256:` y se copia tal cual: repetirlo en la variable da `sha256:sha256:…` y el `pull` falla. Si el `pull` responde 401, la visibilidad del paquete sigue en privada: se cambia en el paquete de GHCR, no con un token. El mismo run publica y firma la imagen de la web (`comicteca-web`); este compose solo levanta la API porque la web no se sirve desde su imagen.
+
 ### Base con mínimo privilegio
 
 El usuario del servicio no ve el esquema: las migraciones van por su propia cadena y el servicio escribe con un usuario sin DDL ([ADR 0009](adr/0009-dos-identidades-en-la-base.md)). El ensayo levanta un SQL Server desechable; no toca Azure ni la base local.
@@ -265,7 +280,7 @@ En escritorio, a 1440 × 900:
 
 - No hay umbral de cobertura: hay 99 pruebas, no una métrica.
 - Safari, lectores de pantalla y dispositivos reales siguen sin probarse.
-- Docker no se ejecuta en el CI: el ensayo es local.
+- El ensayo con Compose no se ejecuta en el CI: el CI construye y escanea las dos imágenes y publica las dos con SBOM y firma, pero levantar la pila es local.
 - La API y la web exigen token en todos los entornos: en Development ya no se apaga y no hay forma de arrancarlas sin los valores del registro. La sesión del navegador se probó contra el tenant real el 12 de noviembre de 2026 y, desde el 13, la prueba de interfaz entra con el emisor de prueba y da de alta y de baja con sesión; desde el 22 comprueba además que el cierre de sesión vacía el almacenamiento. El despliegue espera al alta con el tenant real.
 
 ## Problemas típicos
