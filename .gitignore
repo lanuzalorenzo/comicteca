@@ -42,3 +42,8 @@ src/Comicteca.Web/wwwroot/appsettings.Production.json
 
 # Herramientas locales de OpenCode: no se versionan
 .opencode/
+
+# Plantilla ARM generada por `bicep build`; se compila en local y en el CI
+infra/main.json
+# Parámetros reales del despliegue: identificadores y correo, fuera de Git
+infra/main.parameters.json

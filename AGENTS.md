@@ -140,7 +140,7 @@ Los ADR de `docs/adr/` usan `**Estado:** Aceptada` como estado de la decisión, 
 
 ## Despliegue
 
-No se despliega nada en Azure sin autorización explícita. La infraestructura prevista —Static Web Apps para la pantalla, Container Apps para la API, Functions para el aviso diario y Azure SQL en su oferta gratuita— solo existe como diseño: la decisión está en el [ADR 0003](docs/adr/0003-hospedaje-de-la-api.md) y el despliegue sigue **Pendiente**, sin presentarse como hecho.
+No se despliega nada en Azure sin autorización explícita. Static Web Apps, Container Apps, Azure SQL y Log Analytics tienen su IaC en [`infra/`](infra/README.md), compilada y escaneada en el CI; Functions para el aviso diario sigue en diseño, en la fase 3. La decisión está en el [ADR 0003](docs/adr/0003-hospedaje-de-la-api.md) y el despliegue sigue **Pendiente**, sin presentarse como hecho.
 
 ## Commits
 
@@ -164,7 +164,7 @@ El repositorio es público y el CI se comporta como tal. `.github/workflows/ci.y
 - **Interfaz:** la acción `browser-e2e` de `lanuzalorenzo/core` instala Chromium, arranca el emisor OIDC de prueba, la API y la web con una base temporal y ejecuta `tests/e2e` a 375 px con sesión. También restaura los paquetes con `packages: read`.
 - **Secretos:** la acción `gitleaks` de `lanuzalorenzo/core` escanea el historial completo.
 - **Dependencias:** auditoría de paquetes NuGet directos y transitivos, que hoy solo informa, informe de paquetes desactualizados, que tampoco bloquea, y de las dependencias npm de la prueba de interfaz con `npm audit --audit-level=high`, que falla con altas y críticas. El trabajo que restaura declara `packages: read`.
-- **Análisis estático:** la acción `sast` de `lanuzalorenzo/core` ejecuta CodeQL con `security-extended` sobre C# y publica el SARIF; el trabajo declara `security-events: write`.
+- **Análisis estático:** la acción `sast` de `lanuzalorenzo/core` ejecuta CodeQL con `security-extended` sobre C# y publica el SARIF; el mismo trabajo compila la IaC de `infra/` con Bicep, comprueba que sus nombres salen de la función `nombre` y escanea el ARM resultante con Trivy en modo `azure-arm`. Declara `security-events: write` para los dos SARIF.
 - **Imágenes:** la acción `check-sshd-baseline` revisa los Dockerfiles, se construyen la API y la web y la acción `scan` pasa Trivy sobre cada imagen publicando su SARIF. Un paso comprueba con `id -u` que la web no arranca como root.
 
 Dependabot agrupa cada lunes las actualizaciones de NuGet, npm y las acciones. El flujo automático fusiona las de parche y minor con los siete checks en verde; las major quedan para revisión. El registro `github-packages` de `dependabot.yml` usa el secreto de Dependabot `LL_PACKAGES_TOKEN`, un PAT con `read:packages`, para proponer también actualizaciones de `LL.*`. La primera ejecución con `GITHUB_TOKEN` falló porque Dependabot no resuelve ese token; desde el 07/11 usa el secreto `LL_PACKAGES_TOKEN` y `nuget in /.` ya no falla por credenciales.

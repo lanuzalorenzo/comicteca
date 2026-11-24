@@ -21,6 +21,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 - Migraciones en lugar de crear la base de golpe: el conjunto de SQLite ya está y el de Azure SQL también, en su propio proyecto; al desplegar se aplican.
 - Entrada con Entra ID.
 - Prueba: la captura de facturación del mes y esta matriz actualizada.
+- La IaC está en `infra/`: Bicep para SWA, Container Apps, Azure SQL, Log Analytics y presupuesto. Se compila y se escanea en el CI; nada está desplegado.
 - Antes de desplegar, lo pido y lo autorizo yo.
 
 La decisión y sus números están en el [ADR 0003](adr/0003-hospedaje-de-la-api.md).
