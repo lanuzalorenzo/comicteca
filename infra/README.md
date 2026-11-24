@@ -1,8 +1,10 @@
 # Infraestructura
 
-Plantillas Bicep de la fase 2. **No se ha desplegado nada**: aquí solo se
-escribe, se compila y se escanea. Crear recursos en Azure exige autorización
-explícita del propietario.
+> **Estado:** Pendiente (2026-11-24). La plantilla se compila y se escanea en
+> el CI; no se ha creado ningún recurso en Azure. Crear recursos exige
+> autorización explícita del propietario.
+
+Plantillas Bicep de la fase 2.
 
 ## Qué crea
 
@@ -20,9 +22,9 @@ explícita del propietario.
 La API recibe la audiencia, el tenant, la cuenta permitida, el origen de la web
 y una cadena de conexión con `Authentication=Active Directory Default`; no hay
 contraseñas ni claves en los parámetros. La base nace con la red pública
-desactivada: la conectividad, los usuarios de la base, el usuario migrador y la
-publicación de la imagen se completan en los ítems `aca-sql` e `imagen`. Hasta
-entonces la plantilla describe los recursos, no una aplicación arrancable.
+desactivada. La conectividad, los usuarios de la base, el usuario migrador y la
+publicación de la imagen se completan en un cambio posterior. Hasta entonces la
+plantilla describe los recursos, no una aplicación arrancable.
 
 ## Nombres
 

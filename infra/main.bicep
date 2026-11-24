@@ -284,7 +284,7 @@ resource servidorSql 'Microsoft.Sql/servers@2023-08-01-preview' = {
 
 // Oferta gratuita: serverless, auto-pausa al agotar la cuota y sin agrupación
 // de conexiones en la cadena de la API. La conectividad y los usuarios de la
-// base se completan en el ítem `aca-sql`; aquí la base nace cerrada.
+// base se completan en un cambio posterior; aquí la base nace cerrada.
 resource baseSql 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: servidorSql
   name: nombreBaseSql
