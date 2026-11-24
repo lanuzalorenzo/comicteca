@@ -154,10 +154,43 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v7
 
+      # La IaC se compila y se escanea aquí, en el trabajo de análisis estático,
+      # para no añadir un check obligatorio más al ruleset. Bicep no se instala
+      # en el host: se descarga la versión fijada en el runner.
+      - name: Instalar Bicep
+        run: |
+          curl -sSLo "$RUNNER_TEMP/bicep" \
+            https://github.com/Azure/bicep/releases/download/v0.48.1/bicep-linux-x64
+          echo "b09ec25a9d376c1f8e33ede6ed22b587f915ad68488d5db77a6f9541748c7f6e  $RUNNER_TEMP/bicep" \
+            | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/bicep"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Compilar la infraestructura y comprobar los nombres
+        run: |
+          salida="$(bicep build infra/main.bicep --outfile infra/main.json 2>&1)"
+          echo "$salida"
+          if grep -q 'Warning ' <<<"$salida"; then
+            echo "Bicep dejó avisos: corrígelos antes de fusionar." >&2
+            exit 1
+          fi
+          python3 scripts/comprobar-nombres-iac.py --autoprueba
+
       - name: Analizar con CodeQL y publicar el SARIF
         uses: lanuzalorenzo/core/actions/sast@v1.6
         with:
           languages: csharp
+
+      # Trivy no lee Bicep: se escanea el ARM compilado y se fuerza el escáner
+      # de Azure ARM, porque la detección automática lo confunde con CloudFormation.
+      - name: Escanear la infraestructura con Trivy
+        uses: lanuzalorenzo/core/actions/scan@v1.6
+        env:
+          TRIVY_MISCONFIG_SCANNERS: azure-arm
+        with:
+          scan-type: config
+          scan-ref: infra/main.json
+          category: trivy-iac
 
   container-scan:
     name: Imágenes de contenedor (Trivy)

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "carga": {
+      "value": "comicteca"
+    },
+    "entorno": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "westeurope"
+    },
+    "imagen": {
+      "value": "ghcr.io/<propietario>/comicteca-api:<etiqueta-o-digest>"
+    },
+    "tenantId": {
+      "value": "<tenant-id>"
+    },
+    "apiAudience": {
+      "value": "api://<client-id>"
+    },
+    "cuentaPermitida": {
+      "value": "<object-id-de-la-cuenta>"
+    },
+    "administradorSql": {
+      "value": "<upn-del-administrador>"
+    },
+    "administradorSqlObjectId": {
+      "value": "<object-id-del-administrador>"
+    },
+    "emailAviso": {
+      "value": "<correo-de-aviso>"
+    }
+  }
+}
