@@ -29,10 +29,10 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Comprobar la versión de plataforma
-        uses: lanuzalorenzo/core/actions/check-platform@v1.8
+        uses: lanuzalorenzo/core/actions/check-platform@v1.7
 
       - name: Compilar, verificar el formato y probar
-        uses: lanuzalorenzo/core/actions/dotnet@v1.6
+        uses: lanuzalorenzo/core/actions/dotnet@v1.7
         with:
           solution: Comicteca.slnx
 
@@ -95,7 +95,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Comprobar enlaces y anclas
-        uses: lanuzalorenzo/core/actions/check-links@v1.6
+        uses: lanuzalorenzo/core/actions/check-links@v1.7
         with:
           root: .
           skip: src/Comicteca.Web/wwwroot,src/Comicteca.Web/obj
@@ -110,7 +110,7 @@ jobs:
           fetch-depth: 0
 
       - name: Escanear secretos con Gitleaks
-        uses: lanuzalorenzo/core/actions/gitleaks@v1.6
+        uses: lanuzalorenzo/core/actions/gitleaks@v1.7
 
   sca:
     name: Dependencias vulnerables (NuGet)
@@ -177,14 +177,14 @@ jobs:
           python3 scripts/comprobar-nombres-iac.py --autoprueba
 
       - name: Analizar con CodeQL y publicar el SARIF
-        uses: lanuzalorenzo/core/actions/sast@v1.6
+        uses: lanuzalorenzo/core/actions/sast@v1.7
         with:
           languages: csharp
 
       # Trivy no lee Bicep: se escanea el ARM compilado y se fuerza el escáner
       # de Azure ARM, porque la detección automática lo confunde con CloudFormation.
       - name: Escanear la infraestructura con Trivy
-        uses: lanuzalorenzo/core/actions/scan@v1.6
+        uses: lanuzalorenzo/core/actions/scan@v1.7
         env:
           TRIVY_MISCONFIG_SCANNERS: azure-arm
         with:
@@ -209,7 +209,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Revisar la base musl de los Dockerfiles
-        uses: lanuzalorenzo/core/actions/check-sshd-baseline@v1.6
+        uses: lanuzalorenzo/core/actions/check-sshd-baseline@v1.7
         with:
           root: .
 
@@ -232,14 +232,14 @@ jobs:
         run: docker run --rm comicteca-web:ci nginx -t
 
       - name: Escanear la imagen de la API
-        uses: lanuzalorenzo/core/actions/scan@v1.6
+        uses: lanuzalorenzo/core/actions/scan@v1.7
         with:
           scan-type: image
           image-ref: comicteca-api:ci
           category: trivy-api
 
       - name: Escanear la imagen de la web
-        uses: lanuzalorenzo/core/actions/scan@v1.6
+        uses: lanuzalorenzo/core/actions/scan@v1.7
         with:
           scan-type: image
           image-ref: comicteca-web:ci
@@ -274,7 +274,7 @@ jobs:
         working-directory: tests/e2e
 
       - name: Arrancar los servicios y probar la interfaz
-        uses: lanuzalorenzo/core/actions/browser-e2e@v1.6
+        uses: lanuzalorenzo/core/actions/browser-e2e@v1.7
         with:
           working-directory: tests/e2e
           start-script: tests/e2e/start.sh
