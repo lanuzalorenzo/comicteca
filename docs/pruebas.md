@@ -12,7 +12,7 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Configuración de despliegue | `tests/Comicteca.Tests/ConfiguracionDespliegueTests.cs` | 9 pruebas: reconoce los `compose`, `.env` y `appsettings` que se vigilan, no confunde otros nombres, y recorre los archivos versionados fallando si una cadena lleva contraseña | `dotnet test` |
 | Web publicada | `scripts/comprobar-web-publicada.sh`, `.github/workflows/ci.yml` | 7 comprobaciones con valores y 6 en la publicación vacía: los dos `appsettings` solo llevan claves del registro, ninguno nombra credenciales, los tres valores están y no vienen vacíos cuando la publicación los lleva, no se publicó el de desarrollo y `wwwroot` no trae llaves privadas por cabecera ni por extensión | `dotnet publish` y el script; en el CI, tras las dos publicaciones |
 | Autenticación | `tests/Comicteca.Tests/AutenticacionTests.cs` | 14 pruebas: 10 de contrato con emisor de prueba y 4 de arranque, que falla si falta `Authority`, `Audience`, `CuentaPermitida` o los tres. No hay interruptor que la desactive | `dotnet test` |
-| Interfaz | `tests/e2e/prueba-web.js` | 21 comprobaciones en Chromium a 375 px con sesión: la API rechaza la lectura sin token, sin sesión la web no llama a la API, la entrada por el emisor de prueba, alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, el cierre de sesión que vuelve al inicio y vacía de tokens el almacenamiento, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con el emisor y la pila arrancados con `start.sh` |
+| Interfaz | `tests/e2e/prueba-web.js` | 27 comprobaciones en Chromium a 375 px con sesión: la API rechaza la lectura sin token, sin sesión la web no llama a la API, sin valores de sesión la pantalla nombra lo que falta, la entrada por el emisor de prueba, alta y baja de serie y tomo, duplicado, validación, refresco sin recargar, el cierre de sesión que vuelve al inicio y vacía de tokens el almacenamiento, desbordamiento horizontal y excepciones de JavaScript no capturadas | `npm test` con el emisor y la pila arrancados con `start.sh` |
 | Cabeceras y CSP | `tests/e2e/prueba-cabeceras.js` | 36 comprobaciones en el ensayo local y 46 sobre HTTPS —las mismas más HSTS en tres respuestas, el 301 del HTTP y dos de `connect-src` que el perfil local no necesita—: cabeceras de seguridad y CSP en la web, en `/_framework/` y en la API, el nonce del importmap contra el de la cabecera, el 401 de la API sin token y Blazor arrancando a 375 px sin violaciones de CSP | `npm run test:cabeceras` con la pila en contenedores |
 | Contenedores | `compose.yaml`, `compose.prod.yaml` | Puertos, healthchecks, reinicio automático y volumen de la base; el perfil de producción añade TLS, el proxy de la API y el 301 del HTTP | Manual, con Docker |
 | Análisis estático | `.github/workflows/ci.yml` | CodeQL con `security-extended` sobre C# y SARIF publicado | Trabajo «Análisis estático (CodeQL)» del CI |
@@ -62,7 +62,7 @@ dotnet run --project src/Comicteca.Web    # http://localhost:5077
 
 La primera vez, la API crea la base, aplica las migraciones y carga `data/coleccion.csv`. La web lee la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json` y la sesión de `wwwroot/appsettings.Development.json`, que Git ignora porque WebAssembly no lee variables de entorno.
 
-Desde el 13 de noviembre de 2026 no hay forma de arrancar sin sesión (ADR 0006): si falta alguno de los tres valores, la API lanza una excepción con el nombre de la clave y la web no arranca. Para probar sin tenant, la sección 3 levanta un emisor OIDC de prueba con esos valores puestos.
+Desde el 13 de noviembre de 2026 no hay forma de arrancar sin sesión (ADR 0006): si falta alguno de los tres valores, la API lanza una excepción con el nombre de la clave y la web muestra una pantalla que nombra la configuración que falta, en vez de quedarse en blanco. Para probar sin tenant, la sección 3 levanta un emisor OIDC de prueba con esos valores puestos.
 
 Para usar otra base o otro CSV, sin tocar los archivos:
 
@@ -234,7 +234,7 @@ Autenticacion__ApiScope="api://comicteca-api/acceso" \
 Un despliegue añade `-p:ExigirSesion=true` para que la falta de valores detenga la publicación. Publica fuera del repositorio: el archivo lleva los valores del tenant.
 
 - Si falta uno de los tres, el publish se detiene y nombra el que falta.
-- Sin ninguno se publica con `{ }`: el archivo existe y el runtime lo pide, pero la web falla al arrancar y nombra la configuración que falta. Es lo que permite que la prueba de interfaz intercepte el archivo.
+- Sin ninguno se publica con `{ }`: el archivo existe y el runtime lo pide, pero la web arranca con una pantalla que nombra la configuración que falta. Es lo que permite que la prueba de interfaz intercepte el archivo.
 - `appsettings.Development.json` no se publica nunca: lleva los valores del tenant que solo sirven en local.
 
 El CI comprueba cuatro casos en «Compilación y pruebas»: sin valores exige el archivo vacío, con valores de prueba exige que lleguen al archivo y a su variante comprimida, con uno solo exige que el publish se detenga nombrando el que falta, y con `ExigirSesion=true` exige que se detenga sin ninguno.

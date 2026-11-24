@@ -7,13 +7,43 @@ namespace Comicteca.Web;
 /// Entra ID como cliente público en el navegador: PKCE y sin secreto, porque
 /// en WebAssembly no hay dónde guardarlo. Los valores del registro no se
 /// versionan; el repositorio no los lleva y llegan por un appsettings que Git
-/// ignora. Sin valores la web no arranca, igual que la API: no hay sesión
-/// opcional.
+/// ignora. Sin valores la web no monta la sesión, igual que la API no
+/// arranca: no hay sesión opcional.
 /// </summary>
 public static class Autenticacion
 {
     /// <summary>Ruta que atiende la vuelta del inicio y del cierre de sesión.</summary>
     public const string RutaSesion = "authentication";
+
+    /// <summary>Claves sin las que la web no puede montar la sesión.</summary>
+    public static readonly string[] ClavesDeSesion =
+    [
+        "Autenticacion:Authority",
+        "Autenticacion:ClientId",
+        "Autenticacion:ApiScope",
+    ];
+
+    /// <summary>
+    /// Devuelve las claves de sesión que faltan o están en blanco. La pantalla
+    /// de arranque y el registro de MSAL usan esta misma comprobación.
+    /// </summary>
+    public static IReadOnlyList<string> ClavesQueFaltan(IConfiguration configuracion)
+    {
+        List<string> faltan = [];
+
+        foreach (var clave in ClavesDeSesion)
+        {
+            if (string.IsNullOrWhiteSpace(configuracion[clave]))
+            {
+                faltan.Add(clave);
+            }
+        }
+
+        return faltan;
+    }
+
+    /// <summary>Claves de sesión que impiden montar la aplicación.</summary>
+    public sealed record ConfiguracionAusente(IReadOnlyList<string> Claves);
 
     /// <summary>
     /// Registra MSAL y el portador del token. Lanza si falta algún valor: en
@@ -24,19 +54,18 @@ public static class Autenticacion
         this IServiceCollection servicios,
         IConfiguration configuracion)
     {
-        var authority = configuracion["Autenticacion:Authority"];
-        var cliente = configuracion["Autenticacion:ClientId"];
-        var ambito = configuracion["Autenticacion:ApiScope"];
+        var faltan = ClavesQueFaltan(configuracion);
 
-        if (string.IsNullOrWhiteSpace(authority)
-            || string.IsNullOrWhiteSpace(cliente)
-            || string.IsNullOrWhiteSpace(ambito))
+        if (faltan.Count > 0)
         {
             throw new InvalidOperationException(
-                "Faltan Autenticacion:Authority, Autenticacion:ClientId o " +
-                "Autenticacion:ApiScope. Sin ellas la web no arranca: " +
+                $"Faltan {string.Join(", ", faltan)}. Sin ellas la web no monta la sesión: " +
                 "no hay forma de desactivar la autenticación.");
         }
+
+        var authority = configuracion["Autenticacion:Authority"]!;
+        var cliente = configuracion["Autenticacion:ClientId"]!;
+        var ambito = configuracion["Autenticacion:ApiScope"]!;
 
         servicios.AddMsalAuthentication(opciones =>
         {

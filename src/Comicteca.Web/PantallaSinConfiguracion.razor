@@ -1,0 +1,31 @@
+@* Pantalla de arranque cuando faltan los valores de sesión. Se monta en lugar
+   de App: la web no puede enseñar la colección, pero sí decir qué configurar. *@
+@inject Autenticacion.ConfiguracionAusente Configuracion
+
+<PageTitle>Comicteca · falta configurar la sesión</PageTitle>
+
+<main class="contenido">
+    <header class="cabecera">
+        <h1>Falta configurar la sesión</h1>
+        <p class="resumen">La web no puede mostrar la colección sin los valores de Entra ID.</p>
+    </header>
+
+    <section class="arranque" aria-labelledby="titulo-arranque">
+        <h2 id="titulo-arranque">Faltan estos valores</h2>
+        <ul class="claves">
+            @foreach (var clave in Configuracion.Claves)
+            {
+                <li><code>@clave</code></li>
+            }
+        </ul>
+
+        <p>
+            En local se escriben en <code>wwwroot/appsettings.Development.json</code>,
+            que Git ignora. En un despliegue llegan al publicar con
+            <code>Autenticacion__Authority</code>,
+            <code>Autenticacion__ClientId</code> y
+            <code>Autenticacion__ApiScope</code>.
+        </p>
+        <p>Los valores del registro están en <code>docs/entra-id.md</code>, en el repositorio.</p>
+    </section>
+</main>

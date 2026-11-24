@@ -87,7 +87,7 @@ cómo—; no se pega en servicios de terceros.
 
 1. `dotnet run --project src/Comicteca.Api` y `dotnet run --project
    src/Comicteca.Web`, con los valores de la API en el entorno y los de la web en
-   `appsettings.Development.json`. Sin ellos no arrancan.
+   `appsettings.Development.json`. Sin ellos la API no arranca y la web muestra qué falta.
 2. Sin sesión, la lista no debe cargar: la API responde 401.
 3. **Iniciar sesión**, entrar con la cuenta permitida y verificar que la lista
    carga y que se da de alta una serie.
@@ -132,7 +132,7 @@ El paso 3 es el que falta contra el tenant real: la fila de
   Decidido el 15 de noviembre de 2026: se generan al publicar desde
   `Autenticacion__Authority`, `Autenticacion__ClientId` y `Autenticacion__ApiScope`
   ([ADR 0007](adr/0007-valores-de-sesion-en-el-despliegue.md)). Sin valores la web
-  no arranca, en vez de arrancar sin sesión.
+  no monta la sesión y muestra qué falta, en vez de arrancar sin sesión.
 - El secreto de la API en el despliegue: llega con identidad gestionada (B.6).
 - La CSP va puesta en la API y en la web (`docker/cabeceras.conf` en el ensayo
   y `docker/cabeceras.prod.conf` en el perfil HTTPS), con

@@ -265,6 +265,42 @@ async function leerAlmacenamiento(pagina) {
       'sigue sin desbordamiento horizontal a 375 px');
     check(erroresPagina.length === 0, 'sin errores de JavaScript en la página');
 
+    // Sin valores de sesión la web tampoco se queda en blanco: monta la pantalla
+    // que nombra lo que falta. Se sirve la configuración sin las claves de
+    // sesión para que no dependa de lo que haya en el appsettings local.
+    const contextoVacio = await navegador.newContext({
+      viewport: { width: 375, height: 812 },
+      ignoreHTTPSErrors: true
+    });
+    const paginaVacia = await contextoVacio.newPage();
+    // Solo faltan las claves de sesión: la base de la API sigue puesta, como en
+    // una web publicada sin los valores de Entra ID.
+    await paginaVacia.route('**/appsettings*.json', (respuesta) => respuesta.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({ ApiBaseUrl: API })
+    }));
+
+    const erroresVacios = [];
+    paginaVacia.on('pageerror', (error) => {
+      erroresVacios.push(error.message);
+      console.log(`pageerror sin sesión: ${error.message}`);
+    });
+
+    await paginaVacia.goto(WEB, { waitUntil: 'domcontentloaded' });
+    await paginaVacia.getByRole('heading', { name: 'Falta configurar la sesión' })
+      .waitFor({ timeout: 30000 });
+    check(true, 'sin valores de sesión la web muestra una pantalla propia');
+
+    for (const clave of ['Autenticacion:Authority', 'Autenticacion:ClientId', 'Autenticacion:ApiScope']) {
+      check(await paginaVacia.locator('.claves code', { hasText: clave }).count() === 1,
+        `la pantalla nombra ${clave}`);
+    }
+
+    check(await paginaVacia.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      'la pantalla sin sesión no desborda a 375 px');
+    check(erroresVacios.length === 0, 'la pantalla sin sesión no lanza excepciones de JavaScript');
+    await contextoVacio.close();
+
     console.log('PRUEBA DE INTERFAZ A 375 px CON SESIÓN: OK');
   } catch (error) {
     if (pagina) {
