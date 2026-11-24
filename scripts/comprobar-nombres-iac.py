@@ -130,14 +130,24 @@ def revisar(texto: str, archivo: str) -> list[str]:
     return fallos
 
 
-def comprobar_mapa(texto: str, archivo: str) -> list[str]:
-    """El mapa de abreviaturas de Bicep y la lista TIPOS no pueden separarse."""
+def mapa_abreviaturas(texto: str) -> dict[str, str]:
+    """Devuelve el mapa tipo -> abreviatura de `abreviaturaTipo`."""
     mapa = MAPA_ABREVIATURAS.search(texto)
     if not mapa:
-        return []
-    claves = set(
-        re.findall(r"^\s*([a-z0-9]+):\s*'[a-z0-9]+'", mapa.group(1), re.MULTILINE)
+        return {}
+    return dict(
+        re.findall(
+            r"^\s*([a-z0-9]+):\s*'([a-z0-9]+)'", mapa.group(1), re.MULTILINE
+        )
     )
+
+
+def comprobar_mapa(texto: str, archivo: str) -> list[str]:
+    """El mapa de abreviaturas de Bicep y la lista TIPOS no pueden separarse."""
+    abreviaturas = mapa_abreviaturas(texto)
+    if not abreviaturas:
+        return []
+    claves = set(abreviaturas)
     fallos: list[str] = []
     for tipo in sorted(claves - TIPOS):
         fallos.append(
@@ -150,16 +160,21 @@ def comprobar_mapa(texto: str, archivo: str) -> list[str]:
     return fallos
 
 
-def comprobar_longitudes(max_carga: int, archivo: str) -> list[str]:
+def comprobar_longitudes(
+    max_carga: int, abreviaturas: dict[str, str], archivo: str
+) -> list[str]:
     """Reproduce el peor caso del patrón con la carga máxima permitida.
 
     La región más larga que usa la plantilla es `eus2`/`wus2` (4 caracteres) y
-    el sufijo estable, 6. El entorno más largo es `prod`, 4.
+    el sufijo estable, 6. El entorno más largo es `prod`, 4. La abreviatura se
+    toma del mapa, no del nombre del tipo: si un día `containerapp` abrevia a
+    `ca`, la cuenta sigue siendo la correcta.
     """
     fallos: list[str] = []
     for tipo, limite in sorted(LIMITES.items()):
+        abreviatura = abreviaturas.get(tipo, tipo)
         largo = (
-            len(tipo)
+            len(abreviatura)
             + 1
             + max_carga
             + 1
@@ -262,15 +277,31 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
                 f"autoprueba: '{descripcion}' debía fallar y pasó"
             )
 
-    if comprobar_longitudes(12, "autoprueba"):
-        pass
-    else:
+    mapa_ok = (
+        "func abreviaturaTipo(tipo string) string => {\n"
+        + "\n".join(f"  {tipo}: '{tipo}'" for tipo in sorted(TIPOS))
+        + "\n}[tipo]"
+    )
+    if comprobar_mapa(mapa_ok, "autoprueba"):
+        fallos.append("autoprueba: un mapa completo debía pasar")
+    mapa_extra = mapa_ok[: -len("}[tipo]")] + "  extra: 'extra'\n}[tipo]"
+    if not comprobar_mapa(mapa_extra, "autoprueba"):
+        fallos.append("autoprueba: una clave de más en el mapa debía fallar")
+
+    abreviaturas = {tipo: tipo for tipo in TIPOS}
+    if not comprobar_longitudes(12, abreviaturas, "autoprueba"):
         fallos.append(
             "autoprueba: una carga de 12 caracteres debía romper el límite de `cae`"
         )
-    if comprobar_longitudes(10, "autoprueba"):
+    if comprobar_longitudes(10, abreviaturas, "autoprueba"):
         fallos.append(
             "autoprueba: una carga de 10 caracteres debía caber en todos los tipos"
+        )
+    abreviaturas_largas = dict(abreviaturas)
+    abreviaturas_largas["ca"] = "containerapp"
+    if not comprobar_longitudes(10, abreviaturas_largas, "autoprueba"):
+        fallos.append(
+            "autoprueba: una abreviatura más larga debía contar para el límite"
         )
 
     return fallos
@@ -297,6 +328,7 @@ def main() -> int:
     fallos = autoprueba() if args.autoprueba else []
     recursos = 0
     max_carga: int | None = None
+    abreviaturas: dict[str, str] = {}
 
     for archivo in archivos:
         texto = archivo.read_text(encoding="utf-8")
@@ -305,6 +337,11 @@ def main() -> int:
         fallos.extend(comprobar_mapa(texto, str(archivo.relative_to(RAIZ))))
 
         if archivo.name == "main.bicep":
+            abreviaturas = mapa_abreviaturas(texto)
+            if not abreviaturas:
+                fallos.append(
+                    f"{archivo.name}: no se encontró el mapa de abreviaturas"
+                )
             maxima = CARGA_MAXIMA.search(texto)
             if not maxima:
                 fallos.append(
@@ -313,8 +350,10 @@ def main() -> int:
             else:
                 max_carga = int(maxima.group(1))
 
-    if max_carga is not None:
-        fallos.extend(comprobar_longitudes(max_carga, "infra/main.bicep"))
+    if max_carga is not None and abreviaturas:
+        fallos.extend(
+            comprobar_longitudes(max_carga, abreviaturas, "infra/main.bicep")
+        )
 
     if fallos:
         print("Nombres de IaC fuera de la función `nombre`:", file=sys.stderr)
