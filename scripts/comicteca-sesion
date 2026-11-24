@@ -13,7 +13,7 @@ repo="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 destino="${SESION_WEB_ARCHIVO:-$repo/.sesion/appsettings.Production.json}"
 
 falta() {
-    echo "Falta $1: sin los tres valores la web del contenedor no arranca (ADR 0007)." >&2
+    echo "Falta $1: sin los tres valores la web del contenedor no monta la sesión (ADR 0007)." >&2
     exit 1
 }
 

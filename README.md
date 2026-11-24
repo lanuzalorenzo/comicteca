@@ -29,7 +29,7 @@ dotnet run --project src/Comicteca.Api   # http://localhost:5094
 dotnet run --project src/Comicteca.Web   # http://localhost:5077
 ```
 
-La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La web toma la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json` y la sesión de un `appsettings.Development.json` que Git ignora. La autenticación no se apaga en ningún entorno: sin valores, la aplicación falla en vez de arrancar abierta.
+La primera vez, la API aplica las migraciones, crea la base y carga el CSV. La web toma la dirección de la API de `src/Comicteca.Web/wwwroot/appsettings.json` y la sesión de un `appsettings.Development.json` que Git ignora. La autenticación no se apaga en ningún entorno: sin valores, la API no arranca y la web muestra qué falta, en vez de arrancar abierta.
 
 ### Con Docker
 

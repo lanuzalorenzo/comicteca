@@ -8,7 +8,7 @@
   <!--
     Los valores de sesión se piden por entorno, con el mismo nombre que usa la
     API, y se escriben al publicar (ADR 0007). WebAssembly no lee variables de
-    entorno, así que sin archivo la web publicada no arranca. Se publica con:
+    entorno, así que sin archivo la web publicada no monta la sesión. Se publica con:
 
       Autenticacion__Authority=… Autenticacion__ClientId=… Autenticacion__ApiScope=… \
         dotnet publish src/Comicteca.Web -c Release
@@ -16,7 +16,7 @@
     Sin ese entorno se publica un archivo vacío: el runtime lo pide igual, la
     prueba de interfaz lo intercepta y la imagen se construye sin valores. Un
     despliegue añade `-p:ExigirSesion=true` para que el archivo vacío sea un
-    error en vez de una web que falla en el navegador.
+    error en vez de una web que arranca con la pantalla que nombra lo que falta.
   -->
   <PropertyGroup>
     <_SesionPedida>$(Autenticacion__Authority)|$(Autenticacion__ClientId)|$(Autenticacion__ApiScope)</_SesionPedida>
@@ -54,18 +54,19 @@
   <!--
     La web publicada necesita Authority, ClientId y ApiScope. Se escriben al
     compilar desde el entorno, con el mismo nombre que usa la API; el archivo
-    está en .gitignore. Sin valores se deja vacío a propósito: la web arranca y
-    falla con el motivo, en vez de quedarse en blanco con un 404.
+    está en .gitignore. Sin valores se deja vacío a propósito: la web arranca
+    con la pantalla que nombra lo que falta, en vez de quedarse en blanco con un
+    404.
   -->
   <Target Name="GenerarAppsettingsDeSesion" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(ExigirSesion)' == 'true' and '$(_SesionPedida)' == '||'"
            Text="ExigirSesion=true y no hay valores de sesión. Pasa Autenticacion__Authority, Autenticacion__ClientId y Autenticacion__ApiScope: un despliegue no se publica sin sesión (ADR 0007)." />
     <Error Condition="'$(_SesionPedida)' != '||' and '$(Autenticacion__Authority)' == ''"
-           Text="Falta Autenticacion__Authority. La web publicada no arranca sin los tres valores de sesión (ADR 0007)." />
+           Text="Falta Autenticacion__Authority. La web publicada no monta la sesión sin los tres valores de sesión (ADR 0007)." />
     <Error Condition="'$(_SesionPedida)' != '||' and '$(Autenticacion__ClientId)' == ''"
-           Text="Falta Autenticacion__ClientId. La web publicada no arranca sin los tres valores de sesión (ADR 0007)." />
+           Text="Falta Autenticacion__ClientId. La web publicada no monta la sesión sin los tres valores de sesión (ADR 0007)." />
     <Error Condition="'$(_SesionPedida)' != '||' and '$(Autenticacion__ApiScope)' == ''"
-           Text="Falta Autenticacion__ApiScope. La web publicada no arranca sin los tres valores de sesión (ADR 0007)." />
+           Text="Falta Autenticacion__ApiScope. La web publicada no monta la sesión sin los tres valores de sesión (ADR 0007)." />
 
     <!-- Los valores se interpolan en un JSON y en un elemento de MSBuild: una
          comilla, una barra o un punto y coma producen un archivo inválido o

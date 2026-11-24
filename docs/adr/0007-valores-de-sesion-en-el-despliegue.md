@@ -1,12 +1,12 @@
 # 0007 — De dónde salen los valores de sesión en el despliegue
 
 **Fecha:** 14 de noviembre de 2026
-**Actualizado:** 15 de noviembre de 2026
+**Actualizado:** 24 de noviembre de 2026
 **Estado:** Aceptada (opción 1, generarlos en el pipeline; sin despliegue autorizado)
 
 ## De qué iba
 
-Desde el ADR 0006 la web no arranca sin `Authority`, `ClientId` y `ApiScope`. En local eso se resuelve con un `appsettings.Development.json` que Git ignora, porque WebAssembly no lee variables de entorno. En un despliegue ese archivo no existe: la web se publica como estáticos y el navegador pide `appsettings.json`. Hoy la imagen publicada no lleva valores y la web desplegada no pinta nada. Falta decidir de dónde los recibe.
+Desde el ADR 0006 la web no monta la sesión sin `Authority`, `ClientId` y `ApiScope`. En local eso se resuelve con un `appsettings.Development.json` que Git ignora, porque WebAssembly no lee variables de entorno. En un despliegue ese archivo no existe: la web se publica como estáticos y el navegador pide `appsettings.json`. Hoy la imagen publicada no lleva valores y la web desplegada solo muestra qué falta —desde el 24 de noviembre de 2026, en una pantalla propia; antes, en blanco—. Falta decidir de dónde los recibe.
 
 La API no tiene este problema: lee variables de entorno y `compose` ya se niega a arrancar sin ellas.
 
@@ -44,7 +44,8 @@ Autenticacion__Authority=… Autenticacion__ClientId=… Autenticacion__ApiScope
 ```
 
 Un despliegue añade `-p:ExigirSesion=true`: entonces la ausencia de valores detiene
-la publicación, en vez de producir una web que falla en el navegador. Publicar con
+la publicación, en vez de producir una web que arranca sin sesión y muestra qué
+falta en el navegador. Publicar con
 `--no-build` reutiliza lo que dejó la última compilación, así que no genera ni
 revisa nada: la publicación que se despliega compila.
 
@@ -53,7 +54,7 @@ revisa nada: la publicación que se despliega compila.
   después no se carga nunca: es lo que permite que la prueba de interfaz lo
   intercepte cuando no hay valores.
 - **Falta uno y el publish se detiene** con el nombre del que falta, en vez de
-  producir una web que no arranca. Un valor con comilla, barra o punto y coma
+  producir una web que muestra qué falta en el navegador. Un valor con comilla, barra o punto y coma
   también se rechaza: rompería el JSON.
 - **Un archivo sobrante no entra.** El target reescribe el contenido en cada
   compilación, así que lo que haya en el árbol de una publicación anterior no
