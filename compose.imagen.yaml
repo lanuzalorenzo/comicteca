@@ -1,0 +1,40 @@
+# Ensayo de la imagen publicada: no construye nada y arranca por digest.
+#
+#   export AUTENTICACION_AUTHORITY=...
+#   export AUTENTICACION_AUDIENCE=...
+#   export AUTENTICACION_CUENTA_PERMITIDA=...
+#   COMICTECA_API_DIGEST="sha256:..." docker compose -f compose.imagen.yaml up -d
+#
+# El digest se copia del run que publica (o se pide al registro). Una etiqueta
+# mutable no sirve para esta prueba: el objetivo es arrancar exactamente el
+# artefacto que se firmó. El paquete tiene que estar público para que el `pull`
+# no pida credenciales; si responde 401, la visibilidad sigue en privada.
+#
+# Solo levanta la API. La web no se publica como imagen: su despliegue es
+# Static Web Apps y su configuración de sesión se escribe al publicar.
+
+name: comicteca-imagen
+
+services:
+  api:
+    image: "ghcr.io/${GHCR_PROPIETARIO:-lanuzalorenzo}/comicteca-api@${COMICTECA_API_DIGEST:?falta COMICTECA_API_DIGEST}"
+    environment:
+      ConnectionStrings__Comicteca: "Data Source=/data/comicteca.db"
+      Datos__RutaCsv: "/app/data/coleccion.csv"
+      Autenticacion__Authority: "${AUTENTICACION_AUTHORITY:?falta AUTENTICACION_AUTHORITY}"
+      Autenticacion__Audience: "${AUTENTICACION_AUDIENCE:?falta AUTENTICACION_AUDIENCE}"
+      Autenticacion__CuentaPermitida: "${AUTENTICACION_CUENTA_PERMITIDA:?falta AUTENTICACION_CUENTA_PERMITIDA}"
+    volumes:
+      - datos:/data
+    ports:
+      - "127.0.0.1:5094:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+volumes:
+  datos:

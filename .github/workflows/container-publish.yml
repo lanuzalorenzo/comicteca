@@ -1,0 +1,144 @@
+name: Imágenes de Comicteca
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: imagenes-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # En una PR solo se construye, con permiso de lectura: publicar desde una
+  # rama dejaría paquetes sin revisar en el registro y daría escritura de
+  # paquetes a un cambio que nadie ha fusionado.
+  build:
+    name: Construir ${{ matrix.imagen }}
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - imagen: comicteca-api
+            dockerfile: src/Comicteca.Api/Dockerfile
+          - imagen: comicteca-web
+            dockerfile: src/Comicteca.Web/Dockerfile
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v7
+
+      - name: Construir
+        uses: lanuzalorenzo/core/actions/container-publish@v1.6
+        with:
+          image: ${{ github.repository_owner }}/${{ matrix.imagen }}
+          dockerfile: ${{ matrix.dockerfile }}
+          push: false
+          # El restore de los paquetes LL.* necesita el token como secreto de
+          # BuildKit: no queda en ninguna capa de la imagen.
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha,scope=${{ matrix.imagen }}
+          cache-to: type=gha,scope=${{ matrix.imagen }},mode=max
+
+  # Publicar, generar el SBOM y firmar van en el mismo trabajo para que cada
+  # imagen recorra el flujo completo: no hay un artefacto firmado que no se
+  # haya verificado en el mismo run.
+  publish:
+    name: Publicar, firmar y verificar ${{ matrix.imagen }}
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - imagen: comicteca-api
+            dockerfile: src/Comicteca.Api/Dockerfile
+          - imagen: comicteca-web
+            dockerfile: src/Comicteca.Web/Dockerfile
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v7
+
+      - name: Construir y publicar
+        id: imagen
+        uses: lanuzalorenzo/core/actions/container-publish@v1.6
+        with:
+          image: ${{ github.repository_owner }}/${{ matrix.imagen }}
+          dockerfile: ${{ matrix.dockerfile }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha,scope=${{ matrix.imagen }}
+          cache-to: type=gha,scope=${{ matrix.imagen }},mode=max
+
+      - name: Generar el SBOM CycloneDX del artefacto
+        # Fijada por SHA; el comentario dice la etiqueta que corresponde.
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ghcr.io/${{ github.repository_owner }}/${{ matrix.imagen }}@${{ steps.imagen.outputs.digest }}
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          format: cyclonedx-json
+          output-file: ${{ matrix.imagen }}.cdx.json
+          artifact-name: ${{ matrix.imagen }}-${{ github.sha }}.cdx.json
+          # El SBOM viaja en la atestación, que es lo que se verifica; subirlo
+          # como artefacto no lo consume nadie y choca al reejecutar el run.
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Instalar cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+        with:
+          cosign-release: v3.1.4
+
+      - name: Firmar y atestar la imagen
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.imagen }}@${{ steps.imagen.outputs.digest }}
+        run: |
+          cosign sign --yes "$IMAGE"
+          cosign attest --yes --predicate "${{ matrix.imagen }}.cdx.json" --type cyclonedx "$IMAGE"
+
+      # La comprobación va en el mismo run: un artefacto que no se puede
+      # verificar no cuenta como firmado.
+      - name: Verificar firma y atestación
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.imagen }}@${{ steps.imagen.outputs.digest }}
+          IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/container-publish.yml@${{ github.ref }}
+          ISSUER: https://token.actions.githubusercontent.com
+        run: |
+          cosign verify \
+            --timeout 120s \
+            --output json \
+            --certificate-identity "$IDENTITY" \
+            --certificate-oidc-issuer "$ISSUER" \
+            "$IMAGE" | jq -e 'length > 0'
+          cosign verify-attestation \
+            --timeout 120s \
+            --output json \
+            --type cyclonedx \
+            --certificate-identity "$IDENTITY" \
+            --certificate-oidc-issuer "$ISSUER" \
+            "$IMAGE" | jq -e 'length > 0'
+
+      - name: Anotar el digest y el SBOM
+        run: |
+          {
+            echo "### ${{ matrix.imagen }}"
+            echo "Digest: ${{ steps.imagen.outputs.digest }}"
+            echo "SHA-256 del SBOM: $(sha256sum "${{ matrix.imagen }}.cdx.json" | cut -d' ' -f1)"
+          } >> "$GITHUB_STEP_SUMMARY"
