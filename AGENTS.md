@@ -138,6 +138,29 @@ Ejecución local: `dotnet run --project src/Comicteca.Api` (puerto 5094) y `dotn
 
 Los ADR de `docs/adr/` usan `**Estado:** Aceptada` como estado de la decisión, no como uno de los cinco estados del artefacto; llevan fecha en la cabecera, que es la del día en que se decidieron.
 
+## Línea base
+
+Los identificadores y el criterio son los de [`shared-dotnet/docs/linea-base.md`](https://github.com/lanuzalorenzo/shared-dotnet/blob/main/docs/linea-base.md). Esta sección traduce a los cinco estados lo que documentan [`docs/capacidades.md`](docs/capacidades.md) y el pipeline; no añade controles fuera de su alcance.
+
+| Id | Estado | Evidencia |
+|---|---|---|
+| `auth` | Validado | 10 pruebas de contrato en `AutenticacionTests`: 401 sin token en lectura y escritura, 200 con la cuenta permitida, 403 con otra cuenta, 401 con otra clave, emisor, audiencia o vigencia, y `/health` anónimo; local con emisor de prueba el 13 de noviembre de 2026 y en CI el 14 ([run 43585948696](https://github.com/lanuzalorenzo/comicteca/actions/runs/43585948696)). Contra el tenant real, el 12 de noviembre de 2026: 401 sin token, 403 con otra cuenta y 200 con la permitida. |
+| `permisos` | Pendiente | sin `AddPermissionPolicies` ni `RequirePermission`: la API limita a una sola cuenta permitida, no a un permiso por rol. `LL.Security` 0.4.0, que lo trae, sigue sin publicar. |
+| `cors` | Validado | `AddDenyByDefaultCors` y `UseCors`; un origen permitido recibe la cabecera y uno desconocido no, en el CI del 2026-11-06 ([run 42237288900](https://github.com/lanuzalorenzo/comicteca/actions/runs/42237288900)). |
+| `cabeceras` | Validado | `UseSecurityHeaders` en la API y `docker/cabeceras.conf` en la web; 36 comprobaciones de `tests/e2e/prueba-cabeceras.js` —`nosniff`, `SAMEORIGIN`/`DENY`, `no-referrer`, `Permissions-Policy` y CSP— en local el 13 de noviembre de 2026 y en CI el 14. |
+| `csp` | Validado | `ContentSecurityPolicy.DenyAll`; CSP en la API, en la web y en `/_framework/`, con el nonce del importmap comprobado contra la cabecera; local el 13 de noviembre de 2026. La renovación de MSAL bajo CSP no está automatizada porque la política solo admite el tenant de Microsoft. |
+| `limite` | Validado | 120 peticiones por minuto: 120 respuestas correctas y la 121 con 429, en local y CI el 2026-11-06 ([run 42237288900](https://github.com/lanuzalorenzo/comicteca/actions/runs/42237288900)); la prueba negativa de `X-Forwarded-For` se hizo en local y contenedor el 9 de noviembre y sigue pendiente en CI. |
+| `problemdetails` | Validado | una excepción no controlada devuelve 500 con `application/problem+json`; CI del 2026-11-06 ([run 42248091775](https://github.com/lanuzalorenzo/comicteca/actions/runs/42248091775)). |
+| `salud` | Validado | `/health` responde sin token y sin datos de la colección; prueba de contrato en local y en el CI del 14 de noviembre de 2026 ([run 43585948696](https://github.com/lanuzalorenzo/comicteca/actions/runs/43585948696)). |
+| `permisos-workflow` | Validado | `contents: read` por defecto, `packages: read` en los trabajos que restauran y `security-events: write` solo en SAST e imágenes; run de `main` del 2026-11-24 ([45377655256](https://github.com/lanuzalorenzo/comicteca/actions/runs/45377655256)). |
+| `secretos` | Validado | Gitleaks sobre el historial completo en cada push y PR ([run 42697799507](https://github.com/lanuzalorenzo/comicteca/actions/runs/42697799507)); el hook local de cada clon es la barrera anterior al push. |
+| `sast` | Validado | CodeQL `security-extended` con SARIF ([run 43246451547](https://github.com/lanuzalorenzo/comicteca/actions/runs/43246451547)) y `codeql-gate.yml`, que abre un issue con las alertas abiertas y lo cierra al volver a cero. |
+| `sca` | Parcial | Trivy sobre las dos imágenes, bloqueante en `CRITICAL,HIGH` con corrección, y `npm audit --audit-level=high` en el run del 12 de noviembre de 2026 ([43246451547](https://github.com/lanuzalorenzo/comicteca/actions/runs/43246451547)); el cambio de base de la web a `nginx:1.30.7-alpine` y `libxml2` 2.13.9-r3 del 24 de noviembre espera su run. La auditoría NuGet hoy solo informa. |
+| `contenedor` | Validado | cada Dockerfile usa un usuario no privilegiado: `USER $APP_UID` en la API y `USER nginx` en la web; el CI comprueba que la web no corre como root con `id -u` y que su nginx carga la configuración final (run 43246451547, 12 de noviembre de 2026). |
+| `dependabot` | Validado | `.github/dependabot.yml` y `dependabot-auto-merge.yml`, que fusionan parche y menor con los siete checks en verde; PR #27 y #43 fusionadas por el flujo. |
+| `main` | Validado | ruleset `main` (id 27066653) activo y comprobado el 2026-11-24: pull request obligatoria, los siete checks con rama actualizada, historial lineal y fusión solo por squash. |
+| `iac` | Validado | `bicep build` sin avisos, nombres desde la función `nombre` y Trivy `azure-arm` bloqueante sobre el ARM compilado; run de `main` del 2026-11-24 ([45377655256](https://github.com/lanuzalorenzo/comicteca/actions/runs/45377655256)). Sin desplegar. |
+
 ## Despliegue
 
 No se despliega nada en Azure sin autorización explícita. Static Web Apps, Container Apps, Azure SQL y Log Analytics tienen su IaC en [`infra/`](infra/README.md), compilada y escaneada en el CI; Functions para el aviso diario sigue en diseño, en la fase 3. La decisión está en el [ADR 0003](docs/adr/0003-hospedaje-de-la-api.md) y el despliegue sigue **Pendiente**, sin presentarse como hecho.
