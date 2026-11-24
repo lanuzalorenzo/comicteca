@@ -10,8 +10,9 @@
 # artefacto que se firmó. El paquete tiene que estar público para que el `pull`
 # no pida credenciales; si responde 401, la visibilidad sigue en privada.
 #
-# Solo levanta la API. La web no se publica como imagen: su despliegue es
-# Static Web Apps y su configuración de sesión se escribe al publicar.
+# Solo levanta la API. La web se publica como imagen, pero no se sirve desde
+# ella: su despliegue es Static Web Apps y su configuración de sesión se escribe
+# al publicar.
 
 name: comicteca-imagen
 

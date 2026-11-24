@@ -25,9 +25,11 @@ jobs:
     permissions:
       contents: read
       packages: read
+    # Una sola definición de la matriz: `publish` la referencia con el ancla, así
+    # que una imagen nueva se añade aquí y no en dos sitios.
     strategy:
       fail-fast: false
-      matrix:
+      matrix: &imagenes
         include:
           - imagen: comicteca-api
             dockerfile: src/Comicteca.Api/Dockerfile
@@ -63,12 +65,7 @@ jobs:
       id-token: write
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - imagen: comicteca-api
-            dockerfile: src/Comicteca.Api/Dockerfile
-          - imagen: comicteca-web
-            dockerfile: src/Comicteca.Web/Dockerfile
+      matrix: *imagenes
     steps:
       - name: Checkout del repositorio
         uses: actions/checkout@v7
