@@ -15,6 +15,7 @@ Cuatro fases, como montar una tienda: primero el género, luego el local, despu�
 **Se cierra cuando** una dirección privada sirve la aplicación con los mismos datos y la factura del mes es de 0 €.
 
 - La pantalla en Static Web Apps, en su plan gratuito.
+- La web tiene su `staticwebapp.config.json`, el preparador y un workflow manual `SWA (manual)`; el despliegue sigue Pendiente.
 - La API en un contenedor sobre Container Apps y la base en Azure SQL, en la oferta gratuita, con auto-pausado al agotar la cuota.
 - El ensayo en local con Docker está hecho: el mismo código y los mismos estáticos, con los datos en un volumen y sin coste. Tras adoptar los controles compartidos se repitió el 6 de noviembre de 2026 con un token con `read:packages`: API y web en healthy, `/health` sano, web 200 y 20 series.
 - Agrupación de conexiones desactivada, para que la base pueda auto-pausar en lugar de gastar la cuota en dos días.

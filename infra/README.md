@@ -26,6 +26,15 @@ desactivada. La conectividad, los usuarios de la base, el usuario migrador y la
 publicación de la imagen se completan en un cambio posterior. Hasta entonces la
 plantilla describe los recursos, no una aplicación arrancable.
 
+## Publicación de la web
+
+El recurso `web` y su origen en `Cors__AllowedOrigins__0` ya están en
+`main.bicep`. La publicación no la hace el CI ni un push: el workflow manual
+`SWA (manual)` publica con `scripts/preparar-swa.py` y el secreto
+`AZURE_STATIC_WEB_APPS_API_TOKEN`; el despliegue sigue **Pendiente** hasta que el
+propietario lo autorice y lo ejecute. El entorno `swa` debe llevar una regla de
+protección con revisor obligatorio.
+
 ## Nombres
 
 Todos los nombres de recurso salen de la función `nombre(tipo, carga, entorno,

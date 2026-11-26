@@ -1,0 +1,78 @@
+name: SWA (manual)
+
+# El despliegue en Azure no se dispara solo: se pide a mano, con la URL de la
+# API y el token del recurso. La rama y el PR no publican nada.
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Origen https de la API (Container Apps)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: swa-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  desplegar:
+    name: Publicar la web en Static Web Apps
+    runs-on: ubuntu-latest
+    # El entorno swa debe llevar una regla de protección con revisor obligatorio.
+    environment: swa
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v7
+
+      - name: Comprobar la versión de plataforma
+        uses: lanuzalorenzo/core/actions/check-platform@v1.9
+
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restaurar dependencias
+        env:
+          GH_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet restore Comicteca.slnx
+
+      - name: Publicar la web con los valores del tenant
+        env:
+          Autenticacion__Authority: ${{ vars.AUTENTICACION_AUTHORITY }}
+          Autenticacion__ClientId: ${{ vars.AUTENTICACION_CLIENT_ID }}
+          Autenticacion__ApiScope: ${{ vars.AUTENTICACION_API_SCOPE }}
+        run: >
+          dotnet publish src/Comicteca.Web/Comicteca.Web.csproj
+          -c Release --no-restore -p:ExigirSesion=true -o publicado
+
+      - name: Inyectar la API y los hashes de la CSP
+        run: >
+          python3 scripts/preparar-swa.py
+          --publicado publicado --api-origin "${{ inputs.api_url }}"
+
+      - name: Comprobar el artefacto antes de desplegar
+        run: |
+          ./scripts/comprobar-web-publicada.sh publicado --exigir-sesion
+          if grep -R -n -E '__API_ORIGIN__|__SCRIPT_HASHES__|localhost:5094' \
+              --include='*.json' --include='*.html' --include='*.js' --include='*.css' \
+              publicado/wwwroot; then
+            echo "El artefacto conserva un marcador o la API local" >&2
+            exit 1
+          fi
+          if find publicado/wwwroot -type f \( -name 'appsettings*.gz' -o -name 'appsettings*.br' \
+              -o -name 'staticwebapp.config.json.gz' -o -name 'staticwebapp.config.json.br' \) | grep -q .; then
+            echo "El artefacto conserva variantes precomprimidas de los appsettings o del config" >&2
+            exit 1
+          fi
+
+      - name: Desplegar
+        env:
+          SWA_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+        run: >
+          npx --yes --ignore-scripts @azure/static-web-apps-cli@2.1.0 deploy ./publicado/wwwroot
+          --deployment-token "$SWA_TOKEN" --env production
