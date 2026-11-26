@@ -19,9 +19,16 @@ Esta guía reúne lo que hay que ejecutar antes de dar un cambio por bueno y có
 | Infraestructura como código | `infra/main.bicep`, `infra/presupuesto.bicep`, `scripts/comprobar-nombres-iac.py` | `bicep build` sin avisos, nombres de recurso salidos de la función `nombre` —con autoprueba que rechaza un literal— y Trivy en modo `azure-arm` sobre el ARM compilado | El mismo trabajo de análisis estático del CI |
 | Puerta de CodeQL | `.github/workflows/codeql-gate.yml` | Cada mañana y tras cada CI de `main` consulta las alertas abiertas de code scanning sobre `refs/heads/main`, abre o actualiza un issue con la tabla y lo cierra cuando vuelve a cero | Cron diario, disparo manual o el CI de `main` |
 | Imágenes | `.github/workflows/ci.yml`, `src/Comicteca.Api/Dockerfile`, `src/Comicteca.Web/Dockerfile` | Baseline de sshd sobre musl, Trivy sobre las dos imágenes con SARIF, y `id -u` distinto de 0 en la web | Trabajo «Imágenes de contenedor (Trivy)» del CI |
+| Static Web Apps | `src/Comicteca.Web/wwwroot/staticwebapp.config.json`, `scripts/preparar-swa.py`, `scripts/comprobar-swa.sh`, `.github/workflows/swa.yml` | La autoprueba del preparador en el CI inyecta el origen de la API, los hashes de los scripts en línea y `ApiBaseUrl`; el workflow manual publica; `comprobar-swa.sh` mide cabeceras, CSP y fallback sobre la dirección | `preparar-swa.py --autoprueba` en el CI; `SWA (manual)` y `comprobar-swa.sh <url>` a mano |
 | Móvil real | — | Safari, lector de pantalla y dispositivo físico | Manual, pendiente |
 
 Las de dominio, API, autenticación y proveedor van en el trabajo de compilación y pruebas; la de interfaz, en su propio trabajo del CI. El ensayo con contenedores y la prueba manual no están automatizados.
+
+### Static Web Apps
+
+La web se publica con el workflow manual `SWA (manual)`, no con un push. Antes de desplegar, `scripts/preparar-swa.py` sustituye `__API_ORIGIN__` y `__SCRIPT_HASHES__` en el `staticwebapp.config.json` publicado y fija `ApiBaseUrl` en los dos `appsettings`; si queda un marcador o el origen no es https, falla. El workflow exige la URL de la API, las variables `AUTENTICACION_*` y el secreto `AZURE_STATIC_WEB_APPS_API_TOKEN` en el entorno `swa`. El origen de SWA ya está en `Cors__AllowedOrigins__0` de la API en `infra/main.bicep`. Después, `scripts/comprobar-swa.sh <url> --api-origin <api>` mide cabeceras, CSP y fallback; el listado y el alta con sesión se prueban a mano.
+
+Para probarlo sin desplegar: publica la web, ejecuta `preparar-swa.py` sobre el artefacto y sirve `publicado/wwwroot` con `npx --yes --ignore-scripts @azure/static-web-apps-cli@2.1.0 start publicado/wwwroot`; `comprobar-swa.sh http://localhost:4280 --api-origin https://api.example.test` mide las mismas 19 comprobaciones contra el emulador. El 26 de noviembre de 2026 pasaron las 19.
 
 ## Requisitos
 
@@ -30,6 +37,7 @@ Las de dominio, API, autenticación y proveedor van en el trabajo de compilació
 - Docker con Compose, solo para el ensayo en contenedores.
 - `mkcert` en el `PATH`, solo para el perfil de producción con HTTPS.
 - Node 22, solo para la prueba de interfaz.
+- Python 3, para `scripts/comprobar-swa.sh` y `scripts/comprobar-nombres-iac.py`.
 
 ## 1. La suite automática
 
@@ -42,7 +50,7 @@ dotnet format Comicteca.slnx --verify-no-changes --no-restore
 gitleaks detect --source . --redact --verbose --exit-code 2
 ```
 
-Resultado esperado: compilación sin avisos, **99 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación, publica la web dos veces para comprobar con `scripts/comprobar-web-publicada.sh` que lo servido solo lleva el registro de sesión y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El run 45377655256 (24 de noviembre de 2026) pasó los siete trabajos con la compilación y el escaneo de la IaC además de lo anterior. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
+Resultado esperado: compilación sin avisos, **99 pruebas .NET correctas**, formato sin cambios y ningún secreto. Son las mismas comprobaciones del CI, que además ejecuta la prueba de interfaz, revisa los enlaces de la documentación, publica la web dos veces para comprobar con `scripts/comprobar-web-publicada.sh` que lo servido solo lleva el registro de sesión, ejecuta la autoprueba del preparador de Static Web Apps sobre la publicación con valores y, en sus propios trabajos, pasa CodeQL al código y Trivy a las imágenes publicando el SARIF. El run 43246451547 (12 de noviembre de 2026) pasó los siete trabajos, incluidos CodeQL y las dos imágenes con su SARIF; antes, el 42248091775 (6 de noviembre de 2026) pasó los cinco de entonces con las 41 pruebas: compilación, enlaces, interfaz a 375 px, Gitleaks y el informe de dependencias vulnerables. El run 45377655256 (24 de noviembre de 2026) pasó los siete trabajos con la compilación y el escaneo de la IaC además de lo anterior. El CI reutiliza las acciones `dotnet`, `check-links` y `gitleaks` de `lanuzalorenzo/core`; los trabajos que restauran paquetes declaran `packages: read`; `Directory.Build.props` fija `TreatWarningsAsErrors` para que la compilación sea estricta también en local.
 
 La suite usa una base temporal y un CSV propio: no toca tu base local ni tus datos.
 

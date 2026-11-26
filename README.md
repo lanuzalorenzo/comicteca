@@ -16,7 +16,7 @@ Es la aplicación principal del portfolio público: los paquetes compartidos `LL
 - Da de alta y de baja series y tomos desde la pantalla o por API.
 - Está pensada para el móvil y crece hasta tres columnas en escritorio, con tema oscuro; prueba automática a 375 px y medición en Chromium a 1440 px.
 - CORS, cabeceras de seguridad, límite por IP, ProblemDetails y salud vienen de los paquetes compartidos `LL.Security` y `LL.Hosting`.
-- La CSP y `Permissions-Policy` son propias: dependen de Blazor, de MSAL y del origen de la API. La de la API se compone con `LL.Security` 0.2.0 y las de la web viven en `docker/cabeceras.conf` (ensayo) y `docker/cabeceras.prod.conf` (perfil HTTPS).
+- La CSP y `Permissions-Policy` son propias: dependen de Blazor, de MSAL y del origen de la API. La de la API se compone con `LL.Security` 0.2.0 y las de la web viven en `docker/cabeceras.conf` (ensayo), `docker/cabeceras.prod.conf` (perfil HTTPS) y `src/Comicteca.Web/wwwroot/staticwebapp.config.json` (Static Web Apps).
 
 ## Cómo se arranca
 

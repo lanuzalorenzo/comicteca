@@ -87,6 +87,12 @@ jobs:
           ./scripts/comprobar-web-publicada.sh "$RUNNER_TEMP/publicada-con" --exigir-sesion
           ./scripts/comprobar-web-publicada.sh "$RUNNER_TEMP/publicada-vacia"
 
+      - name: Comprobar el preparador de Static Web Apps
+        run: |
+          python3 scripts/preparar-swa.py --autoprueba
+          python3 scripts/preparar-swa.py --publicado "$RUNNER_TEMP/publicada-con" --api-origin https://api.example.test
+          ./scripts/comprobar-web-publicada.sh "$RUNNER_TEMP/publicada-con" --exigir-sesion
+
   links:
     name: Enlaces de la documentación
     runs-on: ubuntu-latest
